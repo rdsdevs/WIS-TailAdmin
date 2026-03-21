@@ -60,6 +60,8 @@ new class extends Component {
 
     public function save(): void
     {
+        $this->authorize('create', \App\Models\RH\Contract::class);
+
         $datos = $this->validate();
 
         $contractableClass = $datos['contractable_type'] === 'employee'

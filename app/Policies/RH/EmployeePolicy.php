@@ -40,14 +40,22 @@ class EmployeePolicy
         return $user->hasRole(['admin', 'rh-manager']);
     }
 
-    public function update(User $user, Employee $employee): bool
+    public function update(User $user, ?Employee $employee = null): bool
     {
+        if ($employee === null) {
+            return $user->hasRole(['admin', 'rh-manager']);
+        }
+
         return $user->hasRole(['admin', 'rh-manager'])
             && $user->institution_id === $employee->institution_id;
     }
 
-    public function delete(User $user, Employee $employee): bool
+    public function delete(User $user, ?Employee $employee = null): bool
     {
+        if ($employee === null) {
+            return $user->hasRole(['admin', 'rh-manager']);
+        }
+
         return $user->hasRole(['admin', 'rh-manager'])
             && $user->institution_id === $employee->institution_id;
     }

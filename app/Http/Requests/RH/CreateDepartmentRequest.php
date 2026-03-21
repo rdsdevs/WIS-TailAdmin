@@ -10,7 +10,7 @@ class CreateDepartmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasRole(['super-admin', 'admin']);
+        return $this->user()->hasRole(['super-admin', 'admin', 'rh-manager']);
     }
 
     public function rules(): array

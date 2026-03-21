@@ -58,7 +58,7 @@ class PositionController extends Controller
 
     public function edit(Position $cargo): View
     {
-        $this->authorize('create', \App\Models\RH\Employee::class);
+        $this->authorize('update', \App\Models\RH\Employee::class);
 
         $institutionId = auth()->user()->institution_id;
         $departamentos = Department::query()
@@ -80,7 +80,7 @@ class PositionController extends Controller
 
     public function destroy(Position $cargo): RedirectResponse
     {
-        $this->authorize('create', \App\Models\RH\Employee::class);
+        $this->authorize('delete', \App\Models\RH\Employee::class);
         $this->service->delete($cargo);
 
         return redirect()->route('rh.cargos.index')

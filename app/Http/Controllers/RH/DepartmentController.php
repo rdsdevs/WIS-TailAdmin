@@ -50,7 +50,7 @@ class DepartmentController extends Controller
 
     public function edit(Department $departamento): View
     {
-        $this->authorize('create', \App\Models\RH\Employee::class);
+        $this->authorize('update', \App\Models\RH\Employee::class);
 
         return view('pages.rh.departamentos.edit', compact('departamento'));
     }
@@ -65,7 +65,7 @@ class DepartmentController extends Controller
 
     public function destroy(Department $departamento): RedirectResponse
     {
-        $this->authorize('create', \App\Models\RH\Employee::class);
+        $this->authorize('delete', \App\Models\RH\Employee::class);
         $this->service->delete($departamento);
 
         return redirect()->route('rh.departamentos.index')

@@ -1,12 +1,25 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 
-// dashboard pages
-Route::get('/', function () {
-    return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
-})->name('dashboard');
+// Rutas de autenticación
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', [LoginController::class, 'create'])->name('login');
+    Route::post('login', [LoginController::class, 'store']);
+});
+
+Route::post('logout', [LoginController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+// Dashboard
+Route::get('dashboard', fn () => view('pages.dashboard.ecommerce', ['title' => 'Dashboard WIS']))
+    ->middleware('auth')
+    ->name('dashboard');
+
+// Ruta raíz — redirige al dashboard
+Route::get('/', fn () => redirect()->route('dashboard'));
 
 // calender pages
 Route::get('/calendar', function () {
@@ -48,7 +61,6 @@ Route::get('/bar-chart', function () {
     return view('pages.chart.bar-chart', ['title' => 'Bar Chart']);
 })->name('bar-chart');
 
-
 // authentication pages
 Route::get('/signin', function () {
     return view('pages.auth.signin', ['title' => 'Sign In']);
@@ -82,25 +94,3 @@ Route::get('/image', function () {
 Route::get('/videos', function () {
     return view('pages.ui-elements.videos', ['title' => 'Videos']);
 })->name('videos');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

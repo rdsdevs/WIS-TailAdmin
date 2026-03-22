@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
+            InstitutionSeeder::class,   // debe correr antes que UserSeeder
+            UserSeeder::class,          // requiere institución y roles ya creados
             // Módulo RH — orden importa por FKs
             DocumentTypeSeeder::class,
             CollaboratorStatusSeeder::class,

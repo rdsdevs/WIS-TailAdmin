@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('new_position_email', 100)->nullable();
             $table->text('observations')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

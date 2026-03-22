@@ -35,15 +35,15 @@ class CollaboratorController extends Controller
             ->get();
 
         $stats = [
-            'total'        => Collaborator::where('institution_id', $institutionId)->count(),
-            'empleados'    => Collaborator::where('institution_id', $institutionId)->where('type', 'Empleado')->count(),
+            'total' => Collaborator::where('institution_id', $institutionId)->count(),
+            'empleados' => Collaborator::where('institution_id', $institutionId)->where('type', 'Empleado')->count(),
             'contratistas' => Collaborator::where('institution_id', $institutionId)->where('type', 'Contratista')->count(),
-            'porVencer'    => \App\Models\RH\Contract::where('status', 'Vigente')
-                                ->whereNotNull('end_date')
-                                ->where('end_date', '<=', now()->addDays(30))
-                                ->where('end_date', '>=', now())
-                                ->whereHas('collaborator', fn ($q) => $q->where('institution_id', $institutionId))
-                                ->count(),
+            'porVencer' => \App\Models\RH\Contract::where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->whereHas('collaborator', fn ($q) => $q->where('institution_id', $institutionId))
+                ->count(),
         ];
 
         return view('pages.rh.colaboradores.index', compact('colaboradores', 'filters', 'estados', 'stats'));

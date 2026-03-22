@@ -2,7 +2,12 @@
 
 @section('content')
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Nuevo contrato</h2>
+        <div>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Nuevo contrato</h2>
+            <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                Complete los datos para registrar un nuevo contrato.
+            </p>
+        </div>
         <nav aria-label="Migas de pan">
             <ol class="flex items-center gap-1.5">
                 <li>
@@ -30,5 +35,5 @@
 
     @include('layouts.partials.rh-subnav')
 
-    <livewire:rh.contract-form />
+    <livewire:rh.contract-form :collaborator-id="request('collaborator_id')" />
 @endsection

@@ -123,7 +123,7 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex items-center justify-center rounded-full bg-blue-50 px-3 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
-                                    {{ $cargo->employees_count ?? $cargo->employees->count() }}
+                                    {{ $cargo->contracts_count ?? $cargo->contracts->count() }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">

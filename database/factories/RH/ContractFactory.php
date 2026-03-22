@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Database\Factories\RH;
 
 use App\Models\Institution;
+use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
-use App\Models\RH\Employee;
+use App\Models\RH\ContractType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,62 +20,73 @@ class ContractFactory extends Factory
     public function definition(): array
     {
         $startDate = $this->faker->dateTimeBetween('-3 years', 'now');
-        $type = $this->faker->randomElement(['indefinite', 'fixed_term', 'contractor', 'intern']);
-        $endDate = in_array($type, ['fixed_term', 'intern'], true)
-            ? $this->faker->dateTimeBetween($startDate, '+2 years')->format('Y-m-d')
-            : null;
 
         return [
             'institution_id' => Institution::factory(),
-            'contractable_id' => Employee::factory(),
-            'contractable_type' => Employee::class,
-            'contract_type' => $type,
+            'collaborator_id' => Collaborator::factory(),
+            'contract_type_id' => ContractType::factory(),
+            'position_id' => null,
+            'contract_number' => $this->faker->optional()->numerify('####'),
+            'contract_code' => $this->faker->optional()->bothify('CONT-####'),
             'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate,
+            'end_date' => null,
+            'object' => $this->faker->optional()->sentence(),
+            'obligations' => $this->faker->optional()->sentence(),
             'salary' => $this->faker->numberBetween(1_160_000, 15_000_000),
-            'position' => $this->faker->jobTitle(),
-            'description' => $this->faker->optional()->sentence(),
-            'is_active' => true,
+            'fees' => 0,
+            'position_email' => $this->faker->optional()->safeEmail(),
+            'status' => 'Vigente',
         ];
     }
 
+    /**
+     * Contrato a término fijo con fecha de fin.
+     */
     public function terminoFijo(): static
     {
         return $this->state(function (array $attributes) {
             $start = now()->subMonths(6);
 
             return [
-                'contract_type' => 'fixed_term',
                 'start_date' => $start->toDateString(),
                 'end_date' => now()->addMonths(6)->toDateString(),
+                'status' => 'Vigente',
             ];
         });
     }
 
+    /**
+     * Contrato indefinido sin fecha de fin.
+     */
     public function indefinido(): static
     {
         return $this->state(fn (array $attributes) => [
-            'contract_type' => 'indefinite',
             'end_date' => null,
+            'status' => 'Vigente',
         ]);
     }
 
+    /**
+     * Contrato que vence en los próximos N días.
+     */
     public function venceProximamente(int $dias = 15): static
     {
         return $this->state(function (array $attributes) use ($dias) {
             return [
-                'contract_type' => 'fixed_term',
                 'start_date' => now()->subYear()->toDateString(),
                 'end_date' => now()->addDays($dias)->toDateString(),
-                'is_active' => true,
+                'status' => 'Vigente',
             ];
         });
     }
 
-    public function inactivo(): static
+    /**
+     * Contrato liquidado.
+     */
+    public function liquidado(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_active' => false,
+            'status' => 'Liquidado',
         ]);
     }
 }

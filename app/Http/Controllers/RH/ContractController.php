@@ -7,9 +7,10 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RH\CreateContractRequest;
 use App\Http\Requests\RH\UpdateContractRequest;
+use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
-use App\Models\RH\Contractor;
-use App\Models\RH\Employee;
+use App\Models\RH\ContractType;
+use App\Models\RH\Position;
 use App\Services\RH\ContractService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -26,7 +27,20 @@ class ContractController extends Controller
         $contratos = $this->service->getActive($institutionId);
         $porVencer = $this->service->getExpiringSoon($institutionId, 30);
 
-        return view('pages.rh.contratos.index', compact('contratos', 'porVencer'));
+        $stats = [
+            'total' => Contract::count(),
+            'vigentes' => Contract::where('status', 'Vigente')->count(),
+            'porVencer' => Contract::where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->count(),
+            'contratistas' => Contract::where('status', 'Vigente')
+                ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
+                ->count(),
+        ];
+
+        return view('pages.rh.contratos.index', compact('contratos', 'porVencer', 'stats'));
     }
 
     public function create(): View
@@ -34,18 +48,25 @@ class ContractController extends Controller
         $this->authorize('create', Contract::class);
 
         $institutionId = auth()->user()->institution_id;
-        $empleados = Employee::query()
-            ->where('institution_id', $institutionId)
-            ->where('is_active', true)
-            ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name', 'document_number']);
-        $contratistas = Contractor::query()
-            ->where('institution_id', $institutionId)
-            ->where('is_active', true)
-            ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name', 'company_name', 'document_number']);
 
-        return view('pages.rh.contratos.create', compact('empleados', 'contratistas'));
+        $colaboradores = Collaborator::query()
+            ->where('institution_id', $institutionId)
+            ->whereHas('status', fn ($q) => $q->where('name', 'Activo'))
+            ->orderBy('first_surname')
+            ->get(['id', 'first_name', 'second_name', 'first_surname', 'second_surname', 'company_name', 'is_company', 'document_number', 'type']);
+
+        $tiposContrato = ContractType::query()
+            ->where('institution_id', $institutionId)
+            ->orderBy('name')
+            ->get();
+
+        $cargos = Position::query()
+            ->where('institution_id', $institutionId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('pages.rh.contratos.create', compact('colaboradores', 'tiposContrato', 'cargos'));
     }
 
     public function store(CreateContractRequest $request): RedirectResponse
@@ -60,7 +81,7 @@ class ContractController extends Controller
     {
         $this->authorize('view', $contrato);
 
-        $contrato->load('contractable');
+        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'extensions', 'committedValues']);
 
         return view('pages.rh.contratos.show', compact('contrato'));
     }
@@ -69,7 +90,22 @@ class ContractController extends Controller
     {
         $this->authorize('update', $contrato);
 
-        return view('pages.rh.contratos.edit', compact('contrato'));
+        $institutionId = auth()->user()->institution_id;
+
+        $tiposContrato = ContractType::query()
+            ->where('institution_id', $institutionId)
+            ->orderBy('name')
+            ->get();
+
+        $cargos = Position::query()
+            ->where('institution_id', $institutionId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $contract = $contrato->load('collaborator');
+
+        return view('pages.rh.contratos.edit', compact('contract', 'tiposContrato', 'cargos'));
     }
 
     public function update(UpdateContractRequest $request, Contract $contrato): RedirectResponse
@@ -90,7 +126,7 @@ class ContractController extends Controller
     }
 
     /**
-     * Termina un contrato activo sin eliminarlo.
+     * Termina un contrato vigente sin eliminarlo.
      */
     public function terminate(Contract $contrato): RedirectResponse
     {

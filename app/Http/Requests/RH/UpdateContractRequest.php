@@ -19,17 +19,21 @@ class UpdateContractRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'contract_type' => ['required', 'string', 'in:indefinite,fixed_term,contractor,intern'],
+            'contract_type_id' => ['required', 'uuid', 'exists:contract_types,id'],
+            'position_id' => ['nullable', 'uuid', 'exists:positions,id'],
+            'contract_number' => ['nullable', 'string', 'max:10'],
+            'contract_code' => ['nullable', 'string', 'max:20'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
-            'salary' => ['required', 'numeric', 'min:0'],
-            'position' => ['required', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'is_active' => ['boolean'],
+            'object' => ['nullable', 'string'],
+            'obligations' => ['nullable', 'string'],
+            'salary' => ['nullable', 'numeric', 'min:0'],
+            'fees' => ['nullable', 'numeric', 'min:0'],
+            'position_email' => ['nullable', 'email', 'max:100'],
+            'status' => ['required', 'in:Vigente,Liquidado,Terminado,Cambio de cargo'],
         ];
 
-        // La fecha de fin es obligatoria para contratos a término fijo o prácticas
-        if (in_array($this->input('contract_type'), ['fixed_term', 'intern'], true)) {
+        if ($this->input('end_date') === null && $this->input('require_end_date') === 'true') {
             $rules['end_date'] = ['required', 'date', 'after:start_date'];
         }
 
@@ -39,18 +43,19 @@ class UpdateContractRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'contract_type.required' => 'El tipo de contrato es obligatorio.',
-            'contract_type.in' => 'El tipo de contrato no es válido.',
+            'contract_type_id.required' => 'El tipo de contrato es obligatorio.',
+            'contract_type_id.exists' => 'El tipo de contrato seleccionado no existe.',
             'start_date.required' => 'La fecha de inicio del contrato es obligatoria.',
             'start_date.date' => 'La fecha de inicio no tiene un formato válido.',
-            'end_date.required' => 'La fecha de fin es obligatoria para contratos a término fijo y prácticas.',
+            'end_date.required' => 'La fecha de fin es obligatoria para este tipo de contrato.',
             'end_date.date' => 'La fecha de fin no tiene un formato válido.',
             'end_date.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
-            'salary.required' => 'El salario es obligatorio.',
             'salary.numeric' => 'El salario debe ser un valor numérico.',
             'salary.min' => 'El salario no puede ser negativo.',
-            'position.required' => 'El cargo en el contrato es obligatorio.',
-            'position.max' => 'El cargo no puede tener más de :max caracteres.',
+            'fees.numeric' => 'Los honorarios deben ser un valor numérico.',
+            'fees.min' => 'Los honorarios no pueden ser negativos.',
+            'status.required' => 'El estado del contrato es obligatorio.',
+            'status.in' => 'El estado del contrato no es válido.',
         ];
     }
 }

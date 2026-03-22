@@ -6,6 +6,7 @@ namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
 use App\Models\Institution;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,7 +24,9 @@ class Position extends Model implements Auditable
     protected $fillable = [
         'institution_id',
         'department_id',
+        'code',
         'name',
+        'email',
         'description',
         'is_active',
     ];
@@ -42,17 +45,27 @@ class Position extends Model implements Auditable
         return $this->belongsTo(Department::class);
     }
 
-    public function employees(): HasMany
+    public function contracts(): HasMany
     {
-        return $this->hasMany(Employee::class);
+        return $this->hasMany(Contract::class);
     }
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function functions(): HasMany
+    {
+        return $this->hasMany(PositionFunction::class);
+    }
+
+    public function positionChangeHistory(): HasMany
+    {
+        return $this->hasMany(PositionChangeHistory::class, 'new_position_id');
+    }
+
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeByInstitution(\Illuminate\Database\Eloquent\Builder $query, string $institutionId): \Illuminate\Database\Eloquent\Builder
+    public function scopeByInstitution(Builder $query, string $institutionId): Builder
     {
         return $query->where('institution_id', $institutionId);
     }

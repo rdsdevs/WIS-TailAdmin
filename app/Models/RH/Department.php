@@ -6,6 +6,7 @@ namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
 use App\Models\Institution;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,8 @@ class Department extends Model implements Auditable
 
     protected $fillable = [
         'institution_id',
+        'parent_id',
+        'code',
         'name',
         'description',
         'is_active',
@@ -36,22 +39,27 @@ class Department extends Model implements Auditable
         return $this->belongsTo(Institution::class);
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
     public function positions(): HasMany
     {
         return $this->hasMany(Position::class);
     }
 
-    public function employees(): HasMany
-    {
-        return $this->hasMany(Employee::class);
-    }
-
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeByInstitution(\Illuminate\Database\Eloquent\Builder $query, string $institutionId): \Illuminate\Database\Eloquent\Builder
+    public function scopeByInstitution(Builder $query, string $institutionId): Builder
     {
         return $query->where('institution_id', $institutionId);
     }

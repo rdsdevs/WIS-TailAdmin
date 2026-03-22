@@ -6,10 +6,11 @@ namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
 use App\Models\Institution;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -22,50 +23,76 @@ class Contract extends Model implements Auditable
 
     protected $fillable = [
         'institution_id',
-        'contractable_id',
-        'contractable_type',
-        'contract_type',
+        'collaborator_id',
+        'contract_type_id',
+        'position_id',
+        'contract_number',
+        'contract_code',
         'start_date',
         'end_date',
+        'object',
+        'obligations',
         'salary',
-        'position',
-        'description',
-        'is_active',
+        'fees',
+        'position_email',
+        'status',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
         'salary' => 'decimal:2',
-        'is_active' => 'boolean',
+        'fees' => 'decimal:2',
     ];
 
-    /**
-     * Relación polimórfica — puede pertenecer a Employee o Contractor.
-     */
-    public function contractable(): MorphTo
-    {
-        return $this->morphTo();
-    }
+    // ── Relaciones ───────────────────────────────────────────────────────────
 
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
     }
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function collaborator(): BelongsTo
     {
-        return $query->where('is_active', true);
+        return $this->belongsTo(Collaborator::class);
     }
 
-    /**
-     * Contratos que vencen en los próximos X días.
-     */
-    public function scopeExpiringSoon(\Illuminate\Database\Eloquent\Builder $query, int $days = 30): \Illuminate\Database\Eloquent\Builder
+    public function contractType(): BelongsTo
     {
-        return $query
-            ->where('is_active', true)
+        return $this->belongsTo(ContractType::class);
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    public function extensions(): HasMany
+    {
+        return $this->hasMany(ContractExtension::class);
+    }
+
+    public function committedValues(): HasMany
+    {
+        return $this->hasMany(CommittedValue::class);
+    }
+
+    public function positionChangeHistory(): HasMany
+    {
+        return $this->hasMany(PositionChangeHistory::class);
+    }
+
+    // ── Scopes ───────────────────────────────────────────────────────────────
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', 'Vigente');
+    }
+
+    public function scopeExpiringSoon(Builder $query, int $days = 30): Builder
+    {
+        return $query->where('status', 'Vigente')
             ->whereNotNull('end_date')
-            ->whereBetween('end_date', [now()->toDateString(), now()->addDays($days)->toDateString()]);
+            ->where('end_date', '<=', now()->addDays($days));
     }
 }

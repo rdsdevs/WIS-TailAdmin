@@ -184,4 +184,122 @@ describe('Gestión de Contratos', function (): void {
         expect($expirando)->toHaveCount(1);
         expect($expirando->first()->id)->toBe($contrato->id);
     });
+
+    it('crea un contrato con líneas de comprometido', function (): void {
+        [$user, $institution] = crearUsuarioRH('rh-manager');
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $datos = [
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'start_date' => now()->toDateString(),
+            'fees' => 3000000,
+            'status' => 'Vigente',
+            'committed_values' => [
+                ['accounting_account' => '2-1-1-01', 'cost_center' => 'CC-100', 'amount' => 1500000],
+                ['accounting_account' => '2-1-1-02', 'cost_center' => 'CC-200', 'amount' => 1500000],
+            ],
+        ];
+
+        $this->actingAs($user)
+            ->post(route('rh.contratos.store'), $datos)
+            ->assertRedirect();
+
+        $contrato = Contract::query()
+            ->where('collaborator_id', $colaborador->id)
+            ->firstOrFail();
+
+        expect($contrato->committedValues()->count())->toBe(2);
+        $this->assertDatabaseHas('committed_values', [
+            'contract_id' => $contrato->id,
+            'accounting_account' => '2-1-1-01',
+            'cost_center' => 'CC-100',
+            'amount' => 1500000,
+        ]);
+    });
+
+    it('rechaza líneas de comprometido con cuenta contable vacía', function (): void {
+        [$user, $institution] = crearUsuarioRH('rh-manager');
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $this->actingAs($user)
+            ->post(route('rh.contratos.store'), [
+                'institution_id' => $institution->id,
+                'collaborator_id' => $colaborador->id,
+                'contract_type_id' => $tipoContrato->id,
+                'start_date' => now()->toDateString(),
+                'status' => 'Vigente',
+                'committed_values' => [
+                    ['accounting_account' => '', 'cost_center' => 'CC-100', 'amount' => 500000],
+                ],
+            ])
+            ->assertSessionHasErrors('committed_values.0.accounting_account');
+    });
+
+    it('sincroniza (reemplaza) las líneas de comprometido de un contrato existente', function (): void {
+        [$user, $institution] = crearUsuarioRH('rh-manager');
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Vigente',
+        ]);
+
+        // Crear líneas iniciales
+        $contrato->committedValues()->create([
+            'institution_id' => $institution->id,
+            'accounting_account' => '2-1-1-01',
+            'cost_center' => 'CC-100',
+            'amount' => 2000000,
+        ]);
+
+        // Sincronizar con nuevas líneas
+        $service = app(\App\Services\RH\ContractService::class);
+        $service->syncCommittedValues($contrato, [
+            ['accounting_account' => '3-1-1-01', 'cost_center' => 'CC-300', 'amount' => 5000000],
+        ]);
+
+        expect($contrato->committedValues()->count())->toBe(1);
+        $this->assertDatabaseHas('committed_values', [
+            'contract_id' => $contrato->id,
+            'accounting_account' => '3-1-1-01',
+            'amount' => 5000000,
+        ]);
+        $this->assertDatabaseMissing('committed_values', [
+            'contract_id' => $contrato->id,
+            'accounting_account' => '2-1-1-01',
+            'deleted_at' => null,
+        ]);
+    });
+
+    it('syncCommittedValues con array vacío elimina todas las líneas', function (): void {
+        [$user, $institution] = crearUsuarioRH('rh-manager');
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Vigente',
+        ]);
+
+        $contrato->committedValues()->create([
+            'institution_id' => $institution->id,
+            'accounting_account' => '2-1-1-01',
+            'cost_center' => 'CC-100',
+            'amount' => 1000000,
+        ]);
+
+        $service = app(\App\Services\RH\ContractService::class);
+        $service->syncCommittedValues($contrato, []);
+
+        expect($contrato->committedValues()->count())->toBe(0);
+    });
 });

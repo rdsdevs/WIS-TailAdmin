@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
+use App\Models\Institution;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,15 +20,23 @@ class CommittedValue extends Model implements Auditable
     use SoftDeletes;
 
     protected $fillable = [
+        'institution_id',
         'contract_id',
         'accounting_account',
         'cost_center',
-        'committed_value',
+        'amount',
     ];
 
     protected $casts = [
-        'committed_value' => 'decimal:2',
+        'amount' => 'decimal:2',
     ];
+
+    // ── Relaciones ───────────────────────────────────────────────────────────
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
+    }
 
     public function contract(): BelongsTo
     {

@@ -3,9 +3,12 @@
 @section('content')
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Nuevo contrato</h2>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Editar contrato</h2>
             <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                Complete los datos para registrar un nuevo contrato.
+                {{ $contract->collaborator?->full_name ?? 'Colaborador' }}
+                @if($contract->contract_code)
+                    &bull; {{ $contract->contract_code }}
+                @endif
             </p>
         </div>
         <nav aria-label="Migas de pan">
@@ -28,12 +31,12 @@
                         </svg>
                     </a>
                 </li>
-                <li class="text-sm font-medium text-gray-800 dark:text-white/90">Nuevo contrato</li>
+                <li class="text-sm font-medium text-gray-800 dark:text-white/90">Editar</li>
             </ol>
         </nav>
     </div>
 
     @include('layouts.partials.rh-subnav')
 
-    <livewire:rh.contract-form :collaborator-id="request('collaborator_id')" />
+    <livewire:rh.contract-form :contract-id="$contract->id" />
 @endsection

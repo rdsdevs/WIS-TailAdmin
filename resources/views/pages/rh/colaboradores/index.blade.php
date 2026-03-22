@@ -1,11 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+    {{-- Encabezado --}}
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Contratos</h2>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Colaboradores</h2>
             <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                Administre todos los contratos de colaboradores ASCUN.
+                Gestione los empleados y contratistas de ASCUN desde un solo lugar.
             </p>
         </div>
         <nav aria-label="Migas de pan">
@@ -19,12 +20,12 @@
                         </svg>
                     </a>
                 </li>
-                <li class="text-sm font-medium text-gray-800 dark:text-white/90">Contratos</li>
+                <li class="text-sm font-medium text-gray-800 dark:text-white/90">Colaboradores</li>
             </ol>
         </nav>
     </div>
 
-    {{-- Flash --}}
+    {{-- Flash de sesión --}}
     @if(session('success'))
         <div x-data="{ visible: true }" x-show="visible" x-init="setTimeout(() => visible = false, 4000)"
              class="mb-4 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300"
@@ -36,28 +37,36 @@
         </div>
     @endif
 
+    {{-- Sub-navegación RH --}}
     @include('layouts.partials.rh-subnav')
 
     {{-- Tarjetas de resumen --}}
     <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
-            <p class="text-xs font-medium uppercase tracking-wide text-green-600 dark:text-green-400">Vigentes</p>
-            <p class="mt-1 text-2xl font-bold text-green-700 dark:text-green-300">{{ $stats['vigentes'] }}</p>
-        </div>
-        <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-            <p class="text-xs font-medium uppercase tracking-wide text-red-600 dark:text-red-400">Por vencer (30 días)</p>
-            <p class="mt-1 text-2xl font-bold text-red-700 dark:text-red-300">{{ $stats['porVencer'] }}</p>
-        </div>
-        <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-            <p class="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">Contratistas activos</p>
-            <p class="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300">{{ $stats['contratistas'] }}</p>
-        </div>
+        {{-- Total colaboradores --}}
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total contratos</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total colaboradores</p>
             <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
+        </div>
+
+        {{-- Empleados activos --}}
+        <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+            <p class="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">Empleados</p>
+            <p class="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300">{{ $stats['empleados'] }}</p>
+        </div>
+
+        {{-- Contratistas vigentes --}}
+        <div class="rounded-xl border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
+            <p class="text-xs font-medium uppercase tracking-wide text-purple-600 dark:text-purple-400">Contratistas</p>
+            <p class="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-300">{{ $stats['contratistas'] }}</p>
+        </div>
+
+        {{-- Contratos por vencer --}}
+        <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+            <p class="text-xs font-medium uppercase tracking-wide text-red-600 dark:text-red-400">Contratos por vencer</p>
+            <p class="mt-1 text-2xl font-bold text-red-700 dark:text-red-300">{{ $stats['porVencer'] }}</p>
         </div>
     </div>
 
-    {{-- Lista Livewire --}}
-    <livewire:rh.contract-list />
+    {{-- Lista de colaboradores (Livewire) --}}
+    <livewire:rh.collaborator-list />
 @endsection

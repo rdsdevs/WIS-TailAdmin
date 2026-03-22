@@ -30,16 +30,13 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     // Cargos (positions)
     Route::resource('cargos', RH\PositionController::class);
 
-    // Empleados — la ruta de exportar DEBE ir antes del resource para evitar
-    // que Laravel interprete "exportar" como el parámetro {empleado}
-    Route::get('empleados/exportar', [RH\EmployeeController::class, 'export'])
-        ->name('empleados.export');
-    Route::resource('empleados', RH\EmployeeController::class);
-
-    // Contratistas — igual: exportar antes del resource
-    Route::get('contratistas/exportar', [RH\ContractorController::class, 'export'])
-        ->name('contratistas.export');
-    Route::resource('contratistas', RH\ContractorController::class);
+    // Colaboradores (unificado — reemplaza empleados y contratistas)
+    // La ruta de exportar DEBE ir antes del resource para evitar
+    // que Laravel interprete "exportar" como el parámetro {collaborator}
+    Route::get('colaboradores/exportar/{tipo}', [RH\CollaboratorController::class, 'export'])
+        ->name('colaboradores.export');
+    Route::resource('colaboradores', RH\CollaboratorController::class)
+        ->parameters(['colaboradores' => 'collaborator']);
 
     // Contratos — acción de terminar contrato
     Route::patch('contratos/{contrato}/terminar', [RH\ContractController::class, 'terminate'])

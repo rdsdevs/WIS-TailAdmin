@@ -14,8 +14,7 @@ class MenuHelper
                 'icon' => 'rh',
                 'name' => 'Recursos Humanos',
                 'subItems' => [
-                    ['name' => 'Empleados',     'path' => '/rh/empleados'],
-                    ['name' => 'Contratistas',  'path' => '/rh/contratistas'],
+                    ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
                     ['name' => 'Contratos',     'path' => '/rh/contratos'],
                     ['name' => 'Departamentos', 'path' => '/rh/departamentos'],
                     ['name' => 'Cargos',        'path' => '/rh/cargos'],

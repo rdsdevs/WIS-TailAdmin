@@ -19,7 +19,7 @@ class PositionController extends Controller
 
     public function index(): View
     {
-        $this->authorize('viewAny', \App\Models\RH\Employee::class);
+        $this->authorize('viewAny', \App\Models\RH\Collaborator::class);
 
         $institutionId = auth()->user()->institution_id;
         $cargos = $this->service->getAll($institutionId);
@@ -29,7 +29,7 @@ class PositionController extends Controller
 
     public function create(): View
     {
-        $this->authorize('create', \App\Models\RH\Employee::class);
+        $this->authorize('create', \App\Models\RH\Collaborator::class);
 
         $institutionId = auth()->user()->institution_id;
         $departamentos = Department::query()
@@ -51,14 +51,14 @@ class PositionController extends Controller
 
     public function show(Position $cargo): View
     {
-        $this->authorize('viewAny', \App\Models\RH\Employee::class);
+        $this->authorize('viewAny', \App\Models\RH\Collaborator::class);
 
         return view('pages.rh.cargos.show', compact('cargo'));
     }
 
     public function edit(Position $cargo): View
     {
-        $this->authorize('update', \App\Models\RH\Employee::class);
+        $this->authorize('update', \App\Models\RH\Collaborator::class);
 
         $institutionId = auth()->user()->institution_id;
         $departamentos = Department::query()
@@ -80,7 +80,7 @@ class PositionController extends Controller
 
     public function destroy(Position $cargo): RedirectResponse
     {
-        $this->authorize('delete', \App\Models\RH\Employee::class);
+        $this->authorize('delete', \App\Models\RH\Collaborator::class);
         $this->service->delete($cargo);
 
         return redirect()->route('rh.cargos.index')

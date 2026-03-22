@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\Institution;
+use App\Models\RH\Collaborator;
+use App\Models\RH\CollaboratorStatus;
 use App\Models\RH\Contract;
-use App\Models\RH\Department;
-use App\Models\RH\Employee;
-use App\Models\RH\Position;
+use App\Models\RH\ContractType;
+use App\Models\RH\DocumentType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -30,20 +31,39 @@ function crearUsuarioRH(string $rol): array
 }
 
 /**
- * Helper: crea empleado completo con su institución.
+ * Helper: crea colaborador con toda su dependencia en la institución dada.
  */
-function crearEmpleadoRH(Institution $institution): Employee
+function crearColaboradorRH(Institution $institution): Collaborator
 {
-    $dpto = Department::factory()->create(['institution_id' => $institution->id]);
-    $cargo = Position::factory()->create([
+    $documentType = DocumentType::factory()->create([
         'institution_id' => $institution->id,
-        'department_id' => $dpto->id,
+        'code' => 'CC',
+        'name' => 'Cédula de Ciudadanía',
     ]);
 
-    return Employee::factory()->create([
+    $status = CollaboratorStatus::factory()->create([
         'institution_id' => $institution->id,
-        'position_id' => $cargo->id,
-        'department_id' => $dpto->id,
+        'name' => 'Activo',
+        'icon_class' => 'fa-regular fa-user-check',
+    ]);
+
+    return Collaborator::factory()->create([
+        'institution_id' => $institution->id,
+        'document_type_id' => $documentType->id,
+        'status_id' => $status->id,
+        'type' => 'Empleado',
+    ]);
+}
+
+/**
+ * Helper: crea un tipo de contrato para la institución.
+ */
+function crearTipoContrato(Institution $institution): ContractType
+{
+    return ContractType::factory()->create([
+        'institution_id' => $institution->id,
+        'code' => 'IDFD',
+        'name' => 'Indefinido',
     ]);
 }
 
@@ -52,16 +72,16 @@ describe('Gestión de Contratos', function (): void {
     it('puede listar contratos activos', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
 
-        $empleado = crearEmpleadoRH($institution);
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
         Contract::factory()->create([
             'institution_id' => $institution->id,
-            'contractable_id' => $empleado->id,
-            'contractable_type' => Employee::class,
-            'is_active' => true,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Vigente',
         ]);
 
-        // La vista aún no existe (la crea el agente frontend).
-        // Verificamos que la autorización pasa: no 403 ni redirección a login.
         $response = $this->actingAs($user)
             ->get(route('rh.contratos.index'));
 
@@ -69,19 +89,20 @@ describe('Gestión de Contratos', function (): void {
         $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
     });
 
-    it('puede crear un contrato para un empleado', function (): void {
+    it('puede crear un contrato para un colaborador', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
-        $empleado = crearEmpleadoRH($institution);
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
 
         $datos = [
             'institution_id' => $institution->id,
-            'contractable_id' => $empleado->id,
-            'contractable_type' => 'employee',
-            'contract_type' => 'indefinite',
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
             'start_date' => now()->toDateString(),
             'end_date' => null,
             'salary' => 4500000,
-            'position' => 'Analista de Sistemas',
+            'fees' => 0,
+            'status' => 'Vigente',
         ];
 
         $this->actingAs($user)
@@ -89,39 +110,45 @@ describe('Gestión de Contratos', function (): void {
             ->assertRedirect();
 
         $this->assertDatabaseHas('contracts', [
-            'contractable_id' => $empleado->id,
-            'contractable_type' => Employee::class,
-            'contract_type' => 'indefinite',
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Vigente',
         ]);
     });
 
     it('rechaza contrato a término fijo sin fecha de fin', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
-        $empleado = crearEmpleadoRH($institution);
+        $colaborador = crearColaboradorRH($institution);
+
+        $tipoFijo = ContractType::factory()->create([
+            'institution_id' => $institution->id,
+            'code' => 'FIAA',
+            'name' => 'Fijo Inferior a un año',
+        ]);
 
         $this->actingAs($user)
             ->post(route('rh.contratos.store'), [
                 'institution_id' => $institution->id,
-                'contractable_id' => $empleado->id,
-                'contractable_type' => 'employee',
-                'contract_type' => 'fixed_term', // requiere end_date
+                'collaborator_id' => $colaborador->id,
+                'contract_type_id' => $tipoFijo->id,
                 'start_date' => now()->toDateString(),
-                'end_date' => null,          // omitido
+                'end_date' => null,   // omitido para tipo fijo
                 'salary' => 3200000,
-                'position' => 'Auxiliar',
+                'status' => 'Vigente',
             ])
             ->assertSessionHasErrors('end_date');
     });
 
-    it('puede terminar un contrato activo', function (): void {
+    it('puede terminar un contrato vigente', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
-        $empleado = crearEmpleadoRH($institution);
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
             'institution_id' => $institution->id,
-            'contractable_id' => $empleado->id,
-            'contractable_type' => Employee::class,
-            'is_active' => true,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Vigente',
         ]);
 
         $this->actingAs($user)
@@ -130,27 +157,26 @@ describe('Gestión de Contratos', function (): void {
 
         $this->assertDatabaseHas('contracts', [
             'id' => $contrato->id,
-            'is_active' => false,
+            'status' => 'Terminado',
         ]);
     });
 
     it('muestra contratos próximos a vencer', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
-        $empleado = crearEmpleadoRH($institution);
+        $colaborador = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
 
         // Contrato que vence en 10 días
         $contrato = Contract::factory()->create([
             'institution_id' => $institution->id,
-            'contractable_id' => $empleado->id,
-            'contractable_type' => Employee::class,
-            'contract_type' => 'fixed_term',
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
             'start_date' => now()->subYear()->toDateString(),
             'end_date' => now()->addDays(10)->toDateString(),
-            'is_active' => true,
+            'status' => 'Vigente',
         ]);
 
-        // Verificar que el contrato es detectado por el scope expiringSoon del servicio
-        $expirando = \App\Models\RH\Contract::query()
+        $expirando = Contract::query()
             ->where('institution_id', $institution->id)
             ->expiringSoon(30)
             ->get();

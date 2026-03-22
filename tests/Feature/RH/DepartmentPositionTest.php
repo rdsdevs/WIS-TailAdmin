@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Models\Institution;
-use App\Models\RH\Contractor;
+use App\Models\RH\Collaborator;
+use App\Models\RH\CollaboratorStatus;
 use App\Models\RH\Department;
+use App\Models\RH\DocumentType;
 use App\Models\RH\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,9 +159,9 @@ describe('Gestión de Cargos', function (): void {
     });
 });
 
-// ─── Gestión de Contratistas ──────────────────────────────────────────────────
+// ─── Gestión de Colaboradores (contratistas) ──────────────────────────────────
 
-describe('Gestión de Contratistas', function (): void {
+describe('Gestión de Colaboradores Contratistas', function (): void {
 
     beforeEach(function (): void {
         $institution = Institution::factory()->create();
@@ -167,14 +169,29 @@ describe('Gestión de Contratistas', function (): void {
         $this->gerente->assignRole('rh-manager');
         $this->institution = $institution;
         $this->actingAs($this->gerente);
+
+        $this->documentType = DocumentType::factory()->create([
+            'institution_id' => $institution->id,
+            'code' => 'CC',
+            'name' => 'Cédula de Ciudadanía',
+        ]);
+
+        $this->status = CollaboratorStatus::factory()->create([
+            'institution_id' => $institution->id,
+            'name' => 'Activo',
+            'icon_class' => 'fa-regular fa-user-check',
+        ]);
     });
 
     it('puede ver el listado de contratistas', function (): void {
-        Contractor::factory()->count(3)->create([
+        Collaborator::factory()->count(3)->create([
             'institution_id' => $this->institution->id,
+            'document_type_id' => $this->documentType->id,
+            'status_id' => $this->status->id,
+            'type' => 'Contratista',
         ]);
 
-        $response = $this->get(route('rh.contratistas.index'));
+        $response = $this->get(route('rh.colaboradores.index'));
 
         $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
         $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
@@ -183,32 +200,37 @@ describe('Gestión de Contratistas', function (): void {
     it('puede registrar un contratista con datos válidos', function (): void {
         $datos = [
             'institution_id' => $this->institution->id,
-            'document_type' => 'CC',
+            'document_type_id' => $this->documentType->id,
             'document_number' => '123456789',
             'first_name' => 'Ana',
-            'last_name' => 'Martínez',
-            'is_active' => true,
+            'first_surname' => 'Martínez',
+            'type' => 'Contratista',
+            'status_id' => $this->status->id,
+            'is_company' => false,
         ];
 
-        $this->post(route('rh.contratistas.store'), $datos)
+        $this->post(route('rh.colaboradores.store'), $datos)
             ->assertRedirect();
 
-        $this->assertDatabaseHas('contractors', [
+        $this->assertDatabaseHas('collaborators', [
             'document_number' => '123456789',
+            'type' => 'Contratista',
         ]);
     });
 
-    it('rechaza el registro de contratista sin número de cédula', function (): void {
+    it('rechaza el registro de contratista sin número de documento', function (): void {
         $datos = [
             'institution_id' => $this->institution->id,
-            'document_type' => 'CC',
+            'document_type_id' => $this->documentType->id,
             // 'document_number' => omitido intencionalmente
             'first_name' => 'Ana',
-            'last_name' => 'Martínez',
-            'is_active' => true,
+            'first_surname' => 'Martínez',
+            'type' => 'Contratista',
+            'status_id' => $this->status->id,
+            'is_company' => false,
         ];
 
-        $this->post(route('rh.contratistas.store'), $datos)
+        $this->post(route('rh.colaboradores.store'), $datos)
             ->assertSessionHasErrors('document_number');
     });
 
@@ -220,26 +242,31 @@ describe('Gestión de Contratistas', function (): void {
 
         $datos = [
             'institution_id' => $this->institution->id,
-            'document_type' => 'CC',
+            'document_type_id' => $this->documentType->id,
             'document_number' => '987654321',
             'first_name' => 'Luis',
-            'last_name' => 'Pérez',
-            'is_active' => true,
+            'first_surname' => 'Pérez',
+            'type' => 'Contratista',
+            'status_id' => $this->status->id,
+            'is_company' => false,
         ];
 
         $this->actingAs($consultor)
-            ->post(route('rh.contratistas.store'), $datos)
+            ->post(route('rh.colaboradores.store'), $datos)
             ->assertForbidden();
     });
 
-    it('hace eliminación lógica del contratista', function (): void {
-        $contratista = Contractor::factory()->create([
+    it('hace eliminación lógica del colaborador contratista', function (): void {
+        $colaborador = Collaborator::factory()->create([
             'institution_id' => $this->institution->id,
+            'document_type_id' => $this->documentType->id,
+            'status_id' => $this->status->id,
+            'type' => 'Contratista',
         ]);
 
-        $this->delete(route('rh.contratistas.destroy', $contratista))
+        $this->delete(route('rh.colaboradores.destroy', $colaborador))
             ->assertRedirect();
 
-        $this->assertSoftDeleted('contractors', ['id' => $contratista->id]);
+        $this->assertSoftDeleted('collaborators', ['id' => $colaborador->id]);
     });
 });

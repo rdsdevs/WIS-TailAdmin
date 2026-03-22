@@ -152,12 +152,12 @@ new class extends Component {
             $this->authorize('update', Collaborator::findOrFail($this->collaboratorId));
             Collaborator::findOrFail($this->collaboratorId)->update($data);
             session()->flash('success', 'Colaborador actualizado correctamente.');
-            $this->redirect(route('rh.colaboradores.show', $this->collaboratorId), navigate: true);
+            $this->redirect(route('rh.colaboradores.show', $this->collaboratorId), navigate: false);
         } else {
             $this->authorize('create', Collaborator::class);
             $collaborator = Collaborator::create($data);
             session()->flash('success', 'Colaborador registrado correctamente.');
-            $this->redirect(route('rh.colaboradores.show', $collaborator->id), navigate: true);
+            $this->redirect(route('rh.colaboradores.show', $collaborator->id), navigate: false);
         }
     }
 

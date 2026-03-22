@@ -172,7 +172,7 @@ new class extends Component {
             session()->flash('success', 'Contrato registrado correctamente.');
         }
 
-        $this->redirect(route('rh.contratos.index'), navigate: true);
+        $this->redirect(route('rh.contratos.index'), navigate: false);
     }
 
     public function getSuggestionsProperty(): array

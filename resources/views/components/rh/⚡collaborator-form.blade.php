@@ -132,10 +132,11 @@ new class extends Component {
         if ($this->isCompany) {
             $data['company_name']         = $this->companyName;
             $data['legal_representative'] = $this->legalRepresentative ?: null;
-            // Limpiar campos personales
-            $data['first_name']     = null;
-            $data['first_surname']  = null;
-            $data['document_number'] = null;
+            // Limpiar campos personales (no aplican para empresas)
+            $data['document_type_id'] = null;
+            $data['first_name']       = null;
+            $data['first_surname']    = null;
+            $data['document_number']  = null;
         } else {
             $data['document_type_id']   = $this->documentTypeId;
             $data['document_number']    = $this->documentNumber;

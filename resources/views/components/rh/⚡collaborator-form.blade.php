@@ -120,12 +120,13 @@ new class extends Component {
         $this->validate();
 
         $data = [
-            'type'       => $this->type,
-            'is_company' => $this->isCompany,
-            'status_id'  => $this->statusId,
-            'email'      => $this->email ?: null,
-            'phone'      => $this->phone ?: null,
-            'address'    => $this->address ?: null,
+            'institution_id' => auth()->user()->institution_id,
+            'type'           => $this->type,
+            'is_company'     => $this->isCompany,
+            'status_id'      => $this->statusId,
+            'email'          => $this->email ?: null,
+            'phone'          => $this->phone ?: null,
+            'address'        => $this->address ?: null,
         ];
 
         if ($this->isCompany) {

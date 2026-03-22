@@ -145,6 +145,7 @@ new class extends Component {
         $this->validate();
 
         $data = [
+            'institution_id'   => auth()->user()->institution_id,
             'collaborator_id'  => $this->collaboratorId,
             'contract_type_id' => $this->contractTypeId,
             'position_id'      => $this->positionId ?: null,

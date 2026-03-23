@@ -106,7 +106,7 @@
                 </button>
 
                 <!-- Notification Dropdown -->
-                <x-header.notification-dropdown />
+                <livewire:header.notification-dropdown />
             </div>
 
             <!-- User Dropdown -->

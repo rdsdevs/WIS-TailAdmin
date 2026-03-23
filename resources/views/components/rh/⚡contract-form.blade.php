@@ -209,7 +209,10 @@ new class extends Component {
             return [];
         }
 
+        $institutionId = auth()->user()->institution_id;
+
         return CostCenter::active()
+            ->where(fn ($q) => $q->whereNull('institution_id')->orWhere('institution_id', $institutionId))
             ->where(fn ($q) => $q
                 ->where('code', 'like', "%{$term}%")
                 ->orWhere('name', 'like', "%{$term}%")
@@ -446,7 +449,10 @@ new class extends Component {
             return [];
         }
 
+        $institutionId = auth()->user()->institution_id;
+
         return AccountingAccount::active()
+            ->where(fn ($q) => $q->whereNull('institution_id')->orWhere('institution_id', $institutionId))
             ->where(fn ($q) => $q
                 ->where('code', 'like', "%{$this->accountingSearch}%")
                 ->orWhere('name', 'like', "%{$this->accountingSearch}%")
@@ -466,6 +472,7 @@ new class extends Component {
         }
 
         return Collaborator::query()
+            ->where('institution_id', auth()->user()->institution_id)
             ->where(fn ($q) => $q
                 ->where('first_name', 'like', "%{$this->collaboratorSearch}%")
                 ->orWhere('first_surname', 'like', "%{$this->collaboratorSearch}%")
@@ -485,12 +492,17 @@ new class extends Component {
 
     public function getContractTypesProperty()
     {
-        return ContractType::orderBy('name')->get();
+        $institutionId = auth()->user()->institution_id;
+
+        return ContractType::where(fn ($q) => $q->whereNull('institution_id')->orWhere('institution_id', $institutionId))
+            ->orderBy('name')->get();
     }
 
     public function getPositionsProperty()
     {
-        return Position::active()->orderBy('name')->get();
+        return Position::active()
+            ->where('institution_id', auth()->user()->institution_id)
+            ->orderBy('name')->get();
     }
 };
 ?>

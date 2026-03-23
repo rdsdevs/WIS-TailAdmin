@@ -28,14 +28,16 @@ class ContractController extends Controller
         $porVencer = $this->service->getExpiringSoon($institutionId, 30);
 
         $stats = [
-            'total' => Contract::count(),
-            'vigentes' => Contract::where('status', 'Vigente')->count(),
-            'porVencer' => Contract::where('status', 'Vigente')
+            'total'       => Contract::where('institution_id', $institutionId)->count(),
+            'vigentes'    => Contract::where('institution_id', $institutionId)->where('status', 'Vigente')->count(),
+            'porVencer'   => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
                 ->whereNotNull('end_date')
                 ->where('end_date', '<=', now()->addDays(30))
                 ->where('end_date', '>=', now())
                 ->count(),
-            'contratistas' => Contract::where('status', 'Vigente')
+            'contratistas' => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
                 ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
                 ->count(),
         ];

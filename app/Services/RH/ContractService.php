@@ -126,26 +126,13 @@ final class ContractService
      */
     private function persistCommittedValues(Contract $contract, array $lines): void
     {
-        $records = array_map(
-            fn (array $line): array => [
-                'institution_id' => $contract->institution_id,
-                'contract_id' => $contract->id,
+        foreach ($lines as $line) {
+            $contract->committedValues()->create([
+                'institution_id'    => $contract->institution_id,
                 'accounting_account' => $line['accounting_account'],
-                'cost_center' => $line['cost_center'],
-                'amount' => $line['amount'],
-            ],
-            $lines
-        );
-
-        CommittedValue::insert(
-            array_map(
-                fn (array $record): array => array_merge($record, [
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
-                    'created_at' => now()->toDateTimeString(),
-                    'updated_at' => now()->toDateTimeString(),
-                ]),
-                $records
-            )
-        );
+                'cost_center'       => $line['cost_center'],
+                'amount'            => $line['amount'],
+            ]);
+        }
     }
 }

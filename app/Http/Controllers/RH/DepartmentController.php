@@ -18,7 +18,7 @@ class DepartmentController extends Controller
 
     public function index(): View
     {
-        $this->authorize('viewAny', \App\Models\RH\Collaborator::class);
+        $this->authorize('viewAny', Department::class);
 
         $institutionId = auth()->user()->institution_id;
         $departamentos = $this->service->getAll($institutionId);
@@ -28,7 +28,7 @@ class DepartmentController extends Controller
 
     public function create(): View
     {
-        $this->authorize('create', \App\Models\RH\Collaborator::class);
+        $this->authorize('create', Department::class);
 
         return view('pages.rh.departamentos.create');
     }
@@ -43,14 +43,14 @@ class DepartmentController extends Controller
 
     public function show(Department $departamento): View
     {
-        $this->authorize('viewAny', \App\Models\RH\Collaborator::class);
+        $this->authorize('viewAny', Department::class);
 
         return view('pages.rh.departamentos.show', compact('departamento'));
     }
 
     public function edit(Department $departamento): View
     {
-        $this->authorize('update', \App\Models\RH\Collaborator::class);
+        $this->authorize('update', $departamento);
 
         return view('pages.rh.departamentos.edit', compact('departamento'));
     }
@@ -65,7 +65,7 @@ class DepartmentController extends Controller
 
     public function destroy(Department $departamento): RedirectResponse
     {
-        $this->authorize('delete', \App\Models\RH\Collaborator::class);
+        $this->authorize('delete', $departamento);
         $this->service->delete($departamento);
 
         return redirect()->route('rh.departamentos.index')

@@ -33,7 +33,8 @@ class UpdateContractRequest extends FormRequest
             'status' => ['required', 'in:Vigente,Liquidado,Terminado,Cambio de cargo'],
         ];
 
-        if ($this->input('end_date') === null && $this->input('require_end_date') === 'true') {
+        $contractType = \App\Models\RH\ContractType::find($this->input('contract_type_id'));
+        if ($contractType?->requires_end_date) {
             $rules['end_date'] = ['required', 'date', 'after:start_date'];
         }
 

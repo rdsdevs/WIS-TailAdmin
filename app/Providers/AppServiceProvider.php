@@ -6,8 +6,12 @@ namespace App\Providers;
 
 use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
+use App\Models\RH\Department;
+use App\Models\RH\Position;
 use App\Policies\RH\CollaboratorPolicy;
 use App\Policies\RH\ContractPolicy;
+use App\Policies\RH\DepartmentPolicy;
+use App\Policies\RH\PositionPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,5 +33,7 @@ class AppServiceProvider extends ServiceProvider
         // Policies del módulo RH
         Gate::policy(Collaborator::class, CollaboratorPolicy::class);
         Gate::policy(Contract::class, ContractPolicy::class);
+        Gate::policy(Department::class, DepartmentPolicy::class);
+        Gate::policy(Position::class, PositionPolicy::class);
     }
 }

@@ -16,45 +16,153 @@ class DashboardController extends Controller
     {
         $user          = auth()->user();
         $isSuperAdmin  = $user->hasRole('super-admin');
+        $role          = $user->roles->first()->name ?? 'viewer';
         $institutionId = $user->institution_id;
 
-        if ($isSuperAdmin) {
-            // Métricas globales para super-admin
-            $metrics = [
-                'institutions'  => Institution::count(),
-                'users'         => User::count(),
-                'collaborators' => Collaborator::count(),
-                'contracts'     => Contract::count(),
-                'vigentes'      => Contract::where('status', 'Vigente')->count(),
-                'por_vencer'    => Contract::where('status', 'Vigente')
-                    ->whereNotNull('end_date')
-                    ->where('end_date', '<=', now()->addDays(30))
-                    ->where('end_date', '>=', now())
-                    ->count(),
-                'terminados'    => Contract::where('status', 'Terminado')->count(),
-                'empleados'     => Collaborator::where('type', 'Empleado')->count(),
-                'contratistas'  => Collaborator::where('type', 'Contratista')->count(),
-            ];
-        } else {
-            // Métricas por institución
-            $metrics = [
-                'institutions'  => 1,
-                'users'         => User::where('institution_id', $institutionId)->count(),
-                'collaborators' => Collaborator::where('institution_id', $institutionId)->count(),
-                'contracts'     => Contract::where('institution_id', $institutionId)->count(),
-                'vigentes'      => Contract::where('institution_id', $institutionId)->where('status', 'Vigente')->count(),
-                'por_vencer'    => Contract::where('institution_id', $institutionId)
-                    ->where('status', 'Vigente')
-                    ->whereNotNull('end_date')
-                    ->where('end_date', '<=', now()->addDays(30))
-                    ->where('end_date', '>=', now())
-                    ->count(),
-                'terminados'    => Contract::where('institution_id', $institutionId)->where('status', 'Terminado')->count(),
-                'empleados'     => Collaborator::where('institution_id', $institutionId)->where('type', 'Empleado')->count(),
-                'contratistas'  => Collaborator::where('institution_id', $institutionId)->where('type', 'Contratista')->count(),
-            ];
-        }
+        $metrics = match ($role) {
+            'super-admin' => $this->metricsForSuperAdmin(),
+            'admin'       => $this->metricsForAdmin($institutionId),
+            'rh-manager'  => $this->metricsForRhManager($institutionId),
+            'rh-viewer'   => $this->metricsForRhViewer($institutionId),
+            'contractor-manager' => $this->metricsForContractorManager($institutionId),
+            'employee-manager'   => $this->metricsForEmployeeManager($institutionId),
+            default       => $this->metricsForRhViewer($institutionId),
+        };
 
-        return view('pages.dashboard', compact('metrics', 'isSuperAdmin'));
+        return view('pages.dashboard', compact('metrics', 'role', 'isSuperAdmin'));
+    }
+
+    private function metricsForSuperAdmin(): array
+    {
+        return [
+            'institutions' => Institution::count(),
+            'users'        => User::count(),
+            'collaborators' => Collaborator::count(),
+            'contracts'    => Contract::count(),
+            'vigentes'     => Contract::where('status', 'Vigente')->count(),
+            'por_vencer'   => Contract::where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->count(),
+            'terminados'   => Contract::whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
+            'empleados'    => Collaborator::where('type', 'Empleado')->count(),
+            'contratistas' => Collaborator::where('type', 'Contratista')->count(),
+        ];
+    }
+
+    private function metricsForAdmin(string $institutionId): array
+    {
+        return [
+            'users'        => User::where('institution_id', $institutionId)->count(),
+            'collaborators' => Collaborator::where('institution_id', $institutionId)->count(),
+            'contracts'    => Contract::where('institution_id', $institutionId)->count(),
+            'vigentes'     => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')->count(),
+            'por_vencer'   => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->count(),
+            'terminados'   => Contract::where('institution_id', $institutionId)
+                ->whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
+            'empleados'    => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Empleado')->count(),
+            'contratistas' => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Contratista')->count(),
+        ];
+    }
+
+    private function metricsForRhManager(string $institutionId): array
+    {
+        return [
+            'collaborators' => Collaborator::where('institution_id', $institutionId)->count(),
+            'contracts'    => Contract::where('institution_id', $institutionId)->count(),
+            'vigentes'     => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')->count(),
+            'por_vencer'   => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->count(),
+            'terminados'   => Contract::where('institution_id', $institutionId)
+                ->whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
+            'empleados'    => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Empleado')->count(),
+            'contratistas' => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Contratista')->count(),
+        ];
+    }
+
+    private function metricsForRhViewer(string $institutionId): array
+    {
+        return [
+            'collaborators' => Collaborator::where('institution_id', $institutionId)->count(),
+            'contracts'    => Contract::where('institution_id', $institutionId)->count(),
+            'vigentes'     => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')->count(),
+            'por_vencer'   => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->count(),
+            'terminados'   => Contract::where('institution_id', $institutionId)
+                ->whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
+        ];
+    }
+
+    private function metricsForContractorManager(string $institutionId): array
+    {
+        return [
+            'contratistas' => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Contratista')->count(),
+            'vigentes'     => Contract::where('status', 'Vigente')
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Contratista')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+            'por_vencer'   => Contract::where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Contratista')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+            'terminados'   => Contract::whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Contratista')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+        ];
+    }
+
+    private function metricsForEmployeeManager(string $institutionId): array
+    {
+        return [
+            'empleados'  => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Empleado')->count(),
+            'vigentes'   => Contract::where('status', 'Vigente')
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Empleado')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+            'por_vencer' => Contract::where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Empleado')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+            'terminados' => Contract::whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])
+                ->whereHas('collaborator', fn ($q) => $q
+                    ->where('type', 'Empleado')
+                    ->where('institution_id', $institutionId)
+                )->count(),
+        ];
     }
 }

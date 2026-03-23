@@ -80,6 +80,7 @@ new class extends Component {
         if ($this->isCompany) {
             $rules['companyName']         = 'required|string|max:200';
             $rules['legalRepresentative'] = 'nullable|string|max:200';
+            $rules['documentNumber']      = 'nullable|string|max:20';
         } else {
             $rules['documentTypeId']   = 'required|uuid';
             $rules['documentNumber']   = 'required|string|min:6|max:20';
@@ -132,11 +133,10 @@ new class extends Component {
         if ($this->isCompany) {
             $data['company_name']         = $this->companyName;
             $data['legal_representative'] = $this->legalRepresentative ?: null;
-            // Limpiar campos personales (no aplican para empresas)
-            $data['document_type_id'] = null;
-            $data['first_name']       = null;
-            $data['first_surname']    = null;
-            $data['document_number']  = null;
+            $data['document_number']      = $this->documentNumber ?: null;
+            $data['document_type_id']     = \App\Models\RH\DocumentType::where('code', 'NIT')->value('id');
+            $data['first_name']           = null;
+            $data['first_surname']        = null;
         } else {
             $data['document_type_id']   = $this->documentTypeId;
             $data['document_number']    = $this->documentNumber;

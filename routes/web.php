@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RH;
 use Illuminate\Support\Facades\Route;
 
@@ -15,7 +16,7 @@ Route::post('logout', [LoginController::class, 'destroy'])
     ->name('logout');
 
 // Dashboard
-Route::get('dashboard', fn () => view('pages.dashboard.ecommerce', ['title' => 'Dashboard WIS']))
+Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
 
@@ -49,10 +50,11 @@ Route::get('/calendar', function () {
     return view('pages.calender', ['title' => 'Calendar']);
 })->name('calendar');
 
-// profile pages
+// Perfil de usuario
 Route::get('/profile', function () {
-    return view('pages.profile', ['title' => 'Profile']);
-})->name('profile');
+    $user = auth()->user()->load('institution', 'roles');
+    return view('pages.profile', ['title' => 'Mi perfil', 'user' => $user]);
+})->middleware('auth')->name('profile');
 
 // form pages
 Route::get('/form-elements', function () {

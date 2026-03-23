@@ -51,6 +51,14 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('colaboradores', RH\CollaboratorController::class)
         ->parameters(['colaboradores' => 'collaborator']);
 
+    // Importación masiva de contratos
+    Route::get('contratos/importar', [\App\Http\Controllers\RH\ContractImportController::class, 'create'])
+        ->name('contratos.importar');
+    Route::post('contratos/importar', [\App\Http\Controllers\RH\ContractImportController::class, 'store'])
+        ->name('contratos.importar.store');
+    Route::get('contratos/plantilla', [\App\Http\Controllers\RH\ContractImportController::class, 'template'])
+        ->name('contratos.plantilla');
+
     // Contratos — acción de terminar contrato
     Route::patch('contratos/{contrato}/terminar', [RH\ContractController::class, 'terminate'])
         ->name('contratos.terminate');

@@ -79,6 +79,11 @@ class ContractPolicy
         return $this->canManageByType($user, $contract);
     }
 
+    public function import(User $user): bool
+    {
+        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
+    }
+
     private function canManageByType(User $user, Contract $contract): bool
     {
         if ($user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer'])) {

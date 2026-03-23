@@ -58,6 +58,7 @@ class UserController extends Controller
 
     public function store(CreateUserRequest $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
         $usuario = $this->service->create($request->validated(), $request->user());
 
         return redirect()->route('admin.usuarios.show', $usuario)
@@ -101,6 +102,7 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $usuario): RedirectResponse
     {
+        $this->authorize('update', $usuario);
         $this->service->update($usuario, $request->validated());
 
         return redirect()->route('admin.usuarios.show', $usuario)

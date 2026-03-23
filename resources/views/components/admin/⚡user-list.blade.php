@@ -40,7 +40,7 @@ new class extends Component {
         $usuario = User::findOrFail($this->deletingId);
         $this->authorize('delete', $usuario);
 
-        $usuario->delete();
+        app(\App\Services\UserService::class)->delete($usuario);
 
         $this->deletingId   = null;
         $this->deletingName = null;
@@ -48,7 +48,7 @@ new class extends Component {
         session()->flash('exito', 'Usuario eliminado correctamente.');
     }
 
-    public function getUsuariosProperty()
+    public function getUsuariosProperty(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $isSuperAdmin = auth()->user()->hasRole('super-admin');
 
@@ -69,7 +69,7 @@ new class extends Component {
             ->paginate($this->perPage);
     }
 
-    public function getRolesProperty()
+    public function getRolesProperty(): \Illuminate\Database\Eloquent\Collection
     {
         return \Spatie\Permission\Models\Role::orderBy('name')->get();
     }

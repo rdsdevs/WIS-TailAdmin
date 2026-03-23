@@ -41,6 +41,10 @@ class UserPolicy
 
     public function update(User $user, User $model): bool
     {
+        if ($user->id === $model->id) {
+            return false;
+        }
+
         if ($model->hasRole('super-admin')) {
             return false;
         }

@@ -114,12 +114,32 @@ new class extends Component {
 
     private function buscarAuditoria(): void
     {
-        $q = $this->busqueda;
+        $q            = $this->busqueda;
+        $isSuperAdmin = auth()->user()->hasRole('super-admin');
+        $institutionId = auth()->user()->institution_id;
+
+        $collaboratorIds = $isSuperAdmin ? null
+            : \App\Models\RH\Collaborator::where('institution_id', $institutionId)->pluck('id');
+
+        $contractIds = $isSuperAdmin ? null
+            : \App\Models\RH\Contract::where('institution_id', $institutionId)->pluck('id');
+
         $this->auditoria = Audit::query()
             ->where(fn ($q2) => $q2
                 ->where('auditable_type', 'like', "%{$q}%")
                 ->orWhere('event', 'like', "%{$q}%")
             )
+            ->when(! $isSuperAdmin, fn ($q2) => $q2->where(fn ($q3) => $q3
+                ->where(fn ($q4) => $q4
+                    ->where('auditable_type', 'like', '%Collaborator%')
+                    ->whereIn('auditable_id', $collaboratorIds ?? [])
+                )
+                ->orWhere(fn ($q4) => $q4
+                    ->where('auditable_type', 'like', '%Contract%')
+                    ->whereIn('auditable_id', $contractIds ?? [])
+                )
+                ->orWhere('user_id', auth()->id())
+            ))
             ->latest()
             ->limit(5)
             ->get()

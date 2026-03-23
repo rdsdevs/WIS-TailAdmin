@@ -154,4 +154,45 @@ describe('Gestión de Usuarios', function (): void {
             ->assertForbidden();
     });
 
+    it('el listado no muestra usuarios de otras instituciones', function (): void {
+        [$admin, $institution] = crearContextoAdmin('admin');
+
+        $usuarioPropio  = User::factory()->create(['institution_id' => $institution->id]);
+        $otraInstitucion = Institution::factory()->create();
+        $usuarioAjeno   = User::factory()->create(['institution_id' => $otraInstitucion->id]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.usuarios.index'));
+
+        $response->assertOk()
+            ->assertSee($usuarioPropio->name)
+            ->assertDontSee($usuarioAjeno->name);
+    });
+
+    it('admin no puede asignar el rol super-admin', function (): void {
+        [$admin, $institution] = crearContextoAdmin('admin');
+
+        $datos = datosUsuarioValidos($institution->id);
+        $datos['roles'] = ['super-admin'];
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.store'), $datos)
+            ->assertSessionHasErrors('roles');
+    });
+
+    it('rh-manager no puede crear ni eliminar usuarios', function (): void {
+        [$rhManager, $institution] = crearContextoAdmin('rh-manager');
+
+        $objetivo = User::factory()->create(['institution_id' => $institution->id]);
+        $objetivo->assignRole('rh-viewer');
+
+        $this->actingAs($rhManager)
+            ->post(route('admin.usuarios.store'), datosUsuarioValidos($institution->id))
+            ->assertForbidden();
+
+        $this->actingAs($rhManager)
+            ->delete(route('admin.usuarios.destroy', $objetivo))
+            ->assertForbidden();
+    });
+
 });

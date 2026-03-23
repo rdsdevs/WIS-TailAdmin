@@ -142,6 +142,82 @@
                             </button>
                         </form>
                     @endcan
+
+                    @can('changeType', $collaborator)
+                        @php
+                            $tieneContratoActivo = $collaborator->contracts()
+                                ->where('status', 'Vigente')
+                                ->exists();
+                            $labelCambio = $collaborator->type === 'employee'
+                                ? 'Cambiar a contratista'
+                                : 'Cambiar a empleado';
+                        @endphp
+                        @if($tieneContratoActivo)
+                            <div x-data="{ show: false }"
+                                 class="relative"
+                                 @mouseenter="show = true"
+                                 @mouseleave="show = false">
+                                <button type="button"
+                                        disabled
+                                        aria-disabled="true"
+                                        class="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-400 opacity-60 dark:border-amber-800 dark:bg-amber-900/10 dark:text-amber-500">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 3M21 7.5H7.5" />
+                                    </svg>
+                                    {{ $labelCambio }}
+                                </button>
+                                <div x-show="show"
+                                     x-transition
+                                     class="absolute bottom-full left-0 mb-1.5 w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 shadow dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                     role="tooltip">
+                                    No es posible cambiar el tipo mientras el colaborador tiene un contrato activo.
+                                </div>
+                            </div>
+                        @else
+                            <form method="POST"
+                                  action="{{ route('rh.colaboradores.change-type', $collaborator) }}"
+                                  x-data
+                                  @submit.prevent="$dispatch('confirmar-cambio-tipo')">
+                                @csrf
+                                <div x-data="{ pendiente: false }"
+                                     @confirmar-cambio-tipo.window="pendiente = true">
+                                    <button type="button"
+                                            @click="pendiente = true"
+                                            x-show="!pendiente"
+                                            class="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 3M21 7.5H7.5" />
+                                        </svg>
+                                        {{ $labelCambio }}
+                                    </button>
+                                    <div x-show="pendiente" class="space-y-1.5">
+                                        <p class="text-center text-xs text-amber-700 dark:text-amber-400">
+                                            ¿Confirma el cambio de tipo?
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <button type="button"
+                                                    @click="pendiente = false"
+                                                    class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                Cancelar
+                                            </button>
+                                            <button type="submit"
+                                                    form="{{ 'form-change-type-' . $collaborator->id }}"
+                                                    class="flex-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
+                                                Confirmar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            {{-- Formulario real con id para el submit --}}
+                            <form id="{{ 'form-change-type-' . $collaborator->id }}"
+                                  method="POST"
+                                  action="{{ route('rh.colaboradores.change-type', $collaborator) }}"
+                                  class="hidden">
+                                @csrf
+                            </form>
+                        @endif
+                    @endcan
                 </div>
             </div>
 
@@ -336,88 +412,11 @@
                 <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
                         Historial de contratos
-                        <span class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                            {{ $contracts->count() }}
-                        </span>
                     </h4>
                 </div>
-
-                @forelse($contracts as $contract)
-                    <div class="flex items-start gap-4 border-b border-gray-100 px-5 py-4 last:border-b-0 dark:border-gray-700/50">
-                        {{-- Indicador de línea de tiempo --}}
-                        <div class="flex flex-col items-center gap-1 pt-0.5">
-                            <div class="h-3 w-3 rounded-full ring-2 ring-white dark:ring-gray-800
-                                {{ $contract->status === 'Vigente' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600' }}">
-                            </div>
-                            @if(!$loop->last)
-                                <div class="h-full w-px bg-gray-200 dark:bg-gray-700" aria-hidden="true"></div>
-                            @endif
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ $contract->contractType?->name ?? 'Sin tipo' }}
-                                </span>
-                                @if($contract->contract_code)
-                                    <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ $contract->contract_code }}</span>
-                                @endif
-                                @if($contract->status === 'Vigente')
-                                    <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Vigente</span>
-                                @elseif($contract->status === 'Liquidado')
-                                    <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Liquidado</span>
-                                @else
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">{{ $contract->status ?? 'Terminado' }}</span>
-                                @endif
-                            </div>
-                            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                {{ $contract->start_date?->format('d/m/Y') }} —
-                                {{ $contract->end_date ? $contract->end_date->format('d/m/Y') : 'Indefinido' }}
-                                @if($contract->position)
-                                    &bull; {{ $contract->position->name }}
-                                @endif
-                            </p>
-                            @if($contract->salary || $contract->fees)
-                                <p class="mt-0.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-                                    @if($contract->salary)
-                                        Salario: $ {{ number_format((float)$contract->salary, 0, ',', '.') }}
-                                    @else
-                                        Honorarios: $ {{ number_format((float)$contract->fees, 0, ',', '.') }}
-                                    @endif
-                                </p>
-                            @endif
-
-                            {{-- Prórrogas (si hay) --}}
-                            @if($contract->extensions->count() > 0)
-                                <div class="mt-2">
-                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        {{ $contract->extensions->count() }} prórroga(s)
-                                    </p>
-                                    <div class="mt-1 space-y-1">
-                                        @foreach($contract->extensions as $ext)
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                &bull; {{ $ext->extension_date?->format('d/m/Y') ?? '—' }}
-                                                @if($ext->reason) &mdash; {{ $ext->reason }} @endif
-                                            </p>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="flex shrink-0 items-center gap-1">
-                            @can('update', $contract)
-                                <a href="{{ route('rh.contratos.edit', $contract) }}"
-                                   class="rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                                   aria-label="Editar contrato">
-                                    Editar
-                                </a>
-                            @endcan
-                        </div>
-                    </div>
-                @empty
-                    <div class="px-5 py-8 text-center">
-                        <p class="text-sm text-gray-400 dark:text-gray-500 italic">No hay contratos registrados para este colaborador.</p>
-                    </div>
-                @endforelse
+                <div class="p-5">
+                    <livewire:rh.timeline-contratos :collaborator-id="$collaborator->id" />
+                </div>
             </div>
 
         </div>

@@ -45,6 +45,12 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('contratos', RH\ContractController::class);
 });
 
+// ─── Administración de usuarios ──────────────────────────────────────────────
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): void {
+    Route::resource('usuarios', \App\Http\Controllers\Admin\UserController::class)
+        ->parameters(['usuarios' => 'usuario']);
+});
+
 // calender pages
 Route::get('/calendar', function () {
     return view('pages.calender', ['title' => 'Calendar']);

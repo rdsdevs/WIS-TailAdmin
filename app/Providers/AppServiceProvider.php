@@ -8,10 +8,12 @@ use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\RH\Department;
 use App\Models\RH\Position;
+use App\Models\User;
 use App\Policies\RH\CollaboratorPolicy;
 use App\Policies\RH\ContractPolicy;
 use App\Policies\RH\DepartmentPolicy;
 use App\Policies\RH\PositionPolicy;
+use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Contract::class, ContractPolicy::class);
         Gate::policy(Department::class, DepartmentPolicy::class);
         Gate::policy(Position::class, PositionPolicy::class);
+
+        // Policy de administración de usuarios
+        Gate::policy(User::class, UserPolicy::class);
     }
 }

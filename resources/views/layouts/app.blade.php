@@ -95,6 +95,7 @@
 
 <body
     x-data="{ 'loaded': true}"
+    @keydown.ctrl.k.prevent.window="$dispatch('abrir-palette')"
     x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
     const checkMobile = () => {
         if (window.innerWidth < 1280) {

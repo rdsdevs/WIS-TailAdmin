@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class CostCenter extends Model
+class CostCenter extends Model implements Auditable
 {
     use HasFactory;
     use HasUuidPrimaryKey;
     use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
 
     protected $table = 'cost_centers';
 

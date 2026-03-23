@@ -23,35 +23,78 @@ class ContractPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer']);
+        return $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager']);
     }
 
     public function view(User $user, Contract $contract): bool
     {
-        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer'])
-            && $user->institution_id === $contract->institution_id;
+        if (! $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager'])) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        return $this->canManageByType($user, $contract);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole(['admin', 'rh-manager']);
+        return $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
     }
 
     public function update(User $user, Contract $contract): bool
     {
-        return $user->hasRole(['admin', 'rh-manager'])
-            && $user->institution_id === $contract->institution_id;
+        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        return $this->canManageByType($user, $contract);
     }
 
     public function delete(User $user, Contract $contract): bool
     {
-        return $user->hasRole(['admin', 'rh-manager'])
-            && $user->institution_id === $contract->institution_id;
+        if (! $user->hasAnyRole(['admin', 'rh-manager'])) {
+            return false;
+        }
+
+        return $user->institution_id === $contract->institution_id;
     }
 
     public function terminate(User $user, Contract $contract): bool
     {
-        return $user->hasRole(['admin', 'rh-manager'])
-            && $user->institution_id === $contract->institution_id;
+        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        return $this->canManageByType($user, $contract);
+    }
+
+    private function canManageByType(User $user, Contract $contract): bool
+    {
+        if ($user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer'])) {
+            return true;
+        }
+
+        $collaboratorType = $contract->collaborator?->type;
+
+        if ($user->hasRole('contractor-manager')) {
+            return $collaboratorType === 'Contratista';
+        }
+
+        if ($user->hasRole('employee-manager')) {
+            return $collaboratorType === 'Empleado';
+        }
+
+        return false;
     }
 }

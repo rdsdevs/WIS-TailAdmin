@@ -73,6 +73,41 @@ final class CollaboratorService
     }
 
     /**
+     * Determina si un colaborador puede cambiar de tipo.
+     * Solo es posible si no tiene contratos vigentes.
+     */
+    public function canChangeType(Collaborator $collaborator): bool
+    {
+        if ($collaborator->is_company) {
+            return false;
+        }
+
+        return ! $collaborator->contracts()
+            ->where('status', 'Vigente')
+            ->exists();
+    }
+
+    /**
+     * Cambia el tipo de un colaborador entre Empleado y Contratista.
+     *
+     * @throws \RuntimeException si el colaborador tiene contratos vigentes.
+     */
+    public function changeType(Collaborator $collaborator): Collaborator
+    {
+        if (! $this->canChangeType($collaborator)) {
+            throw new \RuntimeException('No se puede cambiar el tipo de colaborador mientras tenga contratos activos.');
+        }
+
+        $newType = $collaborator->type === 'Empleado' ? 'Contratista' : 'Empleado';
+
+        return DB::transaction(function () use ($collaborator, $newType): Collaborator {
+            $collaborator->update(['type' => $newType]);
+
+            return $collaborator->fresh();
+        });
+    }
+
+    /**
      * Elimina lógicamente un colaborador.
      */
     public function delete(Collaborator $collaborator): void

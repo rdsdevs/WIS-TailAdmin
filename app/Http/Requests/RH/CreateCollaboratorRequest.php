@@ -17,9 +17,10 @@ class CreateCollaboratorRequest extends FormRequest
     {
         return [
             'institution_id' => ['required', 'uuid', 'exists:institutions,id'],
-            'document_type_id' => ['required', 'uuid', 'exists:document_types,id'],
+            'document_type_id' => ['required_if:is_company,false', 'nullable', 'uuid', 'exists:document_types,id'],
             'document_number' => [
-                'required',
+                'required_if:is_company,false',
+                'nullable',
                 'string',
                 'max:20',
                 'unique:collaborators,document_number,NULL,id,institution_id,'.$this->input('institution_id'),
@@ -40,6 +41,22 @@ class CreateCollaboratorRequest extends FormRequest
             'type' => ['required', 'in:Empleado,Contratista'],
             'status_id' => ['required', 'uuid', 'exists:collaborator_statuses,id'],
         ];
+    }
+
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Validation\Validator $v) {
+            $user = $this->user();
+            $type = $this->input('type');
+
+            if ($user->hasRole('contractor-manager') && $type !== 'Contratista') {
+                $v->errors()->add('type', 'Solo puede registrar colaboradores de tipo Contratista.');
+            }
+
+            if ($user->hasRole('employee-manager') && $type !== 'Empleado') {
+                $v->errors()->add('type', 'Solo puede registrar colaboradores de tipo Empleado.');
+            }
+        });
     }
 
     public function messages(): array

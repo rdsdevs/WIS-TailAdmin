@@ -23,8 +23,10 @@ class ContractController extends Controller
     {
         $this->authorize('viewAny', Contract::class);
 
-        $institutionId = auth()->user()->institution_id;
-        $contratos = $this->service->getActive($institutionId);
+        $user = auth()->user();
+        $institutionId = $user->institution_id;
+        $typeFilter = $this->resolveCollaboratorTypeFilter($user);
+        $contratos = $this->service->getActive($institutionId, 15, $typeFilter);
         $porVencer = $this->service->getExpiringSoon($institutionId, 30);
 
         $stats = [
@@ -49,12 +51,20 @@ class ContractController extends Controller
     {
         $this->authorize('create', Contract::class);
 
-        $institutionId = auth()->user()->institution_id;
+        $user = auth()->user();
+        $institutionId = $user->institution_id;
+        $typeFilter = $this->resolveCollaboratorTypeFilter($user);
 
-        $colaboradores = Collaborator::query()
+        $colaboradoresQuery = Collaborator::query()
             ->where('institution_id', $institutionId)
             ->whereHas('status', fn ($q) => $q->where('name', 'Activo'))
-            ->orderBy('first_surname')
+            ->orderBy('first_surname');
+
+        if ($typeFilter !== null) {
+            $colaboradoresQuery->where('type', $typeFilter);
+        }
+
+        $colaboradores = $colaboradoresQuery
             ->get(['id', 'first_name', 'second_name', 'first_surname', 'second_surname', 'company_name', 'is_company', 'document_number', 'type']);
 
         $tiposContrato = ContractType::query()
@@ -137,5 +147,22 @@ class ContractController extends Controller
 
         return redirect()->route('rh.contratos.show', $contrato)
             ->with('exito', 'Contrato terminado correctamente.');
+    }
+
+    /**
+     * Resuelve el filtro de tipo de colaborador según el rol del usuario autenticado.
+     * Retorna 'Contratista', 'Empleado' o null (sin restricción).
+     */
+    private function resolveCollaboratorTypeFilter(\App\Models\User $user): ?string
+    {
+        if ($user->hasRole('contractor-manager')) {
+            return 'Contratista';
+        }
+
+        if ($user->hasRole('employee-manager')) {
+            return 'Empleado';
+        }
+
+        return null;
     }
 }

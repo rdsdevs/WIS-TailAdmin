@@ -32,10 +32,22 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('cargos', RH\PositionController::class);
 
     // Colaboradores (unificado — reemplaza empleados y contratistas)
-    // La ruta de exportar DEBE ir antes del resource para evitar
-    // que Laravel interprete "exportar" como el parámetro {collaborator}
+    // Las rutas adicionales DEBEN ir antes del resource para evitar
+    // que Laravel interprete los segmentos como el parámetro {collaborator}
+
+    // Importación masiva de colaboradores
+    Route::get('colaboradores/importar', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'create'])
+        ->name('colaboradores.importar');
+    Route::post('colaboradores/importar', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'store'])
+        ->name('colaboradores.importar.store');
+    Route::get('colaboradores/plantilla/{tipo}', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'template'])
+        ->name('colaboradores.plantilla')
+        ->where('tipo', 'empleados|contratistas|todos');
+
     Route::get('colaboradores/exportar/{tipo}', [RH\CollaboratorController::class, 'export'])
         ->name('colaboradores.export');
+    Route::post('colaboradores/{colaborador}/change-type', [RH\CollaboratorController::class, 'changeType'])
+        ->name('colaboradores.change-type');
     Route::resource('colaboradores', RH\CollaboratorController::class)
         ->parameters(['colaboradores' => 'collaborator']);
 

@@ -66,7 +66,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '1999-04-19',
                 'name'               => 'ANA ISABEL REYES TORRES',
                 'email'              => 'gestiondocumental@ascun.org.co',
-                'role'               => 'rh-manager',
+                'role'               => 'contractor-manager',
             ],
             [
                 'document_number'    => '53135875',
@@ -87,7 +87,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '2011-04-01',
                 'name'               => 'YESENIA KATERIN ROJAS MORENO',
                 'email'              => 'profesional.admin@ascun.org.co',
-                'role'               => 'admin',
+                'role'               => 'employee-manager',
             ],
             [
                 'document_number'    => '1033815362',

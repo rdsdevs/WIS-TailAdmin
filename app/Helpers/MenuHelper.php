@@ -6,19 +6,35 @@ class MenuHelper
 {
     /**
      * Retorna los ítems de navegación del módulo de Recursos Humanos.
+     * Filtra las secciones según el rol del usuario autenticado.
+     *
+     * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Departamentos, Cargos)
+     * - employee-manager                 : Colaboradores, Contratos, Cargos (sin Departamentos)
+     * - contractor-manager               : Colaboradores, Contratos (sin Departamentos ni Cargos)
+     * - rh-viewer                        : Colaboradores, Contratos (solo lectura)
      */
     public static function getRhNavItems(): array
     {
+        $user = auth()->user();
+
+        $subItems = [
+            ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
+            ['name' => 'Contratos',     'path' => '/rh/contratos'],
+        ];
+
+        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'employee-manager'])) {
+            $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
+        }
+
+        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+            $subItems[] = ['name' => 'Departamentos', 'path' => '/rh/departamentos'];
+        }
+
         return [
             [
-                'icon' => 'rh',
-                'name' => 'Recursos Humanos',
-                'subItems' => [
-                    ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
-                    ['name' => 'Contratos',     'path' => '/rh/contratos'],
-                    ['name' => 'Departamentos', 'path' => '/rh/departamentos'],
-                    ['name' => 'Cargos',        'path' => '/rh/cargos'],
-                ],
+                'icon'     => 'rh',
+                'name'     => 'Recursos Humanos',
+                'subItems' => $subItems,
             ],
         ];
     }
@@ -112,6 +128,8 @@ class MenuHelper
             'admin'                => 'Administrador',
             'rh-manager'           => 'Gestor de RH',
             'rh-viewer'            => 'Consultor de RH',
+            'contractor-manager'   => 'Gestor de Contratistas',
+            'employee-manager'     => 'Gestor de Empleados',
             'accounting-manager'   => 'Gestor de Contabilidad',
             'accounting-viewer'    => 'Consultor de Contabilidad',
             'inventory-manager'    => 'Gestor de Inventario',

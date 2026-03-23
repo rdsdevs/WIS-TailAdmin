@@ -22,9 +22,10 @@ class UpdateCollaboratorRequest extends FormRequest
 
         return [
             'institution_id' => ['required', 'uuid', 'exists:institutions,id'],
-            'document_type_id' => ['required', 'uuid', 'exists:document_types,id'],
+            'document_type_id' => ['required_if:is_company,false', 'nullable', 'uuid', 'exists:document_types,id'],
             'document_number' => [
-                'required',
+                'required_if:is_company,false',
+                'nullable',
                 'string',
                 'max:20',
                 "unique:collaborators,document_number,{$collaboratorId},id,institution_id,{$institutionId}",
@@ -45,6 +46,26 @@ class UpdateCollaboratorRequest extends FormRequest
             'type' => ['required', 'in:Empleado,Contratista'],
             'status_id' => ['required', 'uuid', 'exists:collaborator_statuses,id'],
         ];
+    }
+
+    /**
+     * Validación adicional: impide cambiar el tipo de colaborador
+     * si tiene contratos vigentes.
+     */
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Validation\Validator $v): void {
+            $collaborator = $this->route('collaborator');
+
+            if (
+                $collaborator instanceof \App\Models\RH\Collaborator &&
+                $this->filled('type') &&
+                $this->input('type') !== $collaborator->type &&
+                $collaborator->contracts()->where('status', 'Vigente')->exists()
+            ) {
+                $v->errors()->add('type', 'No se puede cambiar el tipo de colaborador mientras tenga contratos activos.');
+            }
+        });
     }
 
     public function messages(): array

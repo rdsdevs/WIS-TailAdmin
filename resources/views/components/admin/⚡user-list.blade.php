@@ -117,7 +117,7 @@ new class extends Component {
             >
                 <option value="">Todos los roles</option>
                 @foreach($this->roles as $rol)
-                    <option value="{{ $rol->name }}">{{ $rol->name }}</option>
+                    <option value="{{ $rol->name }}">{{ \App\Helpers\MenuHelper::rolLabel($rol->name) }}</option>
                 @endforeach
             </select>
 
@@ -207,7 +207,7 @@ new class extends Component {
                             <div class="flex flex-wrap gap-1">
                                 @forelse($usuario->roles as $rol)
                                     <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                        {{ $rol->name }}
+                                        {{ \App\Helpers\MenuHelper::rolLabel($rol->name) }}
                                     </span>
                                 @empty
                                     <span class="text-xs text-gray-400 dark:text-gray-500">Sin rol</span>

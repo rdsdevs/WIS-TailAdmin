@@ -212,7 +212,7 @@
                                         class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
                                         @checked(in_array($rol->name, old('roles', $usuario->roles->pluck('name')->toArray())))
                                     />
-                                    {{ $rol->name }}
+                                    {{ \App\Helpers\MenuHelper::rolLabel($rol->name) }}
                                 </label>
                             @endforeach
                         </div>

@@ -40,7 +40,7 @@
                 <div class="flex flex-wrap gap-1 mt-1">
                     @forelse($user->roles as $role)
                         <span class="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            {{ $role->name }}
+                            {{ \App\Helpers\MenuHelper::rolLabel($role->name) }}
                         </span>
                     @empty
                         <span class="text-sm text-gray-500">Sin roles asignados</span>

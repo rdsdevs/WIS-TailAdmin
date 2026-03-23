@@ -15,7 +15,7 @@
                     @if($user->roles->isNotEmpty())
                         <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium
                             {{ $user->hasRole('super-admin') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }}">
-                            {{ $user->roles->first()->name }}
+                            {{ \App\Helpers\MenuHelper::rolLabel($user->roles->first()->name) }}
                         </span>
                         @if(!$user->hasRole('super-admin'))
                             <div class="hidden h-3.5 w-px bg-gray-300 xl:block dark:bg-gray-700"></div>

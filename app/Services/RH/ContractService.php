@@ -8,6 +8,9 @@ use App\Http\Requests\RH\CreateContractRequest;
 use App\Http\Requests\RH\UpdateContractRequest;
 use App\Models\RH\CommittedValue;
 use App\Models\RH\Contract;
+use App\Notifications\RH\ContractCreatedNotification;
+use App\Notifications\RH\ContractTerminatedNotification;
+use App\Notifications\RH\ContractUpdatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +71,13 @@ final class ContractService
                 $this->persistCommittedValues($contract, $committedLines);
             }
 
+            $contract->load('collaborator');
+            auth()->user()?->notify(new ContractCreatedNotification(
+                $contract->contract_code ?? '',
+                $contract->id,
+                $contract->collaborator?->full_name ?? '',
+            ));
+
             return $contract;
         });
     }
@@ -89,6 +99,11 @@ final class ContractService
             if ($committedLines !== null) {
                 $this->syncCommittedValues($contract, $committedLines);
             }
+
+            auth()->user()?->notify(new ContractUpdatedNotification(
+                $contract->contract_code ?? '',
+                $contract->id,
+            ));
         });
 
         return $contract->fresh();
@@ -121,6 +136,11 @@ final class ContractService
             'status' => 'Terminado',
             'end_date' => $contract->end_date ?? now()->toDateString(),
         ]);
+
+        auth()->user()?->notify(new ContractTerminatedNotification(
+            $contract->contract_code ?? '',
+            $contract->id,
+        ));
     }
 
     // ── Métodos privados ──────────────────────────────────────────────────────

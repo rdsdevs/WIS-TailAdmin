@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Jobs\RH;
 
 use App\Imports\RH\CollaboratorImport;
+use App\Models\User;
+use App\Notifications\RH\CollaboratorImportCompletedNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -58,15 +60,33 @@ class ImportCollaboratorsJob implements ShouldQueue
             'completado_at' => now()->format('d/m/Y H:i'),
         ], now()->addHours(2));
 
+        // Notificar al usuario
+        User::find($this->userId)?->notify(new CollaboratorImportCompletedNotification([
+            'imported' => $imported,
+            'updated'  => $updated,
+            'skipped'  => $skipped,
+            'failures' => collect($failures)->map(fn ($f) => [
+                'fila'    => $f->row(),
+                'campo'   => implode(', ', (array) $f->attribute()),
+                'errores' => $f->errors(),
+            ])->toArray(),
+            'tipo'          => $this->type,
+            'completado_at' => now()->format('d/m/Y H:i'),
+        ]));
+
         // Limpiar archivo temporal
         Storage::delete('private/'.$this->filePath);
     }
 
     public function failed(\Throwable $e): void
     {
-        cache()->put("import_result_{$this->userId}", [
+        $errorData = [
             'error'         => 'La importación falló: '.$e->getMessage(),
             'completado_at' => now()->format('d/m/Y H:i'),
-        ], now()->addHours(2));
+        ];
+
+        cache()->put("import_result_{$this->userId}", $errorData, now()->addHours(2));
+
+        User::find($this->userId)?->notify(new CollaboratorImportCompletedNotification($errorData));
     }
 }

@@ -11,6 +11,7 @@ use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\RH\ContractType;
 use App\Models\RH\Position;
+use App\Notifications\RH\ContractDeletedNotification;
 use App\Services\RH\ContractService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -131,7 +132,9 @@ class ContractController extends Controller
     public function destroy(Contract $contrato): RedirectResponse
     {
         $this->authorize('delete', $contrato);
+        $contractCode = $contrato->contract_code ?? 'Sin código';
         $contrato->delete();
+        auth()->user()?->notify(new ContractDeletedNotification($contractCode));
 
         return redirect()->route('rh.contratos.index')
             ->with('exito', 'Contrato eliminado correctamente.');

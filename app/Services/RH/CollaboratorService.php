@@ -8,6 +8,10 @@ use App\Exports\RH\ColaboradoresExport;
 use App\Http\Requests\RH\CreateCollaboratorRequest;
 use App\Http\Requests\RH\UpdateCollaboratorRequest;
 use App\Models\RH\Collaborator;
+use App\Notifications\RH\CollaboratorCreatedNotification;
+use App\Notifications\RH\CollaboratorDeletedNotification;
+use App\Notifications\RH\CollaboratorTypeChangedNotification;
+use App\Notifications\RH\CollaboratorUpdatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +60,10 @@ final class CollaboratorService
     public function create(CreateCollaboratorRequest $request): Collaborator
     {
         return DB::transaction(function () use ($request): Collaborator {
-            return Collaborator::create($request->validated());
+            $colaborador = Collaborator::create($request->validated());
+            auth()->user()?->notify(new CollaboratorCreatedNotification($colaborador->full_name, $colaborador->id));
+
+            return $colaborador;
         });
     }
 
@@ -67,6 +74,7 @@ final class CollaboratorService
     {
         DB::transaction(function () use ($collaborator, $request): void {
             $collaborator->update($request->validated());
+            auth()->user()?->notify(new CollaboratorUpdatedNotification($collaborator->full_name, $collaborator->id));
         });
 
         return $collaborator->fresh(['documentType', 'status', 'activeContract.position']);
@@ -102,6 +110,7 @@ final class CollaboratorService
 
         return DB::transaction(function () use ($collaborator, $newType): Collaborator {
             $collaborator->update(['type' => $newType]);
+            auth()->user()?->notify(new CollaboratorTypeChangedNotification($collaborator->full_name, $collaborator->id, $newType));
 
             return $collaborator->fresh();
         });
@@ -112,7 +121,9 @@ final class CollaboratorService
      */
     public function delete(Collaborator $collaborator): void
     {
+        $nombre = $collaborator->full_name;
         $collaborator->delete();
+        auth()->user()?->notify(new CollaboratorDeletedNotification($nombre));
     }
 
     /**

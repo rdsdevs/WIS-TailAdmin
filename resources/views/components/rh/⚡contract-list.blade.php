@@ -73,7 +73,7 @@ new class extends Component {
             default       => $query,
         };
 
-        return $query->orderByDesc('start_date')->paginate(15);
+        return $query->orderByDesc('start_date')->paginate(10);
     }
 
     public function getCountsProperty(): array
@@ -249,32 +249,50 @@ new class extends Component {
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1">
+                            <div class="flex items-center justify-end gap-0.5">
+                                {{-- Editar --}}
                                 @can('update', $contract)
-                                    <a href="{{ route('rh.contratos.edit', $contract) }}"
-                                       class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                                       aria-label="Editar contrato">
-                                        Editar
-                                    </a>
+                                    <div class="relative group inline-flex">
+                                        <a href="{{ route('rh.contratos.edit', $contract) }}"
+                                           class="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 transition-colors"
+                                           aria-label="Editar contrato">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                                            </svg>
+                                        </a>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Editar</span>
+                                    </div>
                                 @endcan
+                                {{-- Terminar --}}
                                 @can('update', $contract)
                                     @if($contract->status === 'Vigente')
-                                        <button
-                                            wire:click="terminate('{{ $contract->id }}')"
-                                            wire:confirm="¿Desea terminar este contrato?"
-                                            class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
-                                            aria-label="Terminar contrato">
-                                            Terminar
-                                        </button>
+                                        <div class="relative group inline-flex">
+                                            <button
+                                                wire:click="terminate('{{ $contract->id }}')"
+                                                wire:confirm="¿Desea terminar este contrato?"
+                                                class="p-1.5 rounded-md text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-300 transition-colors"
+                                                aria-label="Terminar contrato">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Terminar</span>
+                                        </div>
                                     @endif
                                 @endcan
+                                {{-- Eliminar --}}
                                 @can('delete', $contract)
-                                    <button
-                                        wire:click="confirmDelete('{{ $contract->id }}', '{{ addslashes($contract->collaborator?->full_name ?? 'este contrato') }}')"
-                                        class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                        aria-label="Eliminar contrato">
-                                        Eliminar
-                                    </button>
+                                    <div class="relative group inline-flex">
+                                        <button
+                                            wire:click="confirmDelete('{{ $contract->id }}', '{{ addslashes($contract->collaborator?->full_name ?? 'este contrato') }}')"
+                                            class="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors"
+                                            aria-label="Eliminar contrato">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                        </button>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Eliminar</span>
+                                    </div>
                                 @endcan
                             </div>
                         </td>

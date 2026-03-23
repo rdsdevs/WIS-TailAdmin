@@ -134,16 +134,14 @@
 
                 {{-- Fecha de expedición --}}
                 <div>
-                    <label for="document_issued_at" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Fecha de expedición <span class="text-red-500" aria-hidden="true">*</span>
-                    </label>
-                    <input
+                    <x-form.date-picker
                         id="document_issued_at"
-                        type="date"
                         name="document_issued_at"
+                        label="Fecha de expedición"
+                        :required="true"
                         value="{{ old('document_issued_at', $usuario->document_issued_at?->format('Y-m-d')) }}"
-                        class="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 dark:bg-gray-800 dark:text-white
-                            {{ $errors->has('document_issued_at') ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600' }}"
+                        :error="$errors->has('document_issued_at')"
+                        placeholder="dd/mm/aaaa"
                     />
                     @error('document_issued_at')
                         <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -172,17 +170,14 @@
 
                 {{-- Nueva contraseña (opcional) --}}
                 <div>
-                    <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Nueva contraseña
-                        <span class="text-xs font-normal text-gray-400">(dejar vacío para no cambiar)</span>
-                    </label>
-                    <input
+                    <x-form.password-input
                         id="password"
-                        type="password"
                         name="password"
+                        label="Nueva contraseña"
+                        :required="false"
                         autocomplete="new-password"
-                        class="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 dark:bg-gray-800 dark:text-white
-                            {{ $errors->has('password') ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600' }}"
+                        :error="$errors->has('password')"
+                        hint="Dejar en blanco para no cambiar"
                     />
                     @error('password')
                         <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -191,15 +186,13 @@
 
                 {{-- Confirmar nueva contraseña --}}
                 <div>
-                    <label for="password_confirmation" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Confirmar nueva contraseña
-                    </label>
-                    <input
+                    <x-form.password-input
                         id="password_confirmation"
-                        type="password"
                         name="password_confirmation"
+                        label="Confirmar nueva contraseña"
+                        :required="false"
                         autocomplete="new-password"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        :error="false"
                     />
                 </div>
 

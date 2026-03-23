@@ -386,12 +386,41 @@ new class extends Component {
                         <label for="documentIssuedAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Fecha de expedición del documento
                         </label>
-                        <input
-                            wire:model="documentIssuedAt"
-                            id="documentIssuedAt"
-                            type="date"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:scheme-dark"
-                        />
+                        <div x-data="{
+                            init() {
+                                flatpickr(this.$refs.fp, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: '{{ $this->documentIssuedAt }}' || null,
+                                    locale: {
+                                        firstDayOfWeek: 1,
+                                        weekdays: {
+                                            shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                            longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                        },
+                                        months: {
+                                            shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                            longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                        }
+                                    },
+                                    onChange(dates, dateStr) {
+                                        $wire.set('documentIssuedAt', dateStr);
+                                    }
+                                });
+                            }
+                        }">
+                            <input
+                                x-ref="fp"
+                                wire:model="documentIssuedAt"
+                                type="text"
+                                id="documentIssuedAt"
+                                placeholder="dd/mm/aaaa"
+                                class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                autocomplete="off"
+                                readonly
+                            />
+                        </div>
                     </div>
 
                     {{-- Nombres --}}
@@ -464,12 +493,41 @@ new class extends Component {
                             <label for="birthDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Fecha de nacimiento
                             </label>
-                            <input
-                                wire:model="birthDate"
-                                id="birthDate"
-                                type="date"
-                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                            />
+                            <div x-data="{
+                                init() {
+                                    flatpickr(this.$refs.fp, {
+                                        dateFormat: 'Y-m-d',
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        defaultDate: '{{ $this->birthDate }}' || null,
+                                        locale: {
+                                            firstDayOfWeek: 1,
+                                            weekdays: {
+                                                shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                                longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                            },
+                                            months: {
+                                                shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                                longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                            }
+                                        },
+                                        onChange(dates, dateStr) {
+                                            $wire.set('birthDate', dateStr);
+                                        }
+                                    });
+                                }
+                            }">
+                                <input
+                                    x-ref="fp"
+                                    wire:model="birthDate"
+                                    type="text"
+                                    id="birthDate"
+                                    placeholder="dd/mm/aaaa"
+                                    class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                    autocomplete="off"
+                                    readonly
+                                />
+                            </div>
                         </div>
                         <div>
                             <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300">

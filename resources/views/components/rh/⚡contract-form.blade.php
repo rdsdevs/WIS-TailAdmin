@@ -771,12 +771,42 @@ new class extends Component {
                         <label for="startDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Fecha de inicio <span class="text-red-500" aria-hidden="true">*</span>
                         </label>
-                        <input
-                            wire:model.live="startDate"
-                            id="startDate"
-                            type="date"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
+                        <div x-data="{
+                            init() {
+                                flatpickr(this.$refs.fp, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: '{{ $this->startDate }}' || null,
+                                    locale: {
+                                        firstDayOfWeek: 1,
+                                        weekdays: {
+                                            shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                            longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                        },
+                                        months: {
+                                            shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                            longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                        }
+                                    },
+                                    onChange(dates, dateStr) {
+                                        $wire.set('startDate', dateStr);
+                                        $wire.dispatch('startDateUpdated');
+                                    }
+                                });
+                            }
+                        }">
+                            <input
+                                x-ref="fp"
+                                wire:model.live="startDate"
+                                type="text"
+                                id="startDate"
+                                placeholder="dd/mm/aaaa"
+                                class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                autocomplete="off"
+                                readonly
+                            />
+                        </div>
                         @error('startDate')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
                         @enderror
@@ -786,12 +816,41 @@ new class extends Component {
                             Fecha de fin
                             <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(vacío = indefinido)</span>
                         </label>
-                        <input
-                            wire:model="endDate"
-                            id="endDate"
-                            type="date"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
+                        <div x-data="{
+                            init() {
+                                flatpickr(this.$refs.fp, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: '{{ $this->endDate ?? '' }}' || null,
+                                    locale: {
+                                        firstDayOfWeek: 1,
+                                        weekdays: {
+                                            shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                            longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                        },
+                                        months: {
+                                            shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                            longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                        }
+                                    },
+                                    onChange(dates, dateStr) {
+                                        $wire.set('endDate', dateStr);
+                                    }
+                                });
+                            }
+                        }">
+                            <input
+                                x-ref="fp"
+                                wire:model="endDate"
+                                type="text"
+                                id="endDate"
+                                placeholder="dd/mm/aaaa"
+                                class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                autocomplete="off"
+                                readonly
+                            />
+                        </div>
                         @error('endDate')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
                         @enderror

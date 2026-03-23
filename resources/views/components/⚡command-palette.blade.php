@@ -251,7 +251,6 @@ new class extends Component {
                                     @foreach($navFiltrados as $item)
                                         <li role="option">
                                             <a href="{{ $item['ruta'] }}"
-                                               wire:navigate
                                                wire:click="cerrar"
                                                class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60">
                                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500" aria-hidden="true">
@@ -278,7 +277,6 @@ new class extends Component {
                                     @foreach($this->colaboradores as $item)
                                         <li role="option">
                                             <a href="{{ $item['ruta'] }}"
-                                               wire:navigate
                                                wire:click="cerrar"
                                                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-xs font-semibold" aria-hidden="true">
@@ -307,7 +305,6 @@ new class extends Component {
                                     @foreach($this->contratos as $item)
                                         <li role="option">
                                             <a href="{{ $item['ruta'] }}"
-                                               wire:navigate
                                                wire:click="cerrar"
                                                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500" aria-hidden="true">

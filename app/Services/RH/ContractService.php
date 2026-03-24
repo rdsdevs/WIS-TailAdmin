@@ -6,14 +6,15 @@ namespace App\Services\RH;
 
 use App\Http\Requests\RH\CreateContractRequest;
 use App\Http\Requests\RH\UpdateContractRequest;
-use App\Models\RH\CommittedValue;
 use App\Models\RH\Contract;
 use App\Notifications\RH\ContractCreatedNotification;
+use App\Notifications\RH\ContractEarlyTerminatedNotification;
 use App\Notifications\RH\ContractTerminatedNotification;
 use App\Notifications\RH\ContractUpdatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class ContractService
 {
@@ -129,18 +130,49 @@ final class ContractService
 
     /**
      * Termina un contrato vigente cambiando su estado a 'Terminado'.
+     * No modifica end_date; esa fecha es la pactada originalmente.
      */
     public function terminate(Contract $contract): void
     {
         $contract->update([
             'status' => 'Terminado',
-            'end_date' => $contract->end_date ?? now()->toDateString(),
         ]);
 
         auth()->user()?->notify(new ContractTerminatedNotification(
             $contract->contract_code ?? '',
             $contract->id,
         ));
+    }
+
+    /**
+     * Termina anticipadamente un contrato antes de su fecha de finalización pactada.
+     *
+     * @param  array{early_termination_date: string, early_termination_reason: string}  $data
+     */
+    public function earlyTerminate(Contract $contract, array $data): void
+    {
+        DB::transaction(function () use ($contract, $data): void {
+            $contract->update([
+                'status' => 'Terminado',
+                'early_termination_date' => $data['early_termination_date'],
+                'early_termination_reason' => $data['early_termination_reason'],
+                'early_terminated_by' => auth()->id(),
+                'early_terminated_at' => now(),
+            ]);
+
+            // Notificar al usuario que realizó la terminación
+            auth()->user()?->notify(new ContractEarlyTerminatedNotification(
+                $contract->contract_code ?? '',
+                $contract->id,
+            ));
+
+            Log::info('Contrato terminado anticipadamente', [
+                'contract_id' => $contract->id,
+                'contract_code' => $contract->contract_code,
+                'early_termination_date' => $data['early_termination_date'],
+                'terminated_by' => auth()->id(),
+            ]);
+        });
     }
 
     // ── Métodos privados ──────────────────────────────────────────────────────
@@ -155,10 +187,10 @@ final class ContractService
     {
         foreach ($lines as $line) {
             $contract->committedValues()->create([
-                'institution_id'    => $contract->institution_id,
+                'institution_id' => $contract->institution_id,
                 'accounting_account' => $line['accounting_account'],
-                'cost_center'       => $line['cost_center'],
-                'amount'            => $line['amount'],
+                'cost_center' => $line['cost_center'],
+                'amount' => $line['amount'],
             ]);
         }
     }

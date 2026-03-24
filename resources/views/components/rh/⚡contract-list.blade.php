@@ -4,6 +4,8 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\RH\Contract;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use WithPagination;
@@ -12,6 +14,13 @@ new class extends Component {
     public string $search   = '';
     public ?string $deletingId   = null;
     public ?string $deletingName = null;
+
+    public string $filterMode = 'none'; // 'none' | 'year' | 'range'
+    public string $filterYear = '';
+    public string $filterFrom = '';
+    public string $filterTo   = '';
+
+    public bool $confirmingTerminateExpired = false;
 
     public function updatingSearch(): void
     {
@@ -23,10 +32,25 @@ new class extends Component {
         $this->resetPage();
     }
 
-    public function confirmDelete(string $id, string $name): void
+    public function updatingFilterMode(): void { $this->resetPage(); }
+    public function updatingFilterYear(): void  { $this->resetPage(); }
+    public function updatingFilterFrom(): void  { $this->resetPage(); }
+    public function updatingFilterTo(): void    { $this->resetPage(); }
+
+    public function clearFilters(): void
     {
+        $this->filterMode = 'none';
+        $this->filterYear = '';
+        $this->filterFrom = '';
+        $this->filterTo   = '';
+        $this->resetPage();
+    }
+
+    public function confirmDelete(string $id): void
+    {
+        $contract           = Contract::with('collaborator')->findOrFail($id);
         $this->deletingId   = $id;
-        $this->deletingName = $name;
+        $this->deletingName = $contract->collaborator?->full_name ?? 'este contrato';
     }
 
     public function cancelDelete(): void
@@ -73,6 +97,19 @@ new class extends Component {
             default       => $query,
         };
 
+        $query
+            ->when($this->filterMode === 'year' && $this->filterYear !== '', fn ($q) =>
+                $q->whereYear('start_date', (int) $this->filterYear)
+            )
+            ->when($this->filterMode === 'range', function ($q) {
+                if ($this->filterFrom !== '') {
+                    $q->where('start_date', '>=', $this->filterFrom);
+                }
+                if ($this->filterTo !== '') {
+                    $q->where('start_date', '<=', $this->filterTo);
+                }
+            });
+
         return $query->orderByDesc('start_date')->paginate(10);
     }
 
@@ -87,10 +124,100 @@ new class extends Component {
                                     ->count(),
         ];
     }
+
+    public function getExpiredCountProperty(): int
+    {
+        $institutionId = auth()->user()?->institution_id;
+
+        return Contract::where('status', 'Vigente')
+            ->where('institution_id', $institutionId)
+            ->whereNotNull('end_date')
+            ->whereDate('end_date', '<', now()->toDateString())
+            ->count();
+    }
+
+    public function confirmTerminateExpired(): void
+    {
+        $this->confirmingTerminateExpired = true;
+    }
+
+    public function cancelTerminateExpired(): void
+    {
+        $this->confirmingTerminateExpired = false;
+    }
+
+    public function terminateExpiredContracts(): void
+    {
+        $this->confirmingTerminateExpired = false;
+        $user = auth()->user();
+
+        if (! $user?->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
+            $this->addError('general', 'No tiene permisos para realizar esta acción.');
+
+            return;
+        }
+
+        $expired = Contract::where('status', 'Vigente')
+            ->where('institution_id', $user->institution_id)
+            ->whereNotNull('end_date')
+            ->whereDate('end_date', '<', now()->toDateString())
+            ->get(['id', 'institution_id', 'contract_code']);
+
+        if ($expired->isEmpty()) {
+            session()->flash('success', 'No hay contratos vencidos pendientes de terminar.');
+
+            return;
+        }
+
+        $ids   = $expired->pluck('id')->all();
+        $total = count($ids);
+
+        DB::transaction(function () use ($ids): void {
+            Contract::whereIn('id', $ids)->update(['status' => 'Terminado']);
+        });
+
+        Log::info(
+            "[Contratos] {$total} contrato(s) terminado(s) manualmente por el usuario {$user->id}.",
+            ['ids' => $ids]
+        );
+
+        session()->flash('success', "{$total} contrato(s) vencido(s) terminado(s) correctamente.");
+    }
 };
 ?>
 
 <div>
+    {{-- Banner: contratos vencidos pendientes --}}
+    @if(auth()->user()?->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager']) && $this->expiredCount > 0)
+        <div class="mb-4 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-800/50 dark:bg-orange-900/20 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/40">
+                    <svg class="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                        {{ $this->expiredCount }} contrato{{ $this->expiredCount === 1 ? '' : 's' }} vencido{{ $this->expiredCount === 1 ? '' : 's' }} sin terminar
+                    </p>
+                    <p class="mt-0.5 text-xs text-orange-700 dark:text-orange-400">
+                        {{ $this->expiredCount === 1 ? 'Este contrato tiene' : 'Estos contratos tienen' }} fecha de finalización anterior a hoy y aún {{ $this->expiredCount === 1 ? 'figura' : 'figuran' }} como <strong>Vigente</strong>.
+                        El proceso automático nocturno los terminará, o puede hacerlo ahora manualmente.
+                    </p>
+                </div>
+            </div>
+            <button
+                wire:click="confirmTerminateExpired"
+                type="button"
+                class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:bg-orange-700 dark:hover:bg-orange-600 dark:focus:ring-offset-gray-900">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Terminar vencidos
+            </button>
+        </div>
+    @endif
+
     {{-- Barra de búsqueda --}}
     <div class="mb-4 flex items-center justify-between gap-3">
         <div class="relative flex-1 sm:max-w-xs">
@@ -116,6 +243,84 @@ new class extends Component {
                 Nuevo contrato
             </a>
         @endcan
+    </div>
+
+    {{-- Panel de filtros --}}
+    <div x-data="{ open: {{ $filterMode !== 'none' ? 'true' : 'false' }} }" class="mb-4">
+        <div class="flex items-center gap-2">
+            <button @click="open = !open" type="button"
+                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors
+                    {{ $filterMode !== 'none' ? 'border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/20 dark:text-blue-400' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591L15.75 12.75v6.75a.75.75 0 0 1-.427.671l-3 1.5a.75.75 0 0 1-1.073-.681v-8.24L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                </svg>
+                Filtrar
+                @if($filterMode !== 'none')
+                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                @endif
+            </button>
+            @if($filterMode !== 'none')
+                <button wire:click="clearFilters" type="button"
+                    class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                    Limpiar filtros
+                </button>
+            @endif
+        </div>
+
+        <div x-show="open" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+            {{-- Selector de modo --}}
+            <div class="mb-4 flex items-center gap-3">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por:</span>
+                <label class="inline-flex cursor-pointer items-center gap-1.5">
+                    <input type="radio" wire:model.live="filterMode" value="year"
+                        class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Año</span>
+                </label>
+                <label class="inline-flex cursor-pointer items-center gap-1.5">
+                    <input type="radio" wire:model.live="filterMode" value="range"
+                        class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Rango de fechas</span>
+                </label>
+                <label class="inline-flex cursor-pointer items-center gap-1.5">
+                    <input type="radio" wire:model.live="filterMode" value="none"
+                        class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Sin filtro</span>
+                </label>
+            </div>
+
+            {{-- Filtro por año --}}
+            @if($filterMode === 'year')
+                <div class="flex items-center gap-3">
+                    <label for="filter-year" class="text-sm text-gray-600 dark:text-gray-400">Año de inicio:</label>
+                    <select id="filter-year" wire:model.live="filterYear"
+                        class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <option value="">-- Seleccionar año --</option>
+                        @for($y = now()->year; $y >= 2000; $y--)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+            @endif
+
+            {{-- Filtro por rango --}}
+            @if($filterMode === 'range')
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <label for="filter-from" class="text-sm text-gray-600 dark:text-gray-400">Desde:</label>
+                        <input type="date" id="filter-from" wire:model.live="filterFrom"
+                            class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="filter-to" class="text-sm text-gray-600 dark:text-gray-400">Hasta:</label>
+                        <input type="date" id="filter-to" wire:model.live="filterTo"
+                            class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+            @endif
+        </div>
     </div>
 
     {{-- Tabs --}}
@@ -284,7 +489,7 @@ new class extends Component {
                                 @can('delete', $contract)
                                     <div class="relative group inline-flex">
                                         <button
-                                            wire:click="confirmDelete('{{ $contract->id }}', '{{ addslashes($contract->collaborator?->full_name ?? 'este contrato') }}')"
+                                            wire:click="confirmDelete('{{ $contract->id }}')"
                                             class="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors"
                                             aria-label="Eliminar contrato">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -353,6 +558,47 @@ new class extends Component {
                     <button wire:click="delete" wire:loading.attr="disabled"
                         class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-60">
                         Sí, eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal: confirmar terminar contratos vencidos --}}
+    @if($confirmingTerminateExpired)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+             role="dialog" aria-modal="true" aria-labelledby="modal-terminar-vencidos">
+            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
+                        <svg class="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 id="modal-terminar-vencidos" class="text-base font-semibold text-gray-900 dark:text-white">
+                            Terminar contratos vencidos
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            ¿Está seguro de terminar los <strong class="text-gray-900 dark:text-white">{{ $this->expiredCount }} contrato(s) vencidos</strong>?
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-5 flex justify-end gap-3">
+                    <button wire:click="cancelTerminateExpired" type="button"
+                        class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancelar
+                    </button>
+                    <button wire:click="terminateExpiredContracts" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-60 dark:focus:ring-offset-gray-800">
+                        <span wire:loading wire:target="terminateExpiredContracts">
+                            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                        </span>
+                        Sí, terminar
                     </button>
                 </div>
             </div>

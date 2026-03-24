@@ -79,7 +79,7 @@
                 </p>
                 <p class="mt-0.5 text-xs text-red-700 dark:text-red-400">
                     Este contrato fue terminado de forma anticipada el
-                    <strong>{{ $contrato->early_termination_date->format('d/m/Y') }}</strong>.
+                    <strong>{{ $contrato->early_termination_date?->format('d/m/Y') ?? '—' }}</strong>.
                     Consulte la sección de terminación anticipada para más detalles.
                 </p>
             </div>
@@ -543,7 +543,7 @@
                     <div>
                         <dt class="text-xs text-gray-500 dark:text-gray-400">Fecha de terminación anticipada</dt>
                         <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                            {{ $contrato->early_termination_date->format('d/m/Y') }}
+                            {{ $contrato->early_termination_date?->format('d/m/Y') ?? '—' }}
                         </dd>
                     </div>
                     <div>

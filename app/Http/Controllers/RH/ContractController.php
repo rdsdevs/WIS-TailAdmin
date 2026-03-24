@@ -92,9 +92,9 @@ class ContractController extends Controller
 
     public function show(Contract $contrato): View
     {
-        $this->authorize('view', $contrato);
+        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'institution', 'extensions', 'committedValues', 'earlyTerminatedBy']);
 
-        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'institution', 'extensions.committedValue', 'committedValues', 'earlyTerminatedBy']);
+        $this->authorize('view', $contrato);
 
         return view('pages.rh.contratos.show', compact('contrato'));
     }

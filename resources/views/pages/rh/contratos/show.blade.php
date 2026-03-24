@@ -333,18 +333,22 @@
             @if($contrato->object)
                 <div class="mt-5 border-t border-gray-100 pt-5 dark:border-gray-700">
                     <p class="text-xs text-gray-500 dark:text-gray-400">Objeto del contrato</p>
-                    <p class="mt-1 text-sm leading-relaxed text-gray-900 dark:text-white">
-                        {{ $contrato->object }}
-                    </p>
+                    <div class="mt-1 text-sm leading-relaxed text-gray-900 dark:text-white [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
+                        {!! $contrato->object !!}
+                    </div>
                 </div>
             @endif
 
             {{-- Obligaciones --}}
             <div class="mt-5 border-t border-gray-100 pt-5 dark:border-gray-700">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Obligaciones</p>
-                <p class="mt-1 text-sm leading-relaxed text-gray-900 dark:text-white">
-                    {{ $contrato->obligations ?? 'No especificadas' }}
-                </p>
+                @if($contrato->obligations)
+                    <div class="mt-1 text-sm leading-relaxed text-gray-900 dark:text-white [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
+                        {!! $contrato->obligations !!}
+                    </div>
+                @else
+                    <p class="mt-1 text-sm leading-relaxed text-gray-900 dark:text-white">No especificadas</p>
+                @endif
             </div>
         </div>
     </div>

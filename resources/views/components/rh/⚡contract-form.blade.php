@@ -9,6 +9,7 @@ use App\Models\RH\Position;
 use App\Models\Contabilidad\AccountingAccount;
 use App\Models\Contabilidad\CostCenter;
 use Illuminate\Support\Facades\DB;
+use Mews\Purifier\Facades\Purifier;
 
 new class extends Component {
 
@@ -25,17 +26,18 @@ new class extends Component {
     public bool   $showSuggestions      = false;
 
     // ── Paso 2: datos del contrato ────────────────────────────────────────────
-    public string  $contractTypeId = '';
-    public string  $positionId     = '';
-    public string  $contractNumber = '';
-    public string  $startDate      = '';
-    public ?string $endDate        = null;
-    public string  $salary         = '';
-    public string  $fees           = '';
-    public string  $object         = '';
-    public string  $obligations    = '';
-    public string  $positionEmail  = '';
-    public string  $status         = 'Vigente';
+    public string  $contractTypeId    = '';
+    public string  $positionId        = '';
+    public string  $contractNumber    = '';
+    public string  $startDate         = '';
+    public ?string $endDate           = null;
+    public string  $salary            = '';
+    public string  $fees              = '';
+    public string  $object            = '';
+    public string  $obligations       = '';
+    public string  $positionEmail     = '';
+    public string  $status            = 'Vigente';
+    public string  $collaboratorType  = '';
 
     // ── Paso 3: comprometidos ─────────────────────────────────────────────────
     // Cuenta contable: única para todo el contrato
@@ -77,6 +79,7 @@ new class extends Component {
                     'type' => $c->collaborator->type,
                 ];
                 $this->collaboratorSearch = $c->collaborator->full_name;
+                $this->collaboratorType   = $c->collaborator->type ?? '';
             }
 
             // Cargar comprometidos existentes
@@ -116,6 +119,7 @@ new class extends Component {
                     'type' => $collab->type,
                 ];
                 $this->collaboratorSearch = $collab->full_name;
+                $this->collaboratorType   = $collab->type ?? '';
             }
         }
     }
@@ -144,6 +148,27 @@ new class extends Component {
         $this->collaboratorId    = $id;
         $this->collaboratorSearch = $collab->full_name;
         $this->showSuggestions   = false;
+        $this->collaboratorType  = $collab->type ?? '';
+
+        if ($this->collaboratorType === 'Contratista') {
+            // Precargar tipo de contrato CPS
+            $institutionId = auth()->user()->institution_id;
+            $cpsType = ContractType::where('code', 'CPS')
+                ->where('institution_id', $institutionId)
+                ->first();
+            if ($cpsType) {
+                $this->contractTypeId = (string) $cpsType->id;
+            }
+
+            // Fecha inicio = hoy
+            $this->startDate = now()->format('Y-m-d');
+
+            // Fecha fin = último día hábil de diciembre del año en curso
+            $this->endDate = $this->getLastWorkingDayOfYear((int) now()->year);
+
+            // Sugerir número de contrato
+            $this->autoFillContractNumber();
+        }
     }
 
     public function clearCollaborator(): void
@@ -263,10 +288,10 @@ new class extends Component {
             'endDate'        => 'nullable|date|after:startDate',
             'salary'         => $type === 'Empleado' ? 'required|numeric|min:0' : 'nullable|numeric|min:0',
             'fees'           => $type === 'Contratista' ? 'required|numeric|min:0' : 'nullable|numeric|min:0',
-            'object'         => 'nullable|string|max:1000',
-            'obligations'    => 'nullable|string|max:2000',
+            'object'         => 'nullable|string|max:5000',
+            'obligations'    => 'nullable|string|max:8000',
             'positionEmail'  => 'nullable|email|max:200',
-            'status'         => 'required|in:Vigente,Terminado,Liquidado',
+            'status'         => 'required|in:Vigente,Terminado,Liquidado,Vencido',
         ];
 
         $messages = [
@@ -381,12 +406,23 @@ new class extends Component {
         if ($this->salary === '') { $this->salary = '0'; }
         if ($this->fees   === '') { $this->fees   = '0'; }
 
+        // Sanitizar HTML de los campos rich text antes de persistir
+        $this->object      = $this->object      ? Purifier::clean($this->object,      'rh_text') : '';
+        $this->obligations = $this->obligations ? Purifier::clean($this->obligations, 'rh_text') : '';
+
+        $contractCode = null;
+        if ($this->contractNumber && $this->startDate) {
+            $year         = date('Y', strtotime($this->startDate));
+            $contractCode = $this->contractNumber . '-' . $year;
+        }
+
         $data = [
             'institution_id'   => auth()->user()->institution_id,
             'collaborator_id'  => $this->collaboratorId,
             'contract_type_id' => $this->contractTypeId,
             'position_id'      => $this->positionId ?: null,
             'contract_number'  => $this->contractNumber ?: null,
+            'contract_code'    => $contractCode,
             'start_date'       => $this->startDate,
             'end_date'         => $this->endDate ?: null,
             'salary'           => $this->salary !== '' ? $this->salary : 0,
@@ -490,7 +526,7 @@ new class extends Component {
             ->toArray();
     }
 
-    public function getContractTypesProperty()
+    public function getContractTypesProperty(): \Illuminate\Database\Eloquent\Collection
     {
         $institutionId = auth()->user()->institution_id;
 
@@ -498,11 +534,129 @@ new class extends Component {
             ->orderBy('name')->get();
     }
 
-    public function getPositionsProperty()
+    public function getPositionsProperty(): \Illuminate\Database\Eloquent\Collection
     {
         return Position::active()
             ->where('institution_id', auth()->user()->institution_id)
             ->orderBy('name')->get();
+    }
+
+    // ── Hooks de ciclo de vida ─────────────────────────────────────────────────
+
+    public function updatedStartDate(): void
+    {
+        $this->autoFillContractNumber();
+    }
+
+    public function updatedContractTypeId(): void
+    {
+        $this->autoFillContractNumber();
+    }
+
+    // ── Computed: duración del contrato ───────────────────────────────────────
+
+    public function getDurationProperty(): ?string
+    {
+        if (! $this->startDate || ! $this->endDate) {
+            return null;
+        }
+
+        $start = \Carbon\Carbon::parse($this->startDate);
+        $end   = \Carbon\Carbon::parse($this->endDate);
+
+        if ($end->lte($start)) {
+            return null;
+        }
+
+        $months = $start->diffInMonths($end);
+        $days   = $start->copy()->addMonths($months)->diffInDays($end);
+
+        $parts = [];
+        if ($months > 0) {
+            $parts[] = $months . ' ' . ($months === 1 ? 'mes' : 'meses');
+        }
+        if ($days > 0) {
+            $parts[] = $days . ' ' . ($days === 1 ? 'día' : 'días');
+        }
+
+        return $parts ? implode(' y ', $parts) : null;
+    }
+
+    // ── Computed: validar número de contrato duplicado ────────────────────────
+
+    public function getContractNumberExistsProperty(): bool
+    {
+        if (! $this->contractNumber || ! $this->startDate || ! $this->contractTypeId) {
+            return false;
+        }
+
+        $tipo = ContractType::find($this->contractTypeId);
+        if (! $tipo || $tipo->code !== 'CPS') {
+            return false;
+        }
+
+        $year          = (int) date('Y', strtotime($this->startDate));
+        $institutionId = auth()->user()->institution_id;
+
+        $query = Contract::where('contract_type_id', $this->contractTypeId)
+            ->where('institution_id', $institutionId)
+            ->where('contract_number', $this->contractNumber)
+            ->whereYear('start_date', $year);
+
+        if ($this->contractId) {
+            $query->where('id', '!=', $this->contractId);
+        }
+
+        return $query->exists();
+    }
+
+    // ── Helpers privados ──────────────────────────────────────────────────────
+
+    private function getLastWorkingDayOfYear(int $year): string
+    {
+        $dec31 = \Carbon\Carbon::create($year, 12, 31);
+
+        if ($dec31->isSaturday()) {
+            return $dec31->subDay()->toDateString();
+        }
+
+        if ($dec31->isSunday()) {
+            return $dec31->subDays(2)->toDateString();
+        }
+
+        return $dec31->toDateString();
+    }
+
+    private function getSuggestedContractNumber(): string
+    {
+        if (! $this->startDate || ! $this->contractTypeId) {
+            return '';
+        }
+
+        $institutionId = auth()->user()->institution_id;
+        $year          = (int) date('Y', strtotime($this->startDate));
+
+        $tipo = ContractType::find($this->contractTypeId);
+        if (! $tipo || $tipo->code !== 'CPS') {
+            return '';
+        }
+
+        $lastNumber = Contract::where('contract_type_id', $this->contractTypeId)
+            ->where('institution_id', $institutionId)
+            ->whereYear('start_date', $year)
+            ->max('contract_number');
+
+        $next = $lastNumber ? ((int) $lastNumber + 1) : 1;
+
+        return str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function autoFillContractNumber(): void
+    {
+        $suggested = $this->getSuggestedContractNumber();
+        if ($suggested !== '' && $this->contractNumber === '') {
+            $this->contractNumber = $suggested;
+        }
     }
 };
 ?>
@@ -719,7 +873,8 @@ new class extends Component {
                     @enderror
                 </div>
 
-                {{-- Cargo --}}
+                {{-- Cargo (solo empleados) --}}
+                @if($collaboratorType !== 'Contratista')
                 <div>
                     <label for="positionId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Cargo
@@ -735,6 +890,7 @@ new class extends Component {
                         @endforeach
                     </select>
                 </div>
+                @endif
 
                 {{-- Número de contrato y código --}}
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -749,6 +905,11 @@ new class extends Component {
                             placeholder="Ej: 001"
                             class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
                         />
+                        @if($this->contractNumberExists)
+                            <p class="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                                Este número de contrato ya existe para el año seleccionado.
+                            </p>
+                        @endif
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -772,8 +933,9 @@ new class extends Component {
                             Fecha de inicio <span class="text-red-500" aria-hidden="true">*</span>
                         </label>
                         <div x-data="{
+                            fp: null,
                             init() {
-                                flatpickr(this.$refs.fp, {
+                                this.fp = flatpickr(this.$refs.fp, {
                                     dateFormat: 'Y-m-d',
                                     altInput: true,
                                     altFormat: 'd/m/Y',
@@ -789,10 +951,13 @@ new class extends Component {
                                             longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
                                         }
                                     },
-                                    onChange(dates, dateStr) {
+                                    onChange: (dates, dateStr) => {
                                         $wire.set('startDate', dateStr);
                                         $wire.dispatch('startDateUpdated');
                                     }
+                                });
+                                $wire.$watch('startDate', (val) => {
+                                    if (val && this.fp) this.fp.setDate(val, false);
                                 });
                             }
                         }">
@@ -817,8 +982,9 @@ new class extends Component {
                             <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(vacío = indefinido)</span>
                         </label>
                         <div x-data="{
+                            fp: null,
                             init() {
-                                flatpickr(this.$refs.fp, {
+                                this.fp = flatpickr(this.$refs.fp, {
                                     dateFormat: 'Y-m-d',
                                     altInput: true,
                                     altFormat: 'd/m/Y',
@@ -834,9 +1000,12 @@ new class extends Component {
                                             longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
                                         }
                                     },
-                                    onChange(dates, dateStr) {
+                                    onChange: (dates, dateStr) => {
                                         $wire.set('endDate', dateStr);
                                     }
+                                });
+                                $wire.$watch('endDate', (val) => {
+                                    if (val && this.fp) this.fp.setDate(val, false);
                                 });
                             }
                         }">
@@ -857,41 +1026,67 @@ new class extends Component {
                     </div>
                 </div>
 
-                {{-- Salario / Honorarios --}}
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {{-- Salario (empleados) --}}
-                    <div>
-                        <label for="salary" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Salario (COP)
-                            @if($selectedCollaborator && $selectedCollaborator['type'] === 'Empleado')
-                                <span class="text-red-500" aria-hidden="true">*</span>
-                            @else
-                                <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(empleados)</span>
-                            @endif
-                        </label>
-                        <input
-                            wire:model.blur="salary"
-                            id="salary"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            placeholder="Ej: 1300000"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-                        />
-                        @error('salary')
-                            <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
-                        @enderror
-                    </div>
+                {{-- Duración informativa del contrato --}}
+                @if($this->duration)
+                    <p class="col-span-2 -mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Duración del contrato:
+                        <span class="font-medium text-gray-700 dark:text-gray-300">{{ $this->duration }}</span>
+                    </p>
+                @endif
 
-                    {{-- Honorarios (contratistas) --}}
+                {{-- Salario / Honorarios --}}
+                @if($collaboratorType !== 'Contratista')
+                    {{-- Grid de dos columnas para empleados --}}
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {{-- Salario (empleados) --}}
+                        <div>
+                            <label for="salary" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Salario (COP)
+                                @if($selectedCollaborator && $selectedCollaborator['type'] === 'Empleado')
+                                    <span class="text-red-500" aria-hidden="true">*</span>
+                                @else
+                                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(empleados)</span>
+                                @endif
+                            </label>
+                            <input
+                                wire:model.blur="salary"
+                                id="salary"
+                                type="number"
+                                min="0"
+                                step="1000"
+                                placeholder="Ej: 1300000"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
+                            />
+                            @error('salary')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Honorarios (empleados, opcional) --}}
+                        <div>
+                            <label for="fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Honorarios (COP)
+                                <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(contratistas)</span>
+                            </label>
+                            <input
+                                wire:model.blur="fees"
+                                id="fees"
+                                type="number"
+                                min="0"
+                                step="1000"
+                                placeholder="Ej: 3000000"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
+                            />
+                            @error('fees')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+                @else
+                    {{-- Honorarios a ancho completo para contratistas --}}
                     <div>
                         <label for="fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Honorarios (COP)
-                            @if($selectedCollaborator && $selectedCollaborator['type'] === 'Contratista')
-                                <span class="text-red-500" aria-hidden="true">*</span>
-                            @else
-                                <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(contratistas)</span>
-                            @endif
+                            Honorarios (COP) <span class="text-red-500" aria-hidden="true">*</span>
                         </label>
                         <input
                             wire:model.blur="fees"
@@ -906,42 +1101,65 @@ new class extends Component {
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
                         @enderror
                     </div>
-                </div>
+                @endif
 
                 {{-- Objeto del contrato --}}
                 <div>
-                    <label for="object" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Objeto del contrato
                     </label>
-                    <textarea
-                        wire:model.blur="object"
-                        id="object"
-                        rows="3"
-                        maxlength="1000"
-                        placeholder="Describa el objeto del contrato..."
-                        class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-                    ></textarea>
-                    <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ strlen($object) }} / 1000</p>
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="$dispatch('open-editor', { field: 'object', value: $wire.object })"
+                            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            {{ $object ? 'Editar objeto' : 'Agregar objeto' }}
+                        </button>
+                        @if($object)
+                            <span class="max-w-xs truncate text-sm text-gray-500 dark:text-gray-400">
+                                {{ \Str::limit(strip_tags($object), 60) }}
+                            </span>
+                        @endif
+                    </div>
+                    @error('object')
+                        <p class="mt-1 text-sm text-red-500" role="alert">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Obligaciones --}}
                 <div>
-                    <label for="obligations" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Obligaciones
                     </label>
-                    <textarea
-                        wire:model.blur="obligations"
-                        id="obligations"
-                        rows="3"
-                        maxlength="2000"
-                        placeholder="Describa las obligaciones del contrato..."
-                        class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-                    ></textarea>
-                    <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ strlen($obligations) }} / 2000</p>
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="$dispatch('open-editor', { field: 'obligations', value: $wire.obligations })"
+                            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            {{ $obligations ? 'Editar obligaciones' : 'Agregar obligaciones' }}
+                        </button>
+                        @if($obligations)
+                            <span class="max-w-xs truncate text-sm text-gray-500 dark:text-gray-400">
+                                {{ \Str::limit(strip_tags($obligations), 60) }}
+                            </span>
+                        @endif
+                    </div>
+                    @error('obligations')
+                        <p class="mt-1 text-sm text-red-500" role="alert">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Correo del cargo y estado --}}
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 {{ $collaboratorType !== 'Contratista' ? 'sm:grid-cols-2' : '' }}">
+                    @if($collaboratorType !== 'Contratista')
                     <div>
                         <label for="positionEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Correo del cargo
@@ -957,6 +1175,7 @@ new class extends Component {
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
                         @enderror
                     </div>
+                    @endif
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Estado del contrato <span class="text-red-500" aria-hidden="true">*</span>
@@ -1358,5 +1577,81 @@ new class extends Component {
             </button>
         @endif
 
+    </div>
+
+    {{-- ── Modal editor rich text (Quill) ──────────────────────────────────── --}}
+    <div
+        x-data="{
+            open: false,
+            field: '',
+            quill: null,
+            openEditor(field, value) {
+                this.field = field;
+                this.open = true;
+                this.$nextTick(() => {
+                    if (!this.quill) {
+                        this.quill = new Quill(this.$refs.editor, {
+                            theme: 'snow',
+                            modules: {
+                                toolbar: [
+                                    [{ header: [2, 3, false] }],
+                                    ['bold', 'italic'],
+                                    [{ list: 'bullet' }, { list: 'ordered' }],
+                                    ['blockquote', 'clean']
+                                ]
+                            }
+                        });
+                    }
+                    this.quill.root.innerHTML = value || '';
+                });
+            },
+            saveEditor() {
+                const html = this.quill.root.innerHTML;
+                $wire.set(this.field, html);
+                this.open = false;
+            }
+        }"
+        @open-editor.window="openEditor($event.detail.field, $event.detail.value)"
+        x-show="open"
+        x-transition
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+        style="display: none;"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quill-modal-title"
+    >
+        <div class="w-full max-w-3xl rounded-2xl bg-white shadow-xl dark:bg-gray-900" @click.stop>
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <h3 id="quill-modal-title" class="text-lg font-semibold text-gray-800 dark:text-white">
+                    Editar texto
+                </h3>
+                <button
+                    type="button"
+                    @click="open = false"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    aria-label="Cerrar editor">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6" wire:ignore>
+                <div x-ref="editor" class="min-h-[300px]"></div>
+            </div>
+            <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+                <button
+                    type="button"
+                    @click="open = false"
+                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    @click="saveEditor()"
+                    class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+                    Guardar
+                </button>
+            </div>
+        </div>
     </div>
 </div>

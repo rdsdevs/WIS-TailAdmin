@@ -13,13 +13,14 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithChunkReading, WithTitle
+class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithTitle
 {
     use SkipsFailures;
+
+    // Sin WithChunkReading — necesario para que WithTitle filtre correctamente la hoja
 
     private int $imported = 0;
     private int $updated  = 0;
@@ -43,9 +44,11 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             ->pluck('id', 'document_number')
             ->toArray();
 
+        // Mapa case-insensitive: strtolower(nombre) → uuid
         $this->contractTypeMap = ContractType::where('institution_id', $institutionId)
             ->whereNull('deleted_at')
-            ->pluck('id', 'name')
+            ->get()
+            ->mapWithKeys(fn (ContractType $ct): array => [strtolower(trim($ct->name)) => $ct->id])
             ->toArray();
     }
 
@@ -63,11 +66,21 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
     private function processRow(array $row, int $rowNumber): void
     {
+        // Saltar silenciosamente filas vacías (del sheet Catálogos u otras hojas)
+        $docColaborador = trim((string) ($row['documento_colaborador'] ?? ''));
+        $fechaInicio    = trim((string) ($row['fecha_inicio_ddmmyyyy'] ?? ''));
+        $tipoContrato   = trim((string) ($row['tipo_contrato'] ?? ''));
+        $objeto         = trim((string) ($row['objeto'] ?? ''));
+
+        if ($docColaborador === '' && $fechaInicio === '' && $tipoContrato === '' && $objeto === '') {
+            return;
+        }
+
         $errors = [];
 
         // ── Parseo de fechas ─────────────────────────────────────────────────
-        $startDate = $this->parseDate($row['fecha_inicio'] ?? null);
-        $endDate   = $this->parseDate($row['fecha_fin'] ?? null);
+        $startDate = $this->parseDate($row['fecha_inicio_ddmmyyyy'] ?? null);
+        $endDate   = $this->parseDate($row['fecha_fin_ddmmyyyy'] ?? null);
 
         if ($startDate === null) {
             $errors[] = ['fila' => $rowNumber + 2, 'campo' => 'fecha_inicio', 'mensaje' => 'La fecha de inicio es obligatoria y debe tener formato dd/mm/yyyy o yyyy-mm-dd.'];
@@ -90,8 +103,8 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         }
 
         // ── Validaciones condicionales (>= 2019) ─────────────────────────────
-        $numContrato   = trim((string) ($row['num_contrato'] ?? ''));
-        $codigoContrato = trim((string) ($row['codigo_contrato'] ?? ''));
+        $numContrato    = trim((string) ($row['num_contrato_solo_2019'] ?? ''));
+        $codigoContrato = trim((string) ($row['codigo_contrato_solo_2019'] ?? ''));
 
         if ($year !== null && $year >= 2019) {
             if ($numContrato === '') {
@@ -123,7 +136,7 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
         // ── Resolver contract_type_id ────────────────────────────────────────
         $tipoContrato   = trim((string) ($row['tipo_contrato'] ?? ''));
-        $contractTypeId = $this->contractTypeMap[$tipoContrato] ?? null;
+        $contractTypeId = $this->contractTypeMap[strtolower($tipoContrato)] ?? null;
 
         if ($contractTypeId === null) {
             $errors[] = ['fila' => $rowNumber + 2, 'campo' => 'tipo_contrato', 'mensaje' => "El tipo de contrato '{$tipoContrato}' no existe en el catálogo de la institución."];
@@ -260,10 +273,24 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             return null;
         }
 
-        // Número serial de Excel
+        // Instancia Carbon o DateTime (maatwebsite/excel puede pasar directamente)
+        if ($value instanceof Carbon) {
+            $year = (int) $value->format('Y');
+
+            return ($year >= 1950 && $year <= 2100) ? $value->copy()->startOfDay() : null;
+        }
+
+        if ($value instanceof \DateTime) {
+            $carbon = Carbon::instance($value);
+            $year   = (int) $carbon->format('Y');
+
+            return ($year >= 1950 && $year <= 2100) ? $carbon->startOfDay() : null;
+        }
+
+        // Número serial de Excel — los seriales representan días en UTC, se pasa timezone explícito
         if (is_numeric($value) && (float) $value > 1 && (float) $value < 100000) {
             try {
-                $date = Carbon::createFromTimestamp(((float) $value - 25569) * 86400);
+                $date = Carbon::createFromTimestamp(((float) $value - 25569) * 86400, 'UTC');
                 $year = (int) $date->format('Y');
                 if ($year < 1950 || $year > 2100) {
                     return null;
@@ -277,7 +304,7 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
         $raw = trim((string) $value);
 
-        foreach (['d/m/Y', 'Y-m-d', 'd-m-Y', 'd/m/y', 'd-m-y'] as $format) {
+        foreach (['d/m/Y', 'Y-m-d H:i:s', 'Y-m-d', 'd-m-Y', 'd/m/y', 'd-m-y'] as $format) {
             try {
                 $date = Carbon::createFromFormat($format, $raw);
                 if ($date === false) {
@@ -295,17 +322,6 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         }
 
         return null;
-    }
-
-    private function addRowError(int $row, string $field, string $message): void
-    {
-        $this->rowErrors[] = ['fila' => $row + 1, 'campo' => $field, 'mensaje' => $message];
-        $this->skipped++;
-    }
-
-    public function chunkSize(): int
-    {
-        return 100;
     }
 
     public function getImported(): int

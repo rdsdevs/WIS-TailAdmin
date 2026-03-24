@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithPagination;
@@ -381,7 +383,9 @@ new class extends Component {
                 <tr>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Colaborador</th>
                     <th scope="col" class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 md:table-cell">Tipo contrato</th>
+                    @unless(auth()->user()?->hasRole('contractor-manager'))
                     <th scope="col" class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 md:table-cell">Cargo</th>
+                    @endunless
                     <th scope="col" class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:table-cell">Inicio</th>
                     <th scope="col" class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:table-cell">Fin</th>
                     <th scope="col" class="hidden px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:table-cell">Valor</th>
@@ -422,9 +426,11 @@ new class extends Component {
                         <td class="hidden px-4 py-3 text-gray-600 dark:text-gray-400 md:table-cell">
                             {{ $contract->contractType?->name ?? '—' }}
                         </td>
+                        @unless(auth()->user()?->hasRole('contractor-manager'))
                         <td class="hidden px-4 py-3 text-gray-600 dark:text-gray-400 md:table-cell">
                             {{ $contract->position?->name ?? '—' }}
                         </td>
+                        @endunless
                         <td class="hidden px-4 py-3 text-gray-600 dark:text-gray-400 sm:table-cell">
                             {{ $contract->start_date?->format('d/m/Y') ?? '—' }}
                         </td>
@@ -438,10 +444,10 @@ new class extends Component {
                             @endif
                         </td>
                         <td class="hidden px-4 py-3 text-right text-gray-600 dark:text-gray-400 lg:table-cell">
-                            @if($contract->salary)
-                                $ {{ number_format((float)$contract->salary, 0, ',', '.') }}
-                            @elseif($contract->fees)
+                            @if((float)$contract->fees > 0)
                                 $ {{ number_format((float)$contract->fees, 0, ',', '.') }}
+                            @elseif((float)$contract->salary > 0)
+                                $ {{ number_format((float)$contract->salary, 0, ',', '.') }}
                             @else
                                 —
                             @endif
@@ -562,7 +568,7 @@ new class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-4 py-14 text-center">
+                        <td colspan="{{ auth()->user()?->hasRole('contractor-manager') ? 7 : 8 }}" class="px-4 py-14 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <svg class="h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />

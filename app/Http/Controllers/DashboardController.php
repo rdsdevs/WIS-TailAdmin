@@ -19,12 +19,19 @@ class DashboardController extends Controller
         $role          = $user->roles->first()->name ?? 'viewer';
         $institutionId = $user->institution_id;
 
+        if (! $isSuperAdmin && $institutionId === null) {
+            return redirect()->route('dashboard')
+                ->withErrors(['error' => 'El usuario no tiene una institución asignada.']);
+        }
+
         $metrics = match ($role) {
-            'super-admin' => $this->metricsForSuperAdmin(),
-            'admin'       => $this->metricsForAdmin($institutionId),
-            'rh-manager'  => $this->metricsForRhManager($institutionId),
-            'rh-viewer'   => $this->metricsForRhViewer($institutionId),
-            default       => $this->metricsForRhViewer($institutionId),
+            'super-admin'        => $this->metricsForSuperAdmin(),
+            'admin'              => $this->metricsForAdmin($institutionId),
+            'rh-manager',
+            'employee-manager',
+            'contractor-manager' => $this->metricsForRhManager($institutionId),
+            'rh-viewer'          => $this->metricsForRhViewer($institutionId),
+            default              => $this->metricsForRhViewer($institutionId),
         };
 
         return view('pages.dashboard', compact('metrics', 'role', 'isSuperAdmin'));
@@ -109,6 +116,10 @@ class DashboardController extends Controller
                 ->count(),
             'terminados'   => Contract::where('institution_id', $institutionId)
                 ->whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
+            'empleados'    => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Empleado')->count(),
+            'contratistas' => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Contratista')->count(),
         ];
     }
 

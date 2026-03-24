@@ -98,16 +98,16 @@ function crearExcelContratos(array $filas = [], array $valoresComprometidos = []
     $headersContratos = [
         'documento_colaborador',
         'tipo_contrato',
-        'fecha_inicio',
-        'fecha_fin',
+        'fecha_inicio_ddmmyyyy',
+        'fecha_fin_ddmmyyyy',
         'objeto',
         'obligaciones',
         'honorarios',
         'salario',
         'correo_cargo',
         'estado',
-        'num_contrato',
-        'codigo_contrato',
+        'num_contrato_solo_2019',
+        'codigo_contrato_solo_2019',
     ];
 
     $sheetContratos->fromArray($headersContratos, null, 'A1');
@@ -156,18 +156,18 @@ function crearExcelContratos(array $filas = [], array $valoresComprometidos = []
 function filaContratoBase(array $sobreescribir = []): array
 {
     return array_merge([
-        'documento_colaborador' => '11111111',
-        'tipo_contrato'         => 'OPS',
-        'fecha_inicio'          => '01/03/2022',
-        'fecha_fin'             => '31/12/2022',
-        'objeto'                => 'Prestación de servicios profesionales',
-        'obligaciones'          => 'Cumplir con las tareas asignadas',
-        'honorarios'            => '3000000',
-        'salario'               => '0',
-        'correo_cargo'          => 'ops@test.co',
-        'estado'                => 'Vigente',
-        'num_contrato'          => '001',
-        'codigo_contrato'       => '001-2022',
+        'documento_colaborador'  => '11111111',
+        'tipo_contrato'          => 'OPS',
+        'fecha_inicio_ddmmyyyy'  => '01/03/2022',
+        'fecha_fin_ddmmyyyy'     => '31/12/2022',
+        'objeto'                 => 'Prestación de servicios profesionales',
+        'obligaciones'           => 'Cumplir con las tareas asignadas',
+        'honorarios'             => '3000000',
+        'salario'                => '0',
+        'correo_cargo'           => 'ops@test.co',
+        'estado'                 => 'Vigente',
+        'num_contrato_solo_2019' => '001',
+        'codigo_contrato_solo_2019' => '001-2022',
     ], $sobreescribir);
 }
 
@@ -367,16 +367,16 @@ describe('Importación masiva de contratos', function (): void {
                 collect([
                     'documento_colaborador' => '11111111',
                     'tipo_contrato'         => 'OPS',
-                    'fecha_inicio'          => '15/06/2015',
-                    'fecha_fin'             => '31/12/2015',
+                    'fecha_inicio_ddmmyyyy'     => '15/06/2015',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2015',
                     'objeto'                => 'Servicios profesionales históricos',
                     'obligaciones'          => '',
                     'honorarios'            => '2000000',
                     'salario'               => '0',
                     'correo_cargo'          => '',
                     'estado'                => 'Terminado',
-                    'num_contrato'          => '',
-                    'codigo_contrato'       => '',
+                    'num_contrato_solo_2019' => '',
+                    'codigo_contrato_solo_2019' => '',
                 ]),
             ]);
 
@@ -404,16 +404,16 @@ describe('Importación masiva de contratos', function (): void {
                 collect([
                     'documento_colaborador' => '11111111',
                     'tipo_contrato'         => 'OPS',
-                    'fecha_inicio'          => '01/01/2010',
-                    'fecha_fin'             => '',
+                    'fecha_inicio_ddmmyyyy'     => '01/01/2010',
+                    'fecha_fin_ddmmyyyy'        => '',
                     'objeto'                => 'Contrato sin número',
                     'obligaciones'          => '',
                     'honorarios'            => '0',
                     'salario'               => '1160000',
                     'correo_cargo'          => '',
                     'estado'                => 'Terminado',
-                    'num_contrato'          => '',
-                    'codigo_contrato'       => '',
+                    'num_contrato_solo_2019' => '',
+                    'codigo_contrato_solo_2019' => '',
                 ]),
             ]);
 
@@ -435,16 +435,16 @@ describe('Importación masiva de contratos', function (): void {
                 collect([
                     'documento_colaborador' => '22222222',
                     'tipo_contrato'         => 'Prestador de Servicios',
-                    'fecha_inicio'          => '01/03/2018',
-                    'fecha_fin'             => '30/06/2018',
+                    'fecha_inicio_ddmmyyyy'     => '01/03/2018',
+                    'fecha_fin_ddmmyyyy'        => '30/06/2018',
                     'objeto'                => 'Objeto del contrato histórico',
                     'obligaciones'          => '',
                     'honorarios'            => '1500000',
                     'salario'               => '0',
                     'correo_cargo'          => '',
                     'estado'                => 'Liquidado',
-                    'num_contrato'          => '',
-                    'codigo_contrato'       => '',
+                    'num_contrato_solo_2019' => '',
+                    'codigo_contrato_solo_2019' => '',
                 ]),
             ]);
 
@@ -478,10 +478,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/03/2022',
-                    'fecha_fin'       => '31/12/2022',
-                    'num_contrato'    => '042',
-                    'codigo_contrato' => '042-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/03/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '042',
+                    'codigo_contrato_solo_2019' => '042-2022',
                 ])),
             ]);
 
@@ -506,10 +506,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/06/2021',
-                    'fecha_fin'       => '31/12/2021',
-                    'num_contrato'    => '',
-                    'codigo_contrato' => '010-2021',
+                    'fecha_inicio_ddmmyyyy'     => '01/06/2021',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2021',
+                    'num_contrato_solo_2019' => '',
+                    'codigo_contrato_solo_2019' => '010-2021',
                 ])),
             ]);
 
@@ -533,10 +533,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/02/2023',
-                    'fecha_fin'       => '30/11/2023',
-                    'num_contrato'    => '5',
-                    'codigo_contrato' => '005-2023',
+                    'fecha_inicio_ddmmyyyy'     => '01/02/2023',
+                    'fecha_fin_ddmmyyyy'        => '30/11/2023',
+                    'num_contrato_solo_2019' => '5',
+                    'codigo_contrato_solo_2019' => '005-2023',
                 ])),
             ]);
 
@@ -558,10 +558,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/02/2023',
-                    'fecha_fin'       => '30/11/2023',
-                    'num_contrato'    => '0050',
-                    'codigo_contrato' => '005-2023',
+                    'fecha_inicio_ddmmyyyy'     => '01/02/2023',
+                    'fecha_fin_ddmmyyyy'        => '30/11/2023',
+                    'num_contrato_solo_2019' => '0050',
+                    'codigo_contrato_solo_2019' => '005-2023',
                 ])),
             ]);
 
@@ -583,10 +583,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/04/2020',
-                    'fecha_fin'       => '31/12/2020',
-                    'num_contrato'    => '015',
-                    'codigo_contrato' => '',
+                    'fecha_inicio_ddmmyyyy'     => '01/04/2020',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2020',
+                    'num_contrato_solo_2019' => '015',
+                    'codigo_contrato_solo_2019' => '',
                 ])),
             ]);
 
@@ -608,10 +608,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/05/2021',
-                    'fecha_fin'       => '30/11/2021',
-                    'num_contrato'    => '008',
-                    'codigo_contrato' => 'CONT-2021',  // Formato inválido: debe ser NNN-AAAA
+                    'fecha_inicio_ddmmyyyy'     => '01/05/2021',
+                    'fecha_fin_ddmmyyyy'        => '30/11/2021',
+                    'num_contrato_solo_2019' => '008',
+                    'codigo_contrato_solo_2019' => 'CONT-2021',  // Formato inválido: debe ser NNN-AAAA
                 ])),
             ]);
 
@@ -641,10 +641,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/02/2025',
-                    'fecha_fin'       => '31/12/2025',
-                    'num_contrato'    => '003',
-                    'codigo_contrato' => '003-2025',
+                    'fecha_inicio_ddmmyyyy'     => '01/02/2025',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2025',
+                    'num_contrato_solo_2019' => '003',
+                    'codigo_contrato_solo_2019' => '003-2025',
                     'estado'          => 'Vigente',
                 ])),
             ]);
@@ -670,10 +670,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '15/01/2025',
-                    'fecha_fin'       => '14/01/2026',
-                    'num_contrato'    => '007',
-                    'codigo_contrato' => '007-2025',
+                    'fecha_inicio_ddmmyyyy'     => '15/01/2025',
+                    'fecha_fin_ddmmyyyy'        => '14/01/2026',
+                    'num_contrato_solo_2019' => '007',
+                    'codigo_contrato_solo_2019' => '007-2025',
                     'estado'          => 'Vigente',
                 ])),
             ]);
@@ -706,10 +706,10 @@ describe('Importación masiva de contratos', function (): void {
             $rows = collect([
                 collect(filaContratoBase([
                     'documento_colaborador' => '99999999',  // No existe en la institución
-                    'fecha_inicio'          => '01/03/2022',
-                    'fecha_fin'             => '31/12/2022',
-                    'num_contrato'          => '099',
-                    'codigo_contrato'       => '099-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/03/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '099',
+                    'codigo_contrato_solo_2019' => '099-2022',
                 ])),
             ]);
 
@@ -734,10 +734,10 @@ describe('Importación masiva de contratos', function (): void {
             $rows = collect([
                 collect(filaContratoBase([
                     'tipo_contrato'   => 'Tipo Inexistente',
-                    'fecha_inicio'    => '01/06/2022',
-                    'fecha_fin'       => '30/11/2022',
-                    'num_contrato'    => '055',
-                    'codigo_contrato' => '055-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/06/2022',
+                    'fecha_fin_ddmmyyyy'        => '30/11/2022',
+                    'num_contrato_solo_2019' => '055',
+                    'codigo_contrato_solo_2019' => '055-2022',
                 ])),
             ]);
 
@@ -777,10 +777,10 @@ describe('Importación masiva de contratos', function (): void {
             $rows = collect([
                 collect(filaContratoBase([
                     'documento_colaborador' => '33333333',  // Solo existe en otra institución
-                    'fecha_inicio'          => '01/07/2022',
-                    'fecha_fin'             => '31/12/2022',
-                    'num_contrato'          => '077',
-                    'codigo_contrato'       => '077-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/07/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '077',
+                    'codigo_contrato_solo_2019' => '077-2022',
                 ])),
             ]);
 
@@ -820,10 +820,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/01/2023',
-                    'fecha_fin'       => '31/12/2023',
-                    'num_contrato'    => '010',
-                    'codigo_contrato' => '010-2023',
+                    'fecha_inicio_ddmmyyyy'     => '01/01/2023',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2023',
+                    'num_contrato_solo_2019' => '010',
+                    'codigo_contrato_solo_2019' => '010-2023',
                     'objeto'          => 'Objeto nuevo que no debe guardarse',
                 ])),
             ]);
@@ -861,10 +861,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect(filaContratoBase([
-                    'fecha_inicio'    => '01/02/2023',
-                    'fecha_fin'       => '31/12/2023',
-                    'num_contrato'    => '020',
-                    'codigo_contrato' => '020-2023',
+                    'fecha_inicio_ddmmyyyy'     => '01/02/2023',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2023',
+                    'num_contrato_solo_2019' => '020',
+                    'codigo_contrato_solo_2019' => '020-2023',
                     'objeto'          => 'Objeto actualizado correctamente',
                 ])),
             ]);
@@ -906,7 +906,7 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect([
-                    'codigo_contrato' => '005-2024',
+                    'codigo_contrato_solo_2019' => '005-2024',
                     'cuenta_contable' => '511000',
                     'centro_de_costo' => 'CC-001',
                     'valor'           => '5000000',
@@ -936,7 +936,7 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect([
-                    'codigo_contrato' => '999-2025',
+                    'codigo_contrato_solo_2019' => '999-2025',
                     'cuenta_contable' => '511000',
                     'centro_de_costo' => 'CC-001',
                     'valor'           => '1000000',
@@ -973,7 +973,7 @@ describe('Importación masiva de contratos', function (): void {
 
             $rows = collect([
                 collect([
-                    'codigo_contrato' => '006-2024',
+                    'codigo_contrato_solo_2019' => '006-2024',
                     'cuenta_contable' => '511000',
                     'centro_de_costo' => 'CC-002',
                     'valor'           => '-500000',  // Negativo: debe rechazarse
@@ -1008,10 +1008,10 @@ describe('Importación masiva de contratos', function (): void {
             // debe almacenarse bajo la clave 'private/<relativePath>' en el disco local.
             $archivo = crearExcelContratos([
                 filaContratoBase([
-                    'fecha_inicio'    => '01/04/2022',
-                    'fecha_fin'       => '31/12/2022',
-                    'num_contrato'    => '030',
-                    'codigo_contrato' => '030-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/04/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '030',
+                    'codigo_contrato_solo_2019' => '030-2022',
                 ]),
             ]);
 
@@ -1040,10 +1040,10 @@ describe('Importación masiva de contratos', function (): void {
 
             $archivo = crearExcelContratos([
                 filaContratoBase([
-                    'fecha_inicio'    => '01/05/2022',
-                    'fecha_fin'       => '31/12/2022',
-                    'num_contrato'    => '031',
-                    'codigo_contrato' => '031-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/05/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '031',
+                    'codigo_contrato_solo_2019' => '031-2022',
                 ]),
             ]);
 
@@ -1121,10 +1121,10 @@ describe('Importación masiva de contratos', function (): void {
             $rows = collect([
                 collect(filaContratoBase([
                     'documento_colaborador' => '55555555',
-                    'fecha_inicio'          => '01/08/2022',
-                    'fecha_fin'             => '31/12/2022',
-                    'num_contrato'          => '088',
-                    'codigo_contrato'       => '088-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/08/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '088',
+                    'codigo_contrato_solo_2019' => '088-2022',
                 ])),
             ]);
 
@@ -1156,10 +1156,10 @@ describe('Importación masiva de contratos', function (): void {
             $rows = collect([
                 collect(filaContratoBase([
                     'tipo_contrato'   => 'Tipo Exclusivo Otra Institución',  // Solo existe en la otra institución
-                    'fecha_inicio'    => '01/09/2022',
-                    'fecha_fin'       => '31/12/2022',
-                    'num_contrato'    => '090',
-                    'codigo_contrato' => '090-2022',
+                    'fecha_inicio_ddmmyyyy'     => '01/09/2022',
+                    'fecha_fin_ddmmyyyy'        => '31/12/2022',
+                    'num_contrato_solo_2019' => '090',
+                    'codigo_contrato_solo_2019' => '090-2022',
                 ])),
             ]);
 

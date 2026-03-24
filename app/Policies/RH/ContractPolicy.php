@@ -84,6 +84,28 @@ class ContractPolicy
         return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
     }
 
+    public function earlyTerminate(User $user, Contract $contract): bool
+    {
+        if (! $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+            return false;
+        }
+
+        return $user->institution_id === $contract->institution_id;
+    }
+
+    public function applyProroga(User $user, Contract $contract): bool
+    {
+        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager'])) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        return $this->canManageByType($user, $contract);
+    }
+
     private function canManageByType(User $user, Contract $contract): bool
     {
         if ($user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer'])) {

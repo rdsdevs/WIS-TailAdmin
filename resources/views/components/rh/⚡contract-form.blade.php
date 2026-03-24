@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use App\Models\RH\Contract;
 use App\Models\RH\CommittedValue;
@@ -291,7 +293,7 @@ new class extends Component {
             'object'         => 'nullable|string|max:5000',
             'obligations'    => 'nullable|string|max:8000',
             'positionEmail'  => 'nullable|email|max:200',
-            'status'         => 'required|in:Vigente,Terminado,Liquidado,Vencido',
+            'status'         => 'required|in:Vigente,Terminado,Liquidado',
         ];
 
         $messages = [
@@ -545,7 +547,11 @@ new class extends Component {
 
     public function updatedStartDate(): void
     {
-        $this->autoFillContractNumber();
+        // Siempre recalcular el número cuando cambia la fecha (el año puede cambiar)
+        $suggested = $this->getSuggestedContractNumber();
+        if ($suggested !== '') {
+            $this->contractNumber = $suggested;
+        }
     }
 
     public function updatedContractTypeId(): void
@@ -568,8 +574,8 @@ new class extends Component {
             return null;
         }
 
-        $months = $start->diffInMonths($end);
-        $days   = $start->copy()->addMonths($months)->diffInDays($end);
+        $months = (int) $start->diffInMonths($end);
+        $days   = (int) $start->copy()->addMonths($months)->diffInDays($end);
 
         $parts = [];
         if ($months > 0) {
@@ -960,10 +966,9 @@ new class extends Component {
                                     if (val && this.fp) this.fp.setDate(val, false);
                                 });
                             }
-                        }">
+                        }" wire:ignore>
                             <input
                                 x-ref="fp"
-                                wire:model.live="startDate"
                                 type="text"
                                 id="startDate"
                                 placeholder="dd/mm/aaaa"
@@ -1008,10 +1013,9 @@ new class extends Component {
                                     if (val && this.fp) this.fp.setDate(val, false);
                                 });
                             }
-                        }">
+                        }" wire:ignore>
                             <input
                                 x-ref="fp"
-                                wire:model="endDate"
                                 type="text"
                                 id="endDate"
                                 placeholder="dd/mm/aaaa"

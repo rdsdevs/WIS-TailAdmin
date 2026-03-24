@@ -25,7 +25,7 @@ class ApplyContractProrogaRequest extends FormRequest
             'extension_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'extension_value' => ['nullable', 'numeric', 'min:0'],
             'committed_value_id' => ['nullable', 'uuid', 'exists:committed_values,id'],
-            'approval_date' => ['required', 'date'],
+            'approval_date' => ['required', 'date', 'before_or_equal:today'],
             'reason' => ['nullable', 'string', 'max:1000'],
         ];
     }

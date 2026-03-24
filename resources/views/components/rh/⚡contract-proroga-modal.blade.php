@@ -92,6 +92,27 @@ new class extends Component {
         $this->reset(['open', 'contractId', 'contract', 'extensionType', 'extensionMonths', 'extensionDays', 'extensionValue', 'committedValueId', 'approvalDate', 'reason', 'needsCostCenterSelection', 'committedValueOptions']);
         $this->extensionType = 'tiempo';
     }
+
+    public function getPreviewEndDateProperty(): ?string
+    {
+        if ($this->contract?->end_date === null) {
+            return null;
+        }
+        if (($this->extensionType !== 'tiempo' && $this->extensionType !== 'tiempo_y_valor')) {
+            return null;
+        }
+        $months = $this->extensionMonths !== '' ? (int) $this->extensionMonths : 0;
+        $days   = $this->extensionDays   !== '' ? (int) $this->extensionDays   : 0;
+        if ($months === 0 && $days === 0) {
+            return null;
+        }
+
+        return $this->contract->end_date
+            ->copy()
+            ->addMonths($months)
+            ->addDays($days)
+            ->format('d/m/Y');
+    }
 };
 ?>
 
@@ -317,7 +338,7 @@ new class extends Component {
                         @error('reason')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ strlen($reason) }}/1000</p>
+                        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ mb_strlen($reason) }}/1000</p>
                     </div>
 
                 </div>

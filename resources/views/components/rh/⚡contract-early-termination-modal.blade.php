@@ -147,7 +147,7 @@ new class extends Component {
                         @error('earlyTerminationReason')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ strlen($earlyTerminationReason) }}/2000</p>
+                        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{{ mb_strlen($earlyTerminationReason) }}/2000</p>
                     </div>
 
                 </div>

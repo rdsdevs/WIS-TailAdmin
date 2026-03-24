@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use App\Models\RH\Contract;
 use Illuminate\Support\Carbon;
@@ -182,6 +183,12 @@ new class extends Component {
         );
 
         session()->flash('success', "{$total} contrato(s) vencido(s) terminado(s) correctamente.");
+    }
+
+    #[On('contract-updated')]
+    public function refreshList(): void
+    {
+        // No-op — Livewire re-renderiza automáticamente al recibir el evento
     }
 };
 ?>
@@ -485,6 +492,38 @@ new class extends Component {
                                         </div>
                                     @endif
                                 @endcan
+                                {{-- Prorrogar --}}
+                                @can('applyProroga', $contract)
+                                    @if($contract->status === 'Vigente')
+                                        <div class="relative group inline-flex">
+                                            <button
+                                                wire:click="$dispatch('open-proroga-modal', { contractId: '{{ $contract->id }}' })"
+                                                class="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 transition-colors"
+                                                aria-label="Aplicar prórroga">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                                </svg>
+                                            </button>
+                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Prorrogar</span>
+                                        </div>
+                                    @endif
+                                @endcan
+                                {{-- Terminar anticipadamente --}}
+                                @can('earlyTerminate', $contract)
+                                    @if($contract->status === 'Vigente')
+                                        <div class="relative group inline-flex">
+                                            <button
+                                                wire:click="$dispatch('open-early-termination-modal', { contractId: '{{ $contract->id }}' })"
+                                                class="p-1.5 rounded-md text-orange-500 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors"
+                                                aria-label="Terminar anticipadamente">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                                </svg>
+                                            </button>
+                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Terminar anticipadamente</span>
+                                        </div>
+                                    @endif
+                                @endcan
                                 {{-- Eliminar --}}
                                 @can('delete', $contract)
                                     <div class="relative group inline-flex">
@@ -604,4 +643,8 @@ new class extends Component {
             </div>
         </div>
     @endif
+
+    {{-- Modales de prórroga y terminación anticipada --}}
+    <livewire:rh.contract-proroga-modal />
+    <livewire:rh.contract-early-termination-modal />
 </div>

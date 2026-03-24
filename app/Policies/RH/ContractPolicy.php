@@ -84,6 +84,11 @@ class ContractPolicy
         return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
     }
 
+    public function terminateMassExpired(User $user): bool
+    {
+        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager']);
+    }
+
     public function earlyTerminate(User $user, Contract $contract): bool
     {
         if (! $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {

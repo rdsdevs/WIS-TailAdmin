@@ -49,7 +49,9 @@ new class extends Component {
 
     public function confirmDelete(string $id): void
     {
-        $contract           = Contract::with('collaborator')->findOrFail($id);
+        $contract = Contract::with('collaborator')
+            ->where('institution_id', auth()->user()?->institution_id)
+            ->findOrFail($id);
         $this->deletingId   = $id;
         $this->deletingName = $contract->collaborator?->full_name ?? 'este contrato';
     }
@@ -72,14 +74,17 @@ new class extends Component {
     public function terminate(string $id): void
     {
         $contract = Contract::findOrFail($id);
-        $this->authorize('update', $contract);
-        $contract->update(['status' => 'Terminado']);
+        $this->authorize('terminate', $contract);
+        app(\App\Services\RH\ContractService::class)->terminate($contract);
         session()->flash('success', 'Contrato terminado correctamente.');
     }
 
-    public function getContractsProperty()
+    public function getContractsProperty(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
+        $institutionId = auth()->user()?->institution_id;
+
         $query = Contract::query()
+            ->where('institution_id', $institutionId)
             ->with(['collaborator', 'position', 'contractType'])
             ->when($this->search, fn ($q) => $q->whereHas('collaborator', fn ($q2) =>
                 $q2->where('first_name', 'like', "%{$this->search}%")
@@ -116,9 +121,13 @@ new class extends Component {
 
     public function getCountsProperty(): array
     {
+        $institutionId = auth()->user()?->institution_id;
+
         return [
-            'vigentes'   => Contract::where('status', 'Vigente')->count(),
-            'por_vencer' => Contract::where('status', 'Vigente')
+            'vigentes'   => Contract::where('institution_id', $institutionId)
+                                    ->where('status', 'Vigente')->count(),
+            'por_vencer' => Contract::where('institution_id', $institutionId)
+                                    ->where('status', 'Vigente')
                                     ->whereNotNull('end_date')
                                     ->where('end_date', '<=', now()->addDays(30))
                                     ->where('end_date', '>=', now())
@@ -152,11 +161,7 @@ new class extends Component {
         $this->confirmingTerminateExpired = false;
         $user = auth()->user();
 
-        if (! $user?->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
-            $this->addError('general', 'No tiene permisos para realizar esta acción.');
-
-            return;
-        }
+        $this->authorize('terminateMassExpired', Contract::class);
 
         $expired = Contract::where('status', 'Vigente')
             ->where('institution_id', $user->institution_id)

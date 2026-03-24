@@ -89,8 +89,11 @@ final class ContractProrogaService
                 // Actualizar CommittedValue si el contrato es de 2025 en adelante
                 if ($contract->start_date->year >= 2025) {
                     if (! empty($data['committed_value_id'])) {
-                        CommittedValue::findOrFail($data['committed_value_id'])
-                            ->increment('amount', $extensionValue);
+                        // Verificar ownership: el CommittedValue debe pertenecer a este contrato
+                        $committedValue = $contract->committedValues()
+                            ->where('id', $data['committed_value_id'])
+                            ->firstOrFail();
+                        $committedValue->increment('amount', $extensionValue);
                     } else {
                         $committedValue = $contract->committedValues()->first();
                         $committedValue?->increment('amount', $extensionValue);

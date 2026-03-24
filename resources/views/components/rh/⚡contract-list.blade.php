@@ -467,6 +467,20 @@ new class extends Component {
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-0.5">
+                                {{-- Ver detalle --}}
+                                @can('view', $contract)
+                                    <div class="relative group inline-flex">
+                                        <a href="{{ route('rh.contratos.show', $contract) }}"
+                                           class="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 transition-colors"
+                                           aria-label="Ver detalle del contrato">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                            </svg>
+                                        </a>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Ver detalle</span>
+                                    </div>
+                                @endcan
                                 {{-- Editar --}}
                                 @can('update', $contract)
                                     <div class="relative group inline-flex">

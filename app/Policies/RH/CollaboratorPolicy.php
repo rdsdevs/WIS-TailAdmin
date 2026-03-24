@@ -24,56 +24,62 @@ class CollaboratorPolicy
         return null;
     }
 
+    /** Roles con acceso completo a gestión RH (crear, editar, eliminar). */
+    private const MANAGERS = ['admin', 'rh-manager', 'employee-manager', 'contractor-manager'];
+
+    /** Roles con acceso de solo lectura a RH. */
+    private const VIEWERS = ['admin', 'rh-manager', 'rh-viewer', 'employee-manager', 'contractor-manager'];
+
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer']);
+        return $user->hasAnyRole(self::VIEWERS);
     }
 
     public function view(User $user, Collaborator $collaborator): bool
     {
-        if (! ($user->institution_id === $collaborator->institution_id)) {
+        if ($user->institution_id !== $collaborator->institution_id) {
             return false;
         }
 
-        return $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer']);
+        return $user->hasAnyRole(self::VIEWERS);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager']);
+        return $user->hasAnyRole(self::MANAGERS);
     }
 
     public function update(User $user, ?Collaborator $collaborator = null): bool
     {
         if ($collaborator === null) {
-            return $user->hasAnyRole(['admin', 'rh-manager']);
+            return $user->hasAnyRole(self::MANAGERS);
         }
 
         if (! ($user->institution_id === $collaborator->institution_id)) {
             return false;
         }
 
-        return $user->hasAnyRole(['admin', 'rh-manager']);
+        return $user->hasAnyRole(self::MANAGERS);
     }
 
     public function delete(User $user, ?Collaborator $collaborator = null): bool
     {
         if ($collaborator === null) {
-            return $user->hasAnyRole(['admin', 'rh-manager']);
+            return $user->hasAnyRole(self::MANAGERS);
         }
 
-        return $user->hasAnyRole(['admin', 'rh-manager'])
+        return $user->hasAnyRole(self::MANAGERS)
             && $user->institution_id === $collaborator->institution_id;
     }
 
     public function export(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager']);
+        return $user->hasAnyRole(self::MANAGERS);
     }
 
     public function import(User $user, ?string $type = null): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager']);
+        return $user->hasAnyRole(self::MANAGERS);
     }
 
     /**
@@ -91,7 +97,7 @@ class CollaboratorPolicy
             return false;
         }
 
-        if ($user->hasAnyRole(['admin', 'rh-manager'])) {
+        if ($user->hasAnyRole(self::MANAGERS)) {
             return ! $collaborator->contracts()->where('status', 'Vigente')->exists();
         }
 

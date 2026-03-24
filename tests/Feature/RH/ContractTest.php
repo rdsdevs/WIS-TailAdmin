@@ -336,6 +336,190 @@ describe('Gestión de Contratos', function (): void {
         ]);
     });
 
+    it('employee-manager puede listar contratos', function (): void {
+        [$user, $institution] = crearUsuarioRH('employee-manager');
+
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.contratos.index'));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+        $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
+    });
+
+    it('contractor-manager puede listar contratos', function (): void {
+        [$user, $institution] = crearUsuarioRH('contractor-manager');
+
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.contratos.index'));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+        $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
+    });
+
+    it('employee-manager puede ver un contrato de su institución', function (): void {
+        [$user, $institution] = crearUsuarioRH('employee-manager');
+
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->view($user, $contrato))->toBeTrue();
+    });
+
+    it('contractor-manager puede ver un contrato de su institución', function (): void {
+        [$user, $institution] = crearUsuarioRH('contractor-manager');
+
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->view($user, $contrato))->toBeTrue();
+    });
+
+    it('employee-manager puede crear un contrato', function (): void {
+        [$user, $institution] = crearUsuarioRH('employee-manager');
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $datos = [
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'start_date'       => now()->toDateString(),
+            'end_date'         => null,
+            'salary'           => 4500000,
+            'fees'             => 0,
+            'status'           => 'Vigente',
+        ];
+
+        $this->actingAs($user)
+            ->post(route('rh.contratos.store'), $datos)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('contracts', [
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+    });
+
+    it('contractor-manager puede crear un contrato', function (): void {
+        [$user, $institution] = crearUsuarioRH('contractor-manager');
+        $contratista  = crearContratista($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $datos = [
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $contratista->id,
+            'contract_type_id' => $tipoContrato->id,
+            'start_date'       => now()->toDateString(),
+            'end_date'         => null,
+            'salary'           => 0,
+            'fees'             => 3000000,
+            'status'           => 'Vigente',
+        ];
+
+        $this->actingAs($user)
+            ->post(route('rh.contratos.store'), $datos)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('contracts', [
+            'collaborator_id'  => $contratista->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+        ]);
+    });
+
+    it('employee-manager puede actualizar un contrato de su institución', function (): void {
+        [$user, $institution] = crearUsuarioRH('employee-manager');
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+            'salary'           => 2000000,
+            'fees'             => 0,
+        ]);
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->update($user, $contrato))->toBeTrue();
+    });
+
+    it('contractor-manager puede actualizar un contrato de su institución', function (): void {
+        [$user, $institution] = crearUsuarioRH('contractor-manager');
+        $colaborador  = crearColaboradorRH($institution);
+        $tipoContrato = crearTipoContrato($institution);
+
+        $contrato = Contract::factory()->create([
+            'institution_id'   => $institution->id,
+            'collaborator_id'  => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status'           => 'Vigente',
+            'salary'           => 0,
+            'fees'             => 5000000,
+        ]);
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->update($user, $contrato))->toBeTrue();
+    });
+
+    it('employee-manager puede importar contratos', function (): void {
+        [$user] = crearUsuarioRH('employee-manager');
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->import($user))->toBeTrue();
+    });
+
+    it('contractor-manager puede importar contratos', function (): void {
+        [$user] = crearUsuarioRH('contractor-manager');
+
+        $policy = new \App\Policies\RH\ContractPolicy();
+
+        expect($policy->import($user))->toBeTrue();
+    });
+
     it('syncCommittedValues con array vacío elimina todas las líneas', function (): void {
         [$user, $institution] = crearUsuarioRH('rh-manager');
         $colaborador = crearColaboradorRH($institution);

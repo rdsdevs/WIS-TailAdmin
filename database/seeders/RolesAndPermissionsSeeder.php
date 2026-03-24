@@ -63,6 +63,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'admin',
             'rh-manager',
             'rh-viewer',
+            'employee-manager',
+            'contractor-manager',
             'accounting-manager',
             'accounting-viewer',
             'inventory-manager',
@@ -103,6 +105,36 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::findByName('rh-viewer')->givePermissionTo([
             'collaborators.read',
             'contracts.read',
+            'certificates.read',
+            'reports.hr',
+        ]);
+
+        // employee-manager: gestión completa de RH (equivalente a rh-manager)
+        Role::findByName('employee-manager')->givePermissionTo([
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
+            'contracts.create',
+            'contracts.read',
+            'contracts.update',
+            'contracts.delete',
+            'certificates.generate',
+            'certificates.read',
+            'reports.hr',
+        ]);
+
+        // contractor-manager: gestión completa de RH (equivalente a rh-manager)
+        Role::findByName('contractor-manager')->givePermissionTo([
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
+            'contracts.create',
+            'contracts.read',
+            'contracts.update',
+            'contracts.delete',
+            'certificates.generate',
             'certificates.read',
             'reports.hr',
         ]);

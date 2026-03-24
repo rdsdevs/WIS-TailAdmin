@@ -6,6 +6,7 @@ namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
 use App\Models\Institution;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,10 @@ class Contract extends Model implements Auditable
         'fees',
         'position_email',
         'status',
+        'early_termination_date',
+        'early_termination_reason',
+        'early_terminated_by',
+        'early_terminated_at',
     ];
 
     protected $casts = [
@@ -43,6 +48,8 @@ class Contract extends Model implements Auditable
         'end_date' => 'date',
         'salary' => 'decimal:2',
         'fees' => 'decimal:2',
+        'early_termination_date' => 'date',
+        'early_terminated_at' => 'datetime',
     ];
 
     // ── Relaciones ───────────────────────────────────────────────────────────
@@ -82,6 +89,18 @@ class Contract extends Model implements Auditable
         return $this->hasMany(PositionChangeHistory::class);
     }
 
+    public function earlyTerminatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'early_terminated_by');
+    }
+
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
+    public function isEarlyTerminated(): bool
+    {
+        return $this->early_termination_date !== null;
+    }
+
     // ── Scopes ───────────────────────────────────────────────────────────────
 
     public function scopeActive(Builder $query): Builder
@@ -94,5 +113,10 @@ class Contract extends Model implements Auditable
         return $query->where('status', 'Vigente')
             ->whereNotNull('end_date')
             ->where('end_date', '<=', now()->addDays($days));
+    }
+
+    public function scopeEarlyTerminated(Builder $query): Builder
+    {
+        return $query->whereNotNull('early_termination_date');
     }
 }

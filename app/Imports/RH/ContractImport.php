@@ -208,8 +208,12 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                         $contract = Contract::updateOrCreate($uniqueKey, $data);
                         $wasCreated = $contract->wasRecentlyCreated;
                     } else {
-                        $exists = Contract::where($uniqueKey)->exists();
-                        if ($exists) {
+                        $contract = Contract::where($uniqueKey)->first();
+                        if ($contract !== null) {
+                            // Cuando el contrato existe y no se sobreescribe, igual guardar en el mapa para CommittedValueImport
+                            if ($codigoContrato !== '') {
+                                $this->createdContractCodes[$codigoContrato] = $contract->id;
+                            }
                             $this->skipped++;
 
                             return;

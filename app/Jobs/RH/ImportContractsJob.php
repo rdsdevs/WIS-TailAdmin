@@ -45,6 +45,16 @@ class ImportContractsJob implements ShouldQueue
 
         $contractCodeMap = $contractImport->getCreatedContractCodes();
 
+        // Enriquecer con contratos ya existentes en BD que no fueron procesados en este job
+        $existingContracts = \App\Models\RH\Contract::query()
+            ->where('institution_id', $this->institutionId)
+            ->whereNotNull('contract_code')
+            ->pluck('id', 'contract_code')
+            ->toArray();
+
+        // El mapa del job actual tiene precedencia
+        $contractCodeMap = array_merge($existingContracts, $contractCodeMap);
+
         // ── Importar hoja "Valores_comprometidos" ─────────────────────────────
         $committedImport = new CommittedValueImport(
             institutionId: $this->institutionId,

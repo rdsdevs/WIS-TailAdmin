@@ -7,5 +7,6 @@
         <x-profile.profile-card :user="$user" />
         <x-profile.personal-info-card :user="$user" />
         <x-profile.address-card :user="$user" />
+        <livewire:profile.change-password />
     </div>
 @endsection

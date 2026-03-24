@@ -232,21 +232,41 @@ new class extends Component {
         </div>
     @endif
 
-    {{-- Barra de búsqueda --}}
+    {{-- Barra de herramientas: búsqueda expandible + acciones --}}
     <div class="mb-4 flex items-center justify-between gap-3">
-        <div class="relative flex-1 sm:max-w-xs">
-            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500" aria-hidden="true">
+        {{-- Búsqueda expandible --}}
+        <div x-data="{ open: false }" class="relative flex items-center">
+            <button
+                type="button"
+                @click="open = !open; if(open) $nextTick(() => $refs.searchInput.focus())"
+                @keydown.escape.window="open = false"
+                class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                :class="{ 'border-brand-500 bg-brand-50 text-brand-600 dark:border-brand-600 dark:bg-brand-900/20 dark:text-brand-400': open || $wire.search.length > 0 }"
+                aria-label="Buscar">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
                 </svg>
-            </span>
-            <input
-                wire:model.live.debounce.400ms="search"
-                type="search"
-                placeholder="Buscar por colaborador o cédula..."
-                aria-label="Buscar contratos"
-                class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-            />
+            </button>
+            <div
+                x-show="open"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95 -translate-x-2"
+                x-transition:enter-end="opacity-100 scale-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100 translate-x-0"
+                x-transition:leave-end="opacity-0 scale-95 -translate-x-2"
+                @click.outside="open = false"
+                class="absolute left-10 z-20 w-64 sm:w-72"
+                style="display:none">
+                <input
+                    x-ref="searchInput"
+                    wire:model.live.debounce.400ms="search"
+                    type="search"
+                    placeholder="Buscar por colaborador o cédula..."
+                    aria-label="Buscar contratos"
+                    class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
+                />
+            </div>
         </div>
         @can('create', \App\Models\RH\Contract::class)
             <a href="{{ route('rh.contratos.create') }}"
@@ -338,30 +358,56 @@ new class extends Component {
     </div>
 
     {{-- Tabs --}}
-    <div class="mb-4 flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
-        @foreach([
-            ['key' => 'vigentes',   'label' => 'Vigentes',   'color' => 'blue'],
-            ['key' => 'por_vencer', 'label' => 'Por vencer', 'color' => 'red'],
-            ['key' => 'terminados', 'label' => 'Terminados', 'color' => 'gray'],
-            ['key' => 'todos',      'label' => 'Todos',      'color' => 'blue'],
-        ] as $t)
-            <button
-                wire:click="$set('tab', '{{ $t['key'] }}')"
-                class="whitespace-nowrap px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                    {{ $tab === $t['key']
-                        ? 'border-b-2 border-' . $t['color'] . '-600 text-' . $t['color'] . '-600 dark:text-' . $t['color'] . '-400 dark:border-' . $t['color'] . '-400'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
-                {{ $t['label'] }}
-                @if(isset($this->counts[$t['key']]) && $this->counts[$t['key']] > 0)
-                    <span class="ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-medium
-                        {{ $t['key'] === 'por_vencer'
-                            ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                            : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' }}">
-                        {{ $this->counts[$t['key']] }}
-                    </span>
-                @endif
-            </button>
-        @endforeach
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+        {{-- Tab: Vigentes --}}
+        <button
+            wire:click="$set('tab', 'vigentes')"
+            class="{{ $tab === 'vigentes'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+            Vigentes
+            @if(isset($this->counts['vigentes']) && $this->counts['vigentes'] > 0)
+                <span class="{{ $tab === 'vigentes'
+                    ? 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1.5 text-xs font-medium text-white dark:bg-gray-200 dark:text-gray-900'
+                    : 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 px-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300' }}">
+                    {{ $this->counts['vigentes'] }}
+                </span>
+            @endif
+        </button>
+
+        {{-- Tab: Por vencer --}}
+        <button
+            wire:click="$set('tab', 'por_vencer')"
+            class="{{ $tab === 'por_vencer'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+            Por vencer
+            @if(isset($this->counts['por_vencer']) && $this->counts['por_vencer'] > 0)
+                <span class="{{ $tab === 'por_vencer'
+                    ? 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-medium text-white dark:bg-amber-400 dark:text-amber-900'
+                    : 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }}">
+                    {{ $this->counts['por_vencer'] }}
+                </span>
+            @endif
+        </button>
+
+        {{-- Tab: Terminados --}}
+        <button
+            wire:click="$set('tab', 'terminados')"
+            class="{{ $tab === 'terminados'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+            Terminados
+        </button>
+
+        {{-- Tab: Todos --}}
+        <button
+            wire:click="$set('tab', 'todos')"
+            class="{{ $tab === 'todos'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+            Todos
+        </button>
     </div>
 
     {{-- Flash --}}

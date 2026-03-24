@@ -83,25 +83,38 @@ new class extends Component {
 <div>
     {{-- Barra superior: búsqueda + filtros + acciones --}}
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {{-- Búsqueda --}}
-        <div class="relative flex-1 sm:max-w-xs">
-            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500" aria-hidden="true">
+        {{-- Búsqueda expandible --}}
+        <div x-data="{ open: false }" class="relative flex items-center">
+            <button
+                type="button"
+                @click="open = !open; if(open) $nextTick(() => $refs.searchInput.focus())"
+                @keydown.escape.window="open = false"
+                class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                :class="{ 'border-brand-500 bg-brand-50 text-brand-600 dark:border-brand-600 dark:bg-brand-900/20 dark:text-brand-400': open || $wire.search.length > 0 }"
+                aria-label="Buscar">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
                 </svg>
-            </span>
-            <input
-                wire:model.live.debounce.400ms="search"
-                type="search"
-                placeholder="Buscar por nombre o cédula..."
-                aria-label="Buscar colaboradores"
-                class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-            />
-            <div wire:loading wire:target="search" class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <svg class="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
+            </button>
+            <div
+                x-show="open"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95 -translate-x-2"
+                x-transition:enter-end="opacity-100 scale-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100 translate-x-0"
+                x-transition:leave-end="opacity-0 scale-95 -translate-x-2"
+                @click.outside="open = false"
+                class="absolute left-10 z-20 w-64 sm:w-72"
+                style="display:none">
+                <input
+                    x-ref="searchInput"
+                    wire:model.live.debounce.400ms="search"
+                    type="search"
+                    placeholder="Buscar por nombre o cédula..."
+                    aria-label="Buscar colaboradores"
+                    class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
+                />
             </div>
         </div>
 
@@ -152,23 +165,26 @@ new class extends Component {
     </div>
 
     {{-- Tabs tipo de colaborador --}}
-    <div class="mb-4 flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
+    <div class="mb-4 flex flex-wrap items-center gap-2">
         <button
             wire:click="$set('filterType', '')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === '' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
+            class="{{ $filterType === ''
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
             Todos
         </button>
         <button
             wire:click="$set('filterType', 'Empleado')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === 'Empleado' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
+            class="{{ $filterType === 'Empleado'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
             Empleados
         </button>
         <button
             wire:click="$set('filterType', 'Contratista')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === 'Contratista' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
+            class="{{ $filterType === 'Contratista'
+                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
+                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
             Contratistas
         </button>
     </div>

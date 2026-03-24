@@ -7,14 +7,14 @@ namespace App\Imports\RH;
 use App\Models\RH\CommittedValue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithChunkReading, WithTitle
+class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithTitle
 {
     use SkipsFailures;
 
@@ -111,18 +111,18 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
                 $this->imported++;
             });
         } catch (\Exception $e) {
+            Log::error('[CommittedValueImport] Error al guardar valor comprometido.', [
+                'fila'    => $rowNumber + 2,
+                'codigo'  => $codigoContrato,
+                'error'   => $e->getMessage(),
+            ]);
             $this->rowErrors[] = [
                 'fila'    => $rowNumber + 2,
                 'campo'   => 'general',
-                'mensaje' => 'Error al guardar el valor comprometido: '.$e->getMessage(),
+                'mensaje' => 'Ocurrió un error inesperado al guardar el registro. Por favor intente de nuevo.',
             ];
             $this->skipped++;
         }
-    }
-
-    public function chunkSize(): int
-    {
-        return 100;
     }
 
     public function getImported(): int

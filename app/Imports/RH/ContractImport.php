@@ -241,10 +241,14 @@ class ContractImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                 }
             });
         } catch (\Exception $e) {
+            Log::error('[ContractImport] Error al guardar contrato.', [
+                'fila'  => $rowNumber + 2,
+                'error' => $e->getMessage(),
+            ]);
             $this->rowErrors[] = [
                 'fila'    => $rowNumber + 2,
                 'campo'   => 'general',
-                'mensaje' => 'Error al guardar el contrato: '.$e->getMessage(),
+                'mensaje' => 'Ocurrió un error inesperado al guardar el registro. Por favor intente de nuevo.',
             ];
             $this->skipped++;
         }

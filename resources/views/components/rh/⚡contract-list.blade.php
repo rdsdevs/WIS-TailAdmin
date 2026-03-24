@@ -66,8 +66,12 @@ new class extends Component {
 
     public function delete(): void
     {
-        $this->authorize('delete', Contract::class);
-        Contract::findOrFail($this->deletingId)->delete();
+        $contract = Contract::where('id', $this->deletingId)
+            ->where('institution_id', auth()->user()?->institution_id)
+            ->firstOrFail();
+
+        $this->authorize('delete', $contract);
+        $contract->delete();
         $this->deletingId   = null;
         $this->deletingName = null;
         session()->flash('success', 'Contrato eliminado correctamente.');
@@ -75,7 +79,9 @@ new class extends Component {
 
     public function terminate(string $id): void
     {
-        $contract = Contract::findOrFail($id);
+        $contract = Contract::where('id', $id)
+            ->where('institution_id', auth()->user()?->institution_id)
+            ->firstOrFail();
         $this->authorize('terminate', $contract);
         app(\App\Services\RH\ContractService::class)->terminate($contract);
         session()->flash('success', 'Contrato terminado correctamente.');

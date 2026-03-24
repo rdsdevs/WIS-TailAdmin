@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 new class extends Component {
     use WithPagination;
@@ -43,9 +47,11 @@ new class extends Component {
 
     public function delete(): void
     {
-        $this->authorize('delete', Collaborator::class);
+        $collaborator = Collaborator::where('id', $this->deletingId)
+            ->where('institution_id', auth()->user()?->institution_id)
+            ->firstOrFail();
 
-        $collaborator = Collaborator::findOrFail($this->deletingId);
+        $this->authorize('delete', $collaborator);
         $collaborator->delete();
 
         $this->deletingId   = null;
@@ -54,9 +60,12 @@ new class extends Component {
         session()->flash('success', 'Colaborador eliminado correctamente.');
     }
 
-    public function getCollaboratorsProperty()
+    public function getCollaboratorsProperty(): LengthAwarePaginator
     {
+        $institutionId = auth()->user()?->institution_id;
+
         return Collaborator::query()
+            ->where('institution_id', $institutionId)
             ->with(['documentType', 'status', 'activeContract.position'])
             ->when($this->search, fn ($q) => $q->where(
                 fn ($q2) => $q2
@@ -73,7 +82,7 @@ new class extends Component {
             ->paginate(10);
     }
 
-    public function getStatusesProperty()
+    public function getStatusesProperty(): Collection
     {
         return CollaboratorStatus::orderBy('name')->get();
     }

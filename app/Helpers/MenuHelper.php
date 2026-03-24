@@ -20,7 +20,7 @@ class MenuHelper
             ['name' => 'Contratos',     'path' => '/rh/contratos'],
         ];
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
             $subItems[] = ['name' => 'Importar contratos', 'path' => '/rh/contratos/importar'];
         }
 
@@ -134,6 +134,8 @@ class MenuHelper
             'accounting-viewer'    => 'Consultor de Contabilidad',
             'inventory-manager'    => 'Gestor de Inventario',
             'inventory-viewer'     => 'Consultor de Inventario',
+            'contractor-manager'   => 'Gestor de Contratistas',
+            'employee-manager'     => 'Gestor de Empleados',
             default                => ucwords(str_replace('-', ' ', $role)),
         };
     }

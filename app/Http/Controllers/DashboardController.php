@@ -8,11 +8,12 @@ use App\Models\Institution;
 use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
         $user          = auth()->user();
         $isSuperAdmin  = $user->hasRole('super-admin');
@@ -28,8 +29,8 @@ class DashboardController extends Controller
             'super-admin'        => $this->metricsForSuperAdmin(),
             'admin'              => $this->metricsForAdmin($institutionId),
             'rh-manager',
-            'employee-manager',
-            'contractor-manager' => $this->metricsForRhManager($institutionId),
+            'employee-manager'   => $this->metricsForRhManager($institutionId),
+            'contractor-manager' => $this->metricsForContractorManager($institutionId),
             'rh-viewer'          => $this->metricsForRhViewer($institutionId),
             default              => $this->metricsForRhViewer($institutionId),
         };
@@ -98,6 +99,26 @@ class DashboardController extends Controller
                 ->where('type', 'Empleado')->count(),
             'contratistas' => Collaborator::where('institution_id', $institutionId)
                 ->where('type', 'Contratista')->count(),
+        ];
+    }
+
+    private function metricsForContractorManager(string $institutionId): array
+    {
+        return [
+            'contratistas' => Collaborator::where('institution_id', $institutionId)
+                ->where('type', 'Contratista')->count(),
+            'vigentes'     => Contract::where('institution_id', $institutionId)
+                ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
+                ->where('status', 'Vigente')->count(),
+            'por_vencer'   => Contract::where('institution_id', $institutionId)
+                ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
+                ->where('status', 'Vigente')
+                ->whereNotNull('end_date')
+                ->where('end_date', '<=', now()->addDays(30))
+                ->where('end_date', '>=', now())->count(),
+            'terminados'   => Contract::where('institution_id', $institutionId)
+                ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
+                ->whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])->count(),
         ];
     }
 

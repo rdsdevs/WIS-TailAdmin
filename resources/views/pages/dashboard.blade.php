@@ -297,10 +297,10 @@ $roleConfig = match($role) {
         </div>
 
     </div>
-    @elseif(in_array($role, ['contractor-manager', 'employee-manager']))
-    {{-- Mini-cards de estado con contexto especializado --}}
+    @elseif($role === 'employee-manager')
+    {{-- Mini-cards de estado con contexto especializado para employee-manager --}}
     @php
-        $tipoLabel = $role === 'contractor-manager' ? 'contratistas' : 'empleados';
+        $tipoLabel = 'empleados';
     @endphp
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
 

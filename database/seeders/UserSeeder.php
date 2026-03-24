@@ -24,18 +24,19 @@ class UserSeeder extends Seeder
      * Usuarios migrados del sistema legacy app.wisascun.com.
      *
      * Campos:
-     *   document_number   → numdoc del legacy
+     *   document_number    → numdoc del legacy
      *   document_issued_at → expdoc del legacy (fecha de expedición del documento)
-     *   name              → nombres + apellidos del legacy
-     *   email             → correo del legacy
-     *   role              → rol Laravel mapeado desde perfil legacy
+     *   name               → nombres + apellidos del legacy
+     *   email              → correo del legacy
+     *   role               → rol Laravel mapeado desde perfil legacy
      *
      * Mapeo de perfiles legacy → roles Laravel:
-     *   Root              → super-admin
-     *   Coordinador       → admin
-     *   Contabilidad      → accounting-manager
-     *   RH Contratistas   → rh-manager
-     *   Inventarios       → inventory-manager
+     *   Root               → super-admin
+     *   Coordinador        → admin
+     *   Contabilidad       → accounting-manager
+     *   RH Contratistas    → rh-manager
+     *   RH Empleados       → rh-manager
+     *   Inventarios        → inventory-manager
      */
     private function usuarios(): array
     {
@@ -66,7 +67,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '1999-04-19',
                 'name'               => 'ANA ISABEL REYES TORRES',
                 'email'              => 'gestiondocumental@ascun.org.co',
-                'role'               => 'contractor-manager',
+                'role'               => 'rh-manager',
             ],
             [
                 'document_number'    => '53135875',
@@ -87,7 +88,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '2011-04-01',
                 'name'               => 'YESENIA KATERIN ROJAS MORENO',
                 'email'              => 'profesional.admin@ascun.org.co',
-                'role'               => 'employee-manager',
+                'role'               => 'rh-manager',
             ],
             [
                 'document_number'    => '1033815362',

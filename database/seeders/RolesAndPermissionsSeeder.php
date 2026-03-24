@@ -17,11 +17,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Crear permisos por módulo
         $permisos = [
-            // Empleados
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'employees.delete',
+            // Colaboradores
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
 
             // Contratos
             'contracts.create',
@@ -63,8 +63,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'admin',
             'rh-manager',
             'rh-viewer',
-            'contractor-manager',
-            'employee-manager',
             'accounting-manager',
             'accounting-viewer',
             'inventory-manager',
@@ -88,10 +86,10 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // rh-manager: gestión completa de RH
         Role::findByName('rh-manager')->givePermissionTo([
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'employees.delete',
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
             'contracts.create',
             'contracts.read',
             'contracts.update',
@@ -103,7 +101,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // rh-viewer: solo consulta RH
         Role::findByName('rh-viewer')->givePermissionTo([
-            'employees.read',
+            'collaborators.read',
             'contracts.read',
             'certificates.read',
             'reports.hr',
@@ -135,28 +133,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::findByName('inventory-viewer')->givePermissionTo([
             'inventory.products.read',
             'inventory.elements.read',
-        ]);
-
-        // contractor-manager: gestión de contratistas
-        Role::findByName('contractor-manager')->givePermissionTo([
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'contracts.create',
-            'contracts.read',
-            'contracts.update',
-            'certificates.read',
-        ]);
-
-        // employee-manager: gestión de empleados
-        Role::findByName('employee-manager')->givePermissionTo([
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'contracts.create',
-            'contracts.read',
-            'contracts.update',
-            'certificates.read',
         ]);
     }
 }

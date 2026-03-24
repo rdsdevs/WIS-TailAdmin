@@ -24,8 +24,6 @@ class DashboardController extends Controller
             'admin'       => $this->metricsForAdmin($institutionId),
             'rh-manager'  => $this->metricsForRhManager($institutionId),
             'rh-viewer'   => $this->metricsForRhViewer($institutionId),
-            'contractor-manager' => $this->metricsForContractorManager($institutionId),
-            'employee-manager'   => $this->metricsForEmployeeManager($institutionId),
             default       => $this->metricsForRhViewer($institutionId),
         };
 
@@ -114,55 +112,4 @@ class DashboardController extends Controller
         ];
     }
 
-    private function metricsForContractorManager(string $institutionId): array
-    {
-        return [
-            'contratistas' => Collaborator::where('institution_id', $institutionId)
-                ->where('type', 'Contratista')->count(),
-            'vigentes'     => Contract::where('status', 'Vigente')
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Contratista')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-            'por_vencer'   => Contract::where('status', 'Vigente')
-                ->whereNotNull('end_date')
-                ->where('end_date', '<=', now()->addDays(30))
-                ->where('end_date', '>=', now())
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Contratista')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-            'terminados'   => Contract::whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Contratista')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-        ];
-    }
-
-    private function metricsForEmployeeManager(string $institutionId): array
-    {
-        return [
-            'empleados'  => Collaborator::where('institution_id', $institutionId)
-                ->where('type', 'Empleado')->count(),
-            'vigentes'   => Contract::where('status', 'Vigente')
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Empleado')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-            'por_vencer' => Contract::where('status', 'Vigente')
-                ->whereNotNull('end_date')
-                ->where('end_date', '<=', now()->addDays(30))
-                ->where('end_date', '>=', now())
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Empleado')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-            'terminados' => Contract::whereIn('status', ['Terminado', 'Liquidado', 'Vencido'])
-                ->whereHas('collaborator', fn ($q) => $q
-                    ->where('type', 'Empleado')
-                    ->where('institution_id', $institutionId)
-                )->count(),
-        ];
-    }
 }

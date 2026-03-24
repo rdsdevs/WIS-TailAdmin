@@ -20,22 +20,15 @@ final class ContractService
 {
     /**
      * Contratos vigentes de la institución, paginados.
-     *
-     * @param  string|null  $collaboratorTypeFilter  'Empleado' | 'Contratista' | null (sin filtro)
      */
-    public function getActive(string $institutionId, int $perPage = 15, ?string $collaboratorTypeFilter = null): LengthAwarePaginator
+    public function getActive(string $institutionId, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Contract::query()
+        return Contract::query()
             ->where('institution_id', $institutionId)
             ->where('status', 'Vigente')
             ->with(['collaborator', 'contractType', 'position'])
-            ->orderBy('start_date', 'desc');
-
-        if ($collaboratorTypeFilter !== null) {
-            $query->whereHas('collaborator', fn ($q) => $q->where('type', $collaboratorTypeFilter));
-        }
-
-        return $query->paginate($perPage);
+            ->orderBy('start_date', 'desc')
+            ->paginate($perPage);
     }
 
     /**

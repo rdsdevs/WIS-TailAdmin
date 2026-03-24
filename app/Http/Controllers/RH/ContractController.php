@@ -26,8 +26,7 @@ class ContractController extends Controller
 
         $user = auth()->user();
         $institutionId = $user->institution_id;
-        $typeFilter = $this->resolveCollaboratorTypeFilter($user);
-        $contratos = $this->service->getActive($institutionId, 15, $typeFilter);
+        $contratos = $this->service->getActive($institutionId, 15);
         $porVencer = $this->service->getExpiringSoon($institutionId, 30);
 
         $stats = [
@@ -54,18 +53,11 @@ class ContractController extends Controller
 
         $user = auth()->user();
         $institutionId = $user->institution_id;
-        $typeFilter = $this->resolveCollaboratorTypeFilter($user);
 
-        $colaboradoresQuery = Collaborator::query()
+        $colaboradores = Collaborator::query()
             ->where('institution_id', $institutionId)
             ->whereHas('status', fn ($q) => $q->where('name', 'Activo'))
-            ->orderBy('first_surname');
-
-        if ($typeFilter !== null) {
-            $colaboradoresQuery->where('type', $typeFilter);
-        }
-
-        $colaboradores = $colaboradoresQuery
+            ->orderBy('first_surname')
             ->get(['id', 'first_name', 'second_name', 'first_surname', 'second_surname', 'company_name', 'is_company', 'document_number', 'type']);
 
         $tiposContrato = ContractType::query()
@@ -152,20 +144,4 @@ class ContractController extends Controller
             ->with('exito', 'Contrato terminado correctamente.');
     }
 
-    /**
-     * Resuelve el filtro de tipo de colaborador según el rol del usuario autenticado.
-     * Retorna 'Contratista', 'Empleado' o null (sin restricción).
-     */
-    private function resolveCollaboratorTypeFilter(\App\Models\User $user): ?string
-    {
-        if ($user->hasRole('contractor-manager')) {
-            return 'Contratista';
-        }
-
-        if ($user->hasRole('employee-manager')) {
-            return 'Empleado';
-        }
-
-        return null;
-    }
 }

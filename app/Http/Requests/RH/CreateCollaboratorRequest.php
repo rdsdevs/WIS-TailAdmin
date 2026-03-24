@@ -43,22 +43,6 @@ class CreateCollaboratorRequest extends FormRequest
         ];
     }
 
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
-    {
-        $validator->after(function (\Illuminate\Validation\Validator $v) {
-            $user = $this->user();
-            $type = $this->input('type');
-
-            if ($user->hasRole('contractor-manager') && $type !== 'Contratista') {
-                $v->errors()->add('type', 'Solo puede registrar colaboradores de tipo Contratista.');
-            }
-
-            if ($user->hasRole('employee-manager') && $type !== 'Empleado') {
-                $v->errors()->add('type', 'Solo puede registrar colaboradores de tipo Empleado.');
-            }
-        });
-    }
-
     public function messages(): array
     {
         return [

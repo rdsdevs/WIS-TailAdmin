@@ -30,8 +30,8 @@ final class CollaboratorService
 
         if (! empty($filters['tipo'])) {
             match ($filters['tipo']) {
-                'empleados' => $query->employees(),
-                'contratistas' => $query->contractors(),
+                'empleados' => $query->empleados(),
+                'contratistas' => $query->contratistas(),
                 default => null,
             };
         }

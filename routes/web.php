@@ -46,7 +46,7 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
 
     Route::get('colaboradores/exportar/{tipo}', [RH\CollaboratorController::class, 'export'])
         ->name('colaboradores.export');
-    Route::post('colaboradores/{colaborador}/change-type', [RH\CollaboratorController::class, 'changeType'])
+    Route::post('colaboradores/{collaborator}/change-type', [RH\CollaboratorController::class, 'changeType'])
         ->name('colaboradores.change-type');
     Route::resource('colaboradores', RH\CollaboratorController::class)
         ->parameters(['colaboradores' => 'collaborator']);

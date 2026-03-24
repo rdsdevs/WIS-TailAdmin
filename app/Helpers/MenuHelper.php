@@ -9,8 +9,6 @@ class MenuHelper
      * Filtra las secciones según el rol del usuario autenticado.
      *
      * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Departamentos, Cargos)
-     * - employee-manager                 : Colaboradores, Contratos, Cargos (sin Departamentos)
-     * - contractor-manager               : Colaboradores, Contratos (sin Departamentos ni Cargos)
      * - rh-viewer                        : Colaboradores, Contratos (solo lectura)
      */
     public static function getRhNavItems(): array
@@ -22,11 +20,11 @@ class MenuHelper
             ['name' => 'Contratos',     'path' => '/rh/contratos'],
         ];
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Importar contratos', 'path' => '/rh/contratos/importar'];
         }
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'employee-manager'])) {
+        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
         }
 
@@ -132,8 +130,6 @@ class MenuHelper
             'admin'                => 'Administrador',
             'rh-manager'           => 'Gestor de RH',
             'rh-viewer'            => 'Consultor de RH',
-            'contractor-manager'   => 'Gestor de Contratistas',
-            'employee-manager'     => 'Gestor de Empleados',
             'accounting-manager'   => 'Gestor de Contabilidad',
             'accounting-viewer'    => 'Consultor de Contabilidad',
             'inventory-manager'    => 'Gestor de Inventario',

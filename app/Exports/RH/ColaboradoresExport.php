@@ -24,9 +24,9 @@ class ColaboradoresExport implements FromQuery, WithHeadings, WithMapping
             ->with(['documentType', 'status', 'activeContract.position']);
 
         if ($this->tipo === 'empleados') {
-            $query->employees();
+            $query->empleados();
         } elseif ($this->tipo === 'contratistas') {
-            $query->contractors();
+            $query->contratistas();
         }
 
         return $query->orderBy('first_surname')->orderBy('first_name');

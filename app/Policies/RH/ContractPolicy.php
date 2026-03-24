@@ -23,38 +23,30 @@ class ContractPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager']);
+        return $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer']);
     }
 
     public function view(User $user, Contract $contract): bool
     {
-        if (! $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager'])) {
+        if (! $user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer'])) {
             return false;
         }
 
-        if ($user->institution_id !== $contract->institution_id) {
-            return false;
-        }
-
-        return $this->canManageByType($user, $contract);
+        return $user->institution_id === $contract->institution_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
+        return $user->hasAnyRole(['admin', 'rh-manager']);
     }
 
     public function update(User $user, Contract $contract): bool
     {
-        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+        if (! $user->hasAnyRole(['admin', 'rh-manager'])) {
             return false;
         }
 
-        if ($user->institution_id !== $contract->institution_id) {
-            return false;
-        }
-
-        return $this->canManageByType($user, $contract);
+        return $user->institution_id === $contract->institution_id;
     }
 
     public function delete(User $user, Contract $contract): bool
@@ -68,25 +60,21 @@ class ContractPolicy
 
     public function terminate(User $user, Contract $contract): bool
     {
-        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+        if (! $user->hasAnyRole(['admin', 'rh-manager'])) {
             return false;
         }
 
-        if ($user->institution_id !== $contract->institution_id) {
-            return false;
-        }
-
-        return $this->canManageByType($user, $contract);
+        return $user->institution_id === $contract->institution_id;
     }
 
     public function import(User $user): bool
     {
-        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager']);
+        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager']);
     }
 
     public function terminateMassExpired(User $user): bool
     {
-        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager']);
+        return $user->hasAnyRole(['super-admin', 'admin', 'rh-manager']);
     }
 
     public function earlyTerminate(User $user, Contract $contract): bool
@@ -100,33 +88,10 @@ class ContractPolicy
 
     public function applyProroga(User $user, Contract $contract): bool
     {
-        if (! $user->hasAnyRole(['admin', 'rh-manager', 'contractor-manager'])) {
+        if (! $user->hasAnyRole(['admin', 'rh-manager'])) {
             return false;
         }
 
-        if ($user->institution_id !== $contract->institution_id) {
-            return false;
-        }
-
-        return $this->canManageByType($user, $contract);
-    }
-
-    private function canManageByType(User $user, Contract $contract): bool
-    {
-        if ($user->hasAnyRole(['admin', 'rh-manager', 'rh-viewer'])) {
-            return true;
-        }
-
-        $collaboratorType = $contract->collaborator?->type;
-
-        if ($user->hasRole('contractor-manager')) {
-            return $collaboratorType === 'Contratista';
-        }
-
-        if ($user->hasRole('employee-manager')) {
-            return $collaboratorType === 'Empleado';
-        }
-
-        return false;
+        return $user->institution_id === $contract->institution_id;
     }
 }

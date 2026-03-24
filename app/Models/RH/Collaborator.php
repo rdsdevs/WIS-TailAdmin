@@ -94,12 +94,12 @@ class Collaborator extends Model implements Auditable
 
     // ── Scopes ───────────────────────────────────────────────────────────────
 
-    public function scopeEmployees(Builder $query): Builder
+    public function scopeEmpleados(Builder $query): Builder
     {
         return $query->where('type', 'Empleado');
     }
 
-    public function scopeContractors(Builder $query): Builder
+    public function scopeContratistas(Builder $query): Builder
     {
         return $query->where('type', 'Contratista');
     }

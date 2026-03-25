@@ -178,8 +178,9 @@ new class extends Component {
      x-on:open-modal="$wire.openModal()">
 
     @if ($open)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" wire:key="modal-generar">
-        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60" wire:key="modal-generar">
+        <div class="flex min-h-full items-center justify-center p-4">
+        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
 
             {{-- Header --}}
             <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
@@ -386,7 +387,7 @@ new class extends Component {
                             @else
                                 <select name="certificate_signature_id"
                                         id="certificate_signature_id"
-                                        wire:model="signatureId"
+                                        wire:model.live="signatureId"
                                         required
                                         class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                     <option value="">Seleccione una firma...</option>
@@ -419,7 +420,7 @@ new class extends Component {
                                 Cancelar
                             </button>
                             <button type="submit"
-                                    @if(empty($selectedContractIds) || ! $signatureId) disabled @endif
+                                    x-bind:disabled="$wire.selectedContractIds.length === 0 || !$wire.signatureId"
                                     class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -430,6 +431,7 @@ new class extends Component {
                     </form>
                 @endif
             </div>
+        </div>
         </div>
     </div>
     @endif

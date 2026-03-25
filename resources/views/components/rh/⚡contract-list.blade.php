@@ -275,39 +275,46 @@ new class extends Component {
             </div>
         </div>
         @can('create', \App\Models\RH\Contract::class)
-            <a href="{{ route('rh.contratos.create') }}"
-               class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Nuevo contrato
-            </a>
+            <div class="flex divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                <a href="{{ route('rh.contratos.create') }}"
+                   class="flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60">
+                    <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Nuevo contrato
+                </a>
+            </div>
         @endcan
     </div>
 
     {{-- Panel de filtros --}}
     <div x-data="{ open: {{ $filterMode !== 'none' ? 'true' : 'false' }} }" class="mb-4">
         <div class="flex items-center gap-2">
-            <button @click="open = !open" type="button"
-                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors
-                    {{ $filterMode !== 'none' ? 'border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/20 dark:text-blue-400' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591L15.75 12.75v6.75a.75.75 0 0 1-.427.671l-3 1.5a.75.75 0 0 1-1.073-.681v-8.24L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
-                </svg>
-                Filtrar
-                @if($filterMode !== 'none')
-                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                @endif
-            </button>
-            @if($filterMode !== 'none')
-                <button wire:click="clearFilters" type="button"
-                    class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
-                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            {{-- Botón Filtrar en group --}}
+            <div class="flex overflow-hidden rounded-xl border {{ $filterMode !== 'none' ? 'border-brand-400 dark:border-brand-600' : 'border-gray-200 dark:border-gray-700' }}">
+                <button @click="open = !open" type="button"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors
+                        {{ $filterMode !== 'none'
+                            ? 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-900/20 dark:text-brand-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }}">
+                    <svg class="h-4 w-4 shrink-0 {{ $filterMode !== 'none' ? 'text-brand-500' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591L15.75 12.75v6.75a.75.75 0 01-.427.671l-3 1.5a.75.75 0 01-1.073-.681v-8.24L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3Z" />
                     </svg>
-                    Limpiar filtros
+                    Filtrar
+                    @if($filterMode !== 'none')
+                        <span class="h-2 w-2 rounded-full bg-brand-500"></span>
+                    @endif
                 </button>
-            @endif
+                @if($filterMode !== 'none')
+                    <button wire:click="clearFilters" type="button"
+                        class="flex items-center gap-1 border-l border-brand-300 bg-brand-50 px-2.5 py-2 text-xs text-brand-600 transition-colors hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/20 dark:text-brand-400 dark:hover:bg-brand-900/30"
+                        aria-label="Limpiar filtros">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                @endif
+            </div>
         </div>
 
         <div x-show="open" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
@@ -364,56 +371,70 @@ new class extends Component {
     </div>
 
     {{-- Tabs --}}
-    <div class="mb-4 flex flex-wrap items-center gap-2">
-        {{-- Tab: Vigentes --}}
-        <button
-            wire:click="$set('tab', 'vigentes')"
-            class="{{ $tab === 'vigentes'
-                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
-                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
-            Vigentes
-            @if(isset($this->counts['vigentes']) && $this->counts['vigentes'] > 0)
-                <span class="{{ $tab === 'vigentes'
-                    ? 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1.5 text-xs font-medium text-white dark:bg-gray-200 dark:text-gray-900'
-                    : 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 px-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300' }}">
-                    {{ $this->counts['vigentes'] }}
-                </span>
-            @endif
-        </button>
+    <div class="mb-4">
+        <div class="flex divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700 w-fit">
+            {{-- Tab: Vigentes --}}
+            <button
+                wire:click="$set('tab', 'vigentes')"
+                class="{{ $tab === 'vigentes'
+                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Vigentes
+                @if(isset($this->counts['vigentes']) && $this->counts['vigentes'] > 0)
+                    <span class="{{ $tab === 'vigentes'
+                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-medium text-white dark:bg-gray-900/20 dark:text-gray-900'
+                        : 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 px-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300' }}">
+                        {{ $this->counts['vigentes'] }}
+                    </span>
+                @endif
+            </button>
 
-        {{-- Tab: Por vencer --}}
-        <button
-            wire:click="$set('tab', 'por_vencer')"
-            class="{{ $tab === 'por_vencer'
-                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
-                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
-            Por vencer
-            @if(isset($this->counts['por_vencer']) && $this->counts['por_vencer'] > 0)
-                <span class="{{ $tab === 'por_vencer'
-                    ? 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-medium text-white dark:bg-amber-400 dark:text-amber-900'
-                    : 'ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }}">
-                    {{ $this->counts['por_vencer'] }}
-                </span>
-            @endif
-        </button>
+            {{-- Tab: Por vencer --}}
+            <button
+                wire:click="$set('tab', 'por_vencer')"
+                class="{{ $tab === 'por_vencer'
+                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                Por vencer
+                @if(isset($this->counts['por_vencer']) && $this->counts['por_vencer'] > 0)
+                    <span class="{{ $tab === 'por_vencer'
+                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-medium text-white dark:bg-gray-900/20 dark:text-gray-900'
+                        : 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }}">
+                        {{ $this->counts['por_vencer'] }}
+                    </span>
+                @endif
+            </button>
 
-        {{-- Tab: Terminados --}}
-        <button
-            wire:click="$set('tab', 'terminados')"
-            class="{{ $tab === 'terminados'
-                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
-                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
-            Terminados
-        </button>
+            {{-- Tab: Terminados --}}
+            <button
+                wire:click="$set('tab', 'terminados')"
+                class="{{ $tab === 'terminados'
+                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                Terminados
+            </button>
 
-        {{-- Tab: Todos --}}
-        <button
-            wire:click="$set('tab', 'todos')"
-            class="{{ $tab === 'todos'
-                ? 'rounded-lg border border-gray-900 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 dark:border-gray-200 dark:text-white'
-                : 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}">
-            Todos
-        </button>
+            {{-- Tab: Todos --}}
+            <button
+                wire:click="$set('tab', 'todos')"
+                class="{{ $tab === 'todos'
+                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                Todos
+            </button>
+        </div>
     </div>
 
     {{-- Flash --}}

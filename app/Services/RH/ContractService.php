@@ -32,6 +32,20 @@ final class ContractService
     }
 
     /**
+     * Busca el contrato vigente más reciente de un colaborador en una institución.
+     * Retorna null si no existe ninguno.
+     */
+    public function findActiveContract(string $collaboratorId, string $institutionId): ?Contract
+    {
+        return Contract::query()
+            ->where('collaborator_id', $collaboratorId)
+            ->where('institution_id', $institutionId)
+            ->where('status', 'Vigente')
+            ->latest('start_date')
+            ->first();
+    }
+
+    /**
      * Contratos próximos a vencer en los siguientes X días.
      */
     public function getExpiringSoon(string $institutionId, int $days = 30): Collection

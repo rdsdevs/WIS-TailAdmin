@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 use App\Models\RH\Contract;
+use App\Services\RH\ContractService;
 use App\Models\RH\CommittedValue;
 use App\Models\RH\Collaborator;
 use App\Models\RH\ContractType;
@@ -41,6 +43,12 @@ new class extends Component {
     public string  $status            = 'Vigente';
     public string  $collaboratorType  = '';
     public bool    $prefillApplied    = false;
+
+    // ── Guardia: contrato vigente ─────────────────────────────────────────────
+    public bool    $showActiveContractAlert = false;
+    public ?string $activeContractId        = null;
+    public ?string $activeContractCode      = null;
+    public ?string $pendingCollaboratorId   = null;
 
     // ── Paso 3: comprometidos ─────────────────────────────────────────────────
     // Cuenta contable: única para todo el contrato
@@ -114,15 +122,29 @@ new class extends Component {
         } elseif ($collaboratorId) {
             $collab = Collaborator::find($collaboratorId);
             if ($collab) {
-                $this->collaboratorId       = $collab->id;
-                $this->selectedCollaborator = [
-                    'id'   => $collab->id,
-                    'name' => $collab->full_name,
-                    'doc'  => $collab->document_number,
-                    'type' => $collab->type,
-                ];
-                $this->collaboratorSearch = $collab->full_name;
-                $this->collaboratorType   = $collab->type ?? '';
+                $institutionId = auth()->user()?->institution_id;
+                $active = $institutionId
+                    ? app(ContractService::class)->findActiveContract($collab->id, $institutionId)
+                    : null;
+
+                if ($active) {
+                    $this->selectedCollaborator = [
+                        'id'   => $collab->id,
+                        'name' => $collab->full_name,
+                        'doc'  => $collab->document_number,
+                        'type' => $collab->type,
+                    ];
+                    $this->collaboratorSearch      = $collab->full_name;
+                    $this->collaboratorType        = $collab->type ?? '';
+                    $this->collaboratorId          = $collab->id;
+                    $this->pendingCollaboratorId   = $collab->id;
+                    $this->activeContractId        = $active->id;
+                    $this->activeContractCode      = $active->contract_code ?? "#{$active->id}";
+                    $this->showActiveContractAlert = true;
+                } else {
+                    $this->collaboratorId = $collab->id;
+                    $this->applyCollaboratorSelection($collab);
+                }
             }
         }
     }
@@ -142,50 +164,42 @@ new class extends Component {
     public function selectCollaborator(string $id): void
     {
         $collab = Collaborator::findOrFail($id);
-        $this->selectedCollaborator = [
-            'id'   => $collab->id,
-            'name' => $collab->full_name,
-            'doc'  => $collab->document_number,
-            'type' => $collab->type,
-        ];
-        $this->collaboratorId    = $id;
-        $this->collaboratorSearch = $collab->full_name;
-        $this->showSuggestions   = false;
-        $this->collaboratorType  = $collab->type ?? '';
+        $this->showSuggestions  = false;
+        $this->collaboratorType = $collab->type ?? '';
 
-        if ($this->collaboratorType === 'Contratista') {
-            // Precargar tipo de contrato CPS
-            $institutionId = auth()->user()->institution_id;
-            $cpsType = ContractType::where('code', 'CPS')
-                ->where('institution_id', $institutionId)
-                ->first();
-            if ($cpsType) {
-                $this->contractTypeId = (string) $cpsType->id;
+        // Solo verificar contrato vigente en creación, no en edición
+        if (! $this->contractId) {
+            $institutionId = auth()->user()?->institution_id;
+            $active = $institutionId
+                ? app(ContractService::class)->findActiveContract($collab->id, $institutionId)
+                : null;
+
+            if ($active) {
+                $this->collaboratorSearch      = $collab->full_name;
+                $this->pendingCollaboratorId   = $id;
+                $this->activeContractId        = $active->id;
+                $this->activeContractCode      = $active->contract_code ?? "#{$active->id}";
+                $this->showActiveContractAlert = true;
+                return;
             }
-
-            // Fecha inicio = hoy
-            $this->startDate = now()->format('Y-m-d');
-
-            // Fecha fin = último día hábil de diciembre del año en curso
-            $this->endDate = $this->getLastWorkingDayOfYear((int) now()->year);
-
-            // Sugerir número de contrato
-            $this->autoFillContractNumber();
-
-            // Precargar datos del último contrato
-            $this->prefillFromLastContract();
         }
+
+        $this->applyCollaboratorSelection($collab);
     }
 
     public function clearCollaborator(): void
     {
-        $this->selectedCollaborator = null;
-        $this->collaboratorId       = null;
-        $this->collaboratorSearch   = '';
-        $this->prefillApplied       = false;
-        $this->object               = '';
-        $this->obligations          = '';
-        $this->fees                 = '';
+        $this->selectedCollaborator    = null;
+        $this->collaboratorId          = null;
+        $this->collaboratorSearch      = '';
+        $this->prefillApplied          = false;
+        $this->showActiveContractAlert = false;
+        $this->activeContractId        = null;
+        $this->activeContractCode      = null;
+        $this->pendingCollaboratorId   = null;
+        $this->object                  = '';
+        $this->obligations             = '';
+        $this->fees                    = '';
     }
 
     // ── Autocompletado de cuenta contable ─────────────────────────────────────
@@ -680,6 +694,72 @@ new class extends Component {
         }
     }
 
+    private function applyCollaboratorSelection(Collaborator $collab): void
+    {
+        $this->selectedCollaborator = [
+            'id'   => $collab->id,
+            'name' => $collab->full_name,
+            'doc'  => $collab->document_number,
+            'type' => $collab->type,
+        ];
+        $this->collaboratorId   = $collab->id;
+        $this->collaboratorSearch = $collab->full_name;
+        $this->collaboratorType = $collab->type ?? '';
+
+        if ($this->collaboratorType === 'Contratista') {
+            $institutionId = auth()->user()?->institution_id;
+            $cpsType = ContractType::where('code', 'CPS')
+                ->where('institution_id', $institutionId)
+                ->first();
+            if ($cpsType) {
+                $this->contractTypeId = (string) $cpsType->id;
+            }
+
+            $this->startDate = now()->format('Y-m-d');
+            $this->endDate   = $this->getLastWorkingDayOfYear((int) now()->year);
+
+            $this->autoFillContractNumber();
+            $this->prefillFromLastContract();
+        }
+    }
+
+    public function proceedWithEarlyTermination(): void
+    {
+        if ($this->pendingCollaboratorId && ! $this->selectedCollaborator) {
+            $collab = Collaborator::findOrFail($this->pendingCollaboratorId);
+            $this->applyCollaboratorSelection($collab);
+        }
+
+        $this->showActiveContractAlert = false;
+        $this->dispatch('open-early-termination-modal', contractId: $this->activeContractId);
+    }
+
+    public function cancelActiveContractAlert(): void
+    {
+        $viaComeFromUrl = (bool) request()->query('collaborator_id');
+
+        $this->showActiveContractAlert = false;
+        $this->activeContractId        = null;
+        $this->activeContractCode      = null;
+        $this->pendingCollaboratorId   = null;
+
+        // Si llegó vía URL mantener el colaborador visible; si fue por autocompletado, limpiar
+        if (! $viaComeFromUrl) {
+            $this->selectedCollaborator = null;
+            $this->collaboratorId       = null;
+            $this->collaboratorSearch   = '';
+        }
+    }
+
+    #[On('contract-updated')]
+    public function onEarlyTerminationConfirmed(): void
+    {
+        $this->activeContractId        = null;
+        $this->activeContractCode      = null;
+        $this->pendingCollaboratorId   = null;
+        $this->showActiveContractAlert = false;
+    }
+
     private function prefillFromLastContract(): void
     {
         if (! $this->collaboratorId) {
@@ -716,6 +796,83 @@ new class extends Component {
 ?>
 
 <div class="mx-auto max-w-3xl">
+
+    {{-- ── Modal: colaborador con contrato vigente ─────────────────────────── --}}
+    @if($showActiveContractAlert)
+    <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="modal-contrato-vigente-title"
+        wire:click.self="cancelActiveContractAlert"
+    >
+        <div
+            class="w-full max-w-md rounded-2xl bg-white shadow-xl dark:bg-gray-800"
+            x-data
+            x-init="$nextTick(() => $el.querySelector('button').focus())"
+        >
+            {{-- Cabecera --}}
+            <div class="flex items-start gap-4 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                    <svg class="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 id="modal-contrato-vigente-title" class="text-base font-semibold text-gray-900 dark:text-white">
+                        Colaborador con contrato vigente
+                    </h3>
+                    <p class="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
+                        {{ $selectedCollaborator['name'] ?? ($collaboratorSearch ?: '') }}
+                    </p>
+                </div>
+                <button
+                    wire:click="cancelActiveContractAlert"
+                    type="button"
+                    class="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    aria-label="Cerrar"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Cuerpo --}}
+            <div class="px-6 py-5">
+                <p class="text-sm text-gray-700 dark:text-gray-300">
+                    Este colaborador ya tiene el contrato
+                    <strong class="font-semibold text-gray-900 dark:text-white">{{ $activeContractCode }}</strong>
+                    con estado <span class="font-medium text-green-600 dark:text-green-400">Vigente</span>.
+                </p>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Para registrar un nuevo contrato debe terminar anticipadamente el contrato vigente. ¿Desea proceder con la terminación anticipada?
+                </p>
+            </div>
+
+            {{-- Pie --}}
+            <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+                <button
+                    wire:click="cancelActiveContractAlert"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                    Cancelar
+                </button>
+                <button
+                    wire:click="proceedWithEarlyTermination"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                    </svg>
+                    Terminación anticipada
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- ── Indicador de pasos ──────────────────────────────────────────────── --}}
     <div class="mb-8 flex items-center">

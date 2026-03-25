@@ -36,4 +36,5 @@
     @include('layouts.partials.rh-subnav')
 
     <livewire:rh.contract-form :collaborator-id="request('collaborator_id')" />
+    <livewire:rh.contract-early-termination-modal />
 @endsection

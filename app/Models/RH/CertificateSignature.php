@@ -9,6 +9,7 @@ use App\Models\Institution;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -37,5 +38,10 @@ class CertificateSignature extends Model implements Auditable
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(\App\Models\Certificados\Certificate::class, 'certificate_signature_id');
     }
 }

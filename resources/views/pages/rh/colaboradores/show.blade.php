@@ -395,6 +395,15 @@
                                 Editar contrato
                             </a>
                         @endcan
+                        @canany(['generateEmployee', 'generateContractor'], \App\Models\Certificados\Certificate::class)
+                            <button onclick="Livewire.dispatch('open-for-collaborator', { collaboratorId: '{{ $collaborator->id }}' })"
+                                    class="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                Generar certificado
+                            </button>
+                        @endcanany
                     </div>
                 </div>
             @else
@@ -419,4 +428,9 @@
 
         </div>
     </div>
+
+    {{-- Modal generar certificado --}}
+    @canany(['generateEmployee', 'generateContractor'], \App\Models\Certificados\Certificate::class)
+        <livewire:certificados.generate-certificate-modal />
+    @endcanany
 @endsection

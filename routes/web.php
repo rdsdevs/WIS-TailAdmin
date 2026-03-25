@@ -65,6 +65,26 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('contratos', RH\ContractController::class);
 });
 
+// ─── Ruta pública de verificación de certificados (sin auth) ─────────────────
+Route::get('verificar/{codigo}', [\App\Http\Controllers\Certificados\CertificateVerificationController::class, 'show'])
+    ->name('certificados.verificar')
+    ->where('codigo', '[0-9a-fA-F\-]{36}');
+
+// ─── Módulo de Certificados (protegido) ──────────────────────────────────────
+Route::prefix('certificados')->name('certificados.')->middleware('auth')->group(function (): void {
+    Route::get('/', [\App\Http\Controllers\Certificados\CertificateController::class, 'index'])
+        ->name('index');
+    Route::post('generar/empleado', [\App\Http\Controllers\Certificados\CertificateController::class, 'generateEmployee'])
+        ->name('generar.empleado');
+    Route::post('generar/contratista', [\App\Http\Controllers\Certificados\CertificateController::class, 'generateContractor'])
+        ->name('generar.contratista');
+    Route::delete('{certificate}', [\App\Http\Controllers\Certificados\CertificateController::class, 'destroy'])
+        ->name('destroy');
+    Route::resource('firmas', \App\Http\Controllers\Certificados\CertificateSignatureController::class)
+        ->parameters(['firmas' => 'signature'])
+        ->except(['show']);
+});
+
 // ─── Administración de usuarios ──────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): void {
     Route::resource('usuarios', \App\Http\Controllers\Admin\UserController::class)

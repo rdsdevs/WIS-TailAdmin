@@ -1,21 +1,22 @@
 @php
-    $meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    $meses      = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     $diasSemana = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-    $fechaLarga = $diasSemana[$issued_at->dayOfWeek] . ' ' . $issued_at->day . ' de ' . $meses[$issued_at->month - 1] . ' de ' . $issued_at->year;
+    $fechaLarga = $diasSemana[$issued_at->dayOfWeek] . ', ' . $issued_at->day . ' de ' . $meses[$issued_at->month - 1] . ' de ' . $issued_at->year;
 
-    $nombre         = $collaborator_snapshot['full_name'] ?? '';
-    $tipoDoc        = $collaborator_snapshot['document_type_name'] ?? 'Cédula de Ciudadanía';
-    $numDoc         = $collaborator_snapshot['document_number'] ?? '';
-    $genero         = $collaborator_snapshot['gender'] ?? 'M';
-    $identificado   = $genero === 'F' ? 'identificada' : 'identificado';
-    $numContratos   = count($contracts_snapshot);
+    $nombre       = $collaborator_snapshot['full_name'] ?? '';
+    $tipoDoc      = $collaborator_snapshot['document_type_name'] ?? 'Cédula de Ciudadanía';
+    $numDoc       = $collaborator_snapshot['document_number'] ?? '';
+    $genero       = $collaborator_snapshot['gender'] ?? 'M';
+    $identificado = $genero === 'F' ? 'identificada' : 'identificado';
+    $numContratos = count($contracts_snapshot);
 
     $showSalary          = ! empty($options_snapshot['show_salary']);
     $showPositionHistory = ! empty($options_snapshot['show_position_history']);
 
-    // Cargo del firmante
-    $signerGender   = strtolower($signature->signer_position ?? '');
-    $laSuscrita     = str_contains($signerGender, 'director') ? 'EL SUSCRITO' : 'LA SUSCRITA';
+    $cargoFirmante = strtolower($signature->signer_position ?? '');
+    $laSuscrita    = (str_contains($cargoFirmante, 'director') && ! str_contains($cargoFirmante, 'directora'))
+        ? 'EL SUSCRITO'
+        : 'LA SUSCRITA';
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -24,33 +25,39 @@
     <title>Certificado Laboral</title>
     <style>
         @page {
-            margin-top: 110px;
-            margin-bottom: 3.5cm;
+            margin-top: 120px;
+            margin-bottom: 55px;
             margin-left: 2cm;
-            margin-right: 1.5cm;
+            margin-right: 1.8cm;
         }
         body {
-            font-family: "DejaVu Sans", sans-serif;
+            font-family: "Arial", sans-serif;
             font-size: 11pt;
             color: #000;
+            line-height: 1.45;
         }
         header {
             position: fixed;
-            top: -80px;
+            top: -105px;
             left: 0;
             right: 0;
-            height: 65px;
+            height: 90px;
         }
         footer {
             position: fixed;
-            bottom: -30px;
+            bottom: -45px;
             left: 0;
             right: 0;
-            height: 30px;
-            text-align: center;
-            font-size: 8pt;
-            color: #666;
-            border-top: 1px solid #ccc;
+            height: 44px;
+        }
+        .bold         { font-weight: bold; }
+        .text-center  { text-align: center; }
+        .text-justify { text-align: justify; }
+        .section-title {
+            font-weight: bold;
+            font-size: 10pt;
+            margin-top: 10px;
+            margin-bottom: 4px;
         }
         table {
             width: 100%;
@@ -59,83 +66,115 @@
             font-size: 10pt;
         }
         th {
-            background-color: #e8e8e8;
-            border: 1px solid #999;
-            padding: 4px 6px;
+            background-color: #dde3ef;
+            border: 1px solid #777;
+            padding: 5px 6px;
             text-align: center;
             font-weight: bold;
         }
         td {
-            border: 1px solid #999;
-            padding: 4px 6px;
+            border: 1px solid #777;
+            padding: 5px 6px;
             text-align: center;
         }
-        .bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-justify { text-align: justify; }
-        .section-title {
+        .certifica-header {
+            text-align: center;
             font-weight: bold;
-            font-size: 10pt;
-            margin-top: 8px;
-            margin-bottom: 4px;
+            font-size: 12pt;
+            line-height: 1.7;
+            margin-top: 30px;
+            margin-bottom: 30px;
         }
-        .page-break { page-break-before: always; margin-bottom: 30px; }
+        .intro-paragraph {
+            font-size: 12pt;
+            text-align: justify;
+            margin-bottom: 18px;
+        }
+        .firma-block {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .page-break { page-break-before: always; }
     </style>
 </head>
 <body>
 
-{{-- Header fijo --}}
+{{-- Numeración de página --}}
+<script type="text/php">
+    if (isset($pdf)) {
+        $font = $fontMetrics->get_font("Arial", "normal");
+        $w    = $pdf->get_width();
+        $pdf->page_text($w - 95, 17, "Página {PAGE_NUM} de {PAGE_COUNT}", $font, 7.5, [0.1, 0.1, 0.1]);
+    }
+</script>
+
+{{-- ── Header fijo ─────────────────────────────────────────────────────── --}}
 <header>
-    <table style="border-collapse: collapse; border: none; width: 100%;">
+    <table style="border-collapse: collapse; border: none; width: 100%; padding: 0; margin: 0;">
         <tr>
-            <td style="border: none; text-align: left; vertical-align: top; width: 60%;">
-                <strong style="font-size: 10pt;">{{ strtoupper($institution_name) }}</strong><br>
-                @if ($logo_base64)
-                    <img src="{{ $logo_base64 }}" style="height: 45px; margin-top: 4px;">
-                @endif
+            <td style="border: none; vertical-align: top; text-align: left; width: 18%;">
+                <img src="{{ $qr_base64 }}" style="height: 68px; width: 68px;">
+                <br><span style="font-size: 6pt; color: #555;">Escanea para validar el certificado</span>
             </td>
-            <td style="border: none; text-align: right; vertical-align: top; width: 40%;">
-                <img src="data:image/png;base64,{{ $qr_base64 }}" style="height: 55px;">
-                <br><span style="font-size: 7pt;">Escanea para validar</span>
+            <td style="border: none; vertical-align: middle; text-align: left; width: 42%; padding-left: 6px;">
+                <strong style="font-size: 9.5pt; color: #1a1a1a;">{{ strtoupper($institution_name) }}</strong>
+            </td>
+            <td style="border: none; vertical-align: top; text-align: right; width: 40%;">
+                @if ($logo_base64)
+                    <img src="{{ $logo_base64 }}" style="max-height: 72px; max-width: 180px;">
+                @endif
             </td>
         </tr>
     </table>
+    <hr style="border: 0; border-top: 1.5px solid #1a3a6b; margin: 4px 0 0 0;">
 </header>
 
-{{-- Footer fijo --}}
+{{-- ── Footer fijo ─────────────────────────────────────────────────────── --}}
 <footer>
-    Certificado laboral — {{ strtoupper($institution_name) }} — Código: {{ $certificate->verification_code }}
+    @if ($footer_base64)
+        <img src="{{ $footer_base64 }}" style="width: 100%; height: 44px;">
+    @else
+        <div style="background-color: #1a3a6b; padding: 5px 10px; text-align: center; color: #fff; font-size: 7.5pt;">
+            <span style="margin: 0 6px;">&#9679; Calle 93 No. 16 - 43</span>
+            <span style="margin: 0 6px;">&#9679; (57 - 1) 623 15 80</span>
+            <span style="margin: 0 6px;">&#9679; ascun@ascun.org.co</span>
+            <span style="margin: 0 6px;">&#9679; www.ascun.org.co</span>
+            <span style="margin: 0 6px;">&#9679; Bogotá - Colombia</span>
+        </div>
+    @endif
 </footer>
 
-{{-- Contenido principal --}}
+{{-- ── Contenido principal ──────────────────────────────────────────────── --}}
 <main>
-    <p class="bold text-center" style="margin-top: 10px; line-height: 1.6;">
+
+    <div class="certifica-header">
         {{ $laSuscrita }} {{ strtoupper($signature->signer_position ?? '') }}<br>
         DE {{ strtoupper($institution_name) }}<br>
         CERTIFICA:
-    </p>
+    </div>
 
-    <p class="text-justify">
-        Que <strong>{{ strtoupper($nombre) }}</strong>, {{ $identificado }}(a) con {{ $tipoDoc }}
-        N° {{ number_format((float) $numDoc, 0, ',', '.') }}, cuenta con la siguiente información
-        relacionada a {{ $numContratos > 1 ? 'sus contratos laborales' : 'su contrato laboral' }}
-        de acuerdo a la base de datos de su historia laboral.
+    <p class="intro-paragraph">
+        Que <strong>{{ strtoupper($nombre) }}</strong>,
+        {{ $identificado }} con {{ strtolower($tipoDoc) }}
+        N° {{ number_format((float) $numDoc, 0, ',', '.') }},
+        cuenta con la siguiente información relacionada a
+        {{ $numContratos > 1 ? 'sus contratos laborales' : 'su contrato laboral' }}
+        de acuerdo con la base de datos de su historia laboral.
     </p>
 
     @foreach ($contracts_snapshot as $i => $contrato)
-        {{-- Tabla de contrato --}}
+
+        {{-- Tabla principal del contrato --}}
         <table>
             <thead>
                 <tr>
                     <th>Tipo de Contrato</th>
-                    <th>Fecha de Inicio</th>
-                    <th>Fecha de Terminación</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Terminación</th>
                     <th>Estado</th>
+                    <th>Cargo</th>
                     @if ($showSalary)
-                        <th>Cargo</th>
-                        <th>Último salario mensual</th>
-                    @else
-                        <th style="width: 40%;">Cargo</th>
+                        <th>Último Salario</th>
                     @endif
                 </tr>
             </thead>
@@ -177,7 +216,7 @@
                             <td>{{ $cambio['from_position'] ?? '—' }}</td>
                             <td>{{ $cambio['to_position'] ?? '—' }}</td>
                             <td>{{ $cambio['change_date'] ?? '—' }}</td>
-                            <td>{{ $cambio['observations'] ?? '—' }}</td>
+                            <td style="text-align: left;">{{ $cambio['observations'] ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -189,24 +228,30 @@
         @endif
     @endforeach
 
-    <p class="text-justify" style="margin-top: 20px;">
-        La presente certificación está dirigida a <strong>{{ $addressed_to }}</strong>, y se expide
-        de forma automática a través del aplicativo <strong>WIS</strong> — Web Information System,
+    <p class="text-justify" style="font-size: 11pt; margin-top: 20px;">
+        Se expide la presente certificación a petición de
+        <strong>{{ $addressed_to }}</strong>
         el {{ $fechaLarga }}.
     </p>
 
-    <br><br>
-    <p>Atentamente,</p>
-    <br><br><br>
+    {{-- Firma centrada --}}
+    <div class="firma-block">
+        @if (! empty($signature->signature_image))
+            <img src="{{ $signature->signature_image }}" style="width: 160px; margin-bottom: -10px;">
+        @else
+            <br><br><br>
+        @endif
+        <p style="margin: 0; font-weight: bold; font-size: 11pt;">
+            {{ strtoupper($signature->signer_name ?? '') }}
+        </p>
+        <p style="margin: 2px 0 0 0; font-size: 11pt;">
+            {{ strtoupper($signature->signer_position ?? '') }}
+        </p>
+    </div>
 
-    @if ($signature->signature_image)
-        <img src="{{ $signature->signature_image }}" style="width: 22%; margin-bottom: -28px;"><br>
-    @endif
-    <strong>{{ strtoupper($signature->signer_name ?? '') }}</strong><br>
-    {{ $signature->signer_position ?? '' }}
 </main>
 
-{{-- Página 2: texto legal --}}
+{{-- Página final: texto legal --}}
 <div class="page-break"></div>
 @include('pdf.partials.certificado-legal')
 

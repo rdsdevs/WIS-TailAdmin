@@ -11,6 +11,7 @@ use App\Notifications\RH\ContractProrogaAppliedNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 final class ContractProrogaService
 {
@@ -140,11 +141,28 @@ final class ContractProrogaService
 
             // 4. Notificar solo si no es contrato histórico
             if (! $contract->isFromPreviousYear()) {
+                $contract->loadMissing('collaborator');
+                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorEmail = $contract->collaborator?->email ?? '';
+
+                // Campana al usuario autenticado
                 auth()->user()?->notify(new ContractProrogaAppliedNotification(
                     $contract->contract_code ?? '',
                     $contract->id,
                     $extensionType,
+                    $collaboratorName,
                 ));
+
+                // Correo al colaborador
+                if ($collaboratorEmail !== '') {
+                    Notification::route('mail', $collaboratorEmail)
+                        ->notify(new ContractProrogaAppliedNotification(
+                            $contract->contract_code ?? '',
+                            $contract->id,
+                            $extensionType,
+                            $collaboratorName,
+                        ));
+                }
             }
 
             Log::info('Prórroga aplicada al contrato', [

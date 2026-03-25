@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 final class ContractService
 {
@@ -90,11 +91,25 @@ final class ContractService
             // No notificar contratos históricos
             if (! $contract->isFromPreviousYear()) {
                 $contract->load('collaborator');
+                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorEmail = $contract->collaborator?->email ?? '';
+
+                // Campana al usuario autenticado
                 auth()->user()?->notify(new ContractCreatedNotification(
                     $contract->contract_code ?? '',
                     $contract->id,
-                    $contract->collaborator?->full_name ?? '',
+                    $collaboratorName,
                 ));
+
+                // Correo al colaborador
+                if ($collaboratorEmail !== '') {
+                    Notification::route('mail', $collaboratorEmail)
+                        ->notify(new ContractCreatedNotification(
+                            $contract->contract_code ?? '',
+                            $contract->id,
+                            $collaboratorName,
+                        ));
+                }
             }
 
             return $contract;
@@ -126,10 +141,26 @@ final class ContractService
 
             // No notificar contratos históricos
             if (! $contract->isFromPreviousYear()) {
+                $contract->loadMissing('collaborator');
+                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorEmail = $contract->collaborator?->email ?? '';
+
+                // Campana al usuario autenticado
                 auth()->user()?->notify(new ContractUpdatedNotification(
                     $contract->contract_code ?? '',
                     $contract->id,
+                    $collaboratorName,
                 ));
+
+                // Correo al colaborador
+                if ($collaboratorEmail !== '') {
+                    Notification::route('mail', $collaboratorEmail)
+                        ->notify(new ContractUpdatedNotification(
+                            $contract->contract_code ?? '',
+                            $contract->id,
+                            $collaboratorName,
+                        ));
+                }
             }
         });
 
@@ -164,10 +195,26 @@ final class ContractService
             'status' => 'Terminado',
         ]);
 
+        $contract->loadMissing('collaborator');
+        $collaboratorName  = $contract->collaborator?->full_name ?? '';
+        $collaboratorEmail = $contract->collaborator?->email ?? '';
+
+        // Campana al usuario autenticado
         auth()->user()?->notify(new ContractTerminatedNotification(
             $contract->contract_code ?? '',
             $contract->id,
+            $collaboratorName,
         ));
+
+        // Correo al colaborador
+        if ($collaboratorEmail !== '') {
+            Notification::route('mail', $collaboratorEmail)
+                ->notify(new ContractTerminatedNotification(
+                    $contract->contract_code ?? '',
+                    $contract->id,
+                    $collaboratorName,
+                ));
+        }
     }
 
     /**
@@ -186,11 +233,26 @@ final class ContractService
                 'early_terminated_at' => now(),
             ]);
 
-            // Notificar al usuario que realizó la terminación
+            $contract->loadMissing('collaborator');
+            $collaboratorName  = $contract->collaborator?->full_name ?? '';
+            $collaboratorEmail = $contract->collaborator?->email ?? '';
+
+            // Campana al usuario autenticado
             auth()->user()?->notify(new ContractEarlyTerminatedNotification(
                 $contract->contract_code ?? '',
                 $contract->id,
+                $collaboratorName,
             ));
+
+            // Correo al colaborador
+            if ($collaboratorEmail !== '') {
+                Notification::route('mail', $collaboratorEmail)
+                    ->notify(new ContractEarlyTerminatedNotification(
+                        $contract->contract_code ?? '',
+                        $contract->id,
+                        $collaboratorName,
+                    ));
+            }
 
             Log::info('Contrato terminado anticipadamente', [
                 'contract_id' => $contract->id,

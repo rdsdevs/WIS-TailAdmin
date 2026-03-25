@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications\RH;
 
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -13,12 +14,13 @@ class ContractProrogaAppliedNotification extends Notification
         private readonly string $contractCode,
         private readonly string $contractId,
         private readonly string $extensionType,
+        private readonly string $collaboratorName,
     ) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable instanceof AnonymousNotifiable ? ['mail'] : ['database'];
     }
 
     /** @return array<string, mixed> */
@@ -37,7 +39,7 @@ class ContractProrogaAppliedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Prórroga aplicada al contrato')
-            ->greeting('Hola, '.$notifiable->name.'.')
+            ->greeting('Hola, '.$this->collaboratorName.'.')
             ->line("Se aplicó una prórroga de tipo {$this->extensionType} al contrato {$this->contractCode}.")
             ->action('Ver contrato', route('rh.contratos.show', $this->contractId))
             ->line('Este mensaje fue generado automáticamente por WIS ASCUN.');

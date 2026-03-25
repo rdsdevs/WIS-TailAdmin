@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications\RH;
 
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,12 +13,13 @@ class ContractUpdatedNotification extends Notification
     public function __construct(
         private readonly string $contractCode,
         private readonly string $contractId,
+        private readonly string $collaboratorName,
     ) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable instanceof AnonymousNotifiable ? ['mail'] : ['database'];
     }
 
     /** @return array<string, mixed> */
@@ -45,7 +47,7 @@ class ContractUpdatedNotification extends Notification
 
         return (new MailMessage)
             ->subject('Contrato actualizado')
-            ->greeting('Hola, '.$notifiable->name.'.')
+            ->greeting('Hola, '.$this->collaboratorName.'.')
             ->line($message)
             ->action('Ver contrato', route('rh.contratos.edit', $this->contractId))
             ->line('Este mensaje fue generado automáticamente por WIS ASCUN.');

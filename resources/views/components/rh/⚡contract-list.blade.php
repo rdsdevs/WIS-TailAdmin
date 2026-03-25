@@ -354,16 +354,31 @@ new class extends Component {
 
             {{-- Filtro por rango --}}
             @if($filterMode === 'range')
-                <div class="flex flex-wrap items-center gap-3">
+                <div
+                    class="flex flex-wrap items-center gap-3"
+                    @wire-date-changed.window="$wire.set($event.detail.field, $event.detail.value)"
+                >
                     <div class="flex items-center gap-2">
-                        <label for="filter-from" class="text-sm text-gray-600 dark:text-gray-400">Desde:</label>
-                        <input type="date" id="filter-from" wire:model.live="filterFrom"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        <label class="shrink-0 text-sm text-gray-600 dark:text-gray-400">Desde:</label>
+                        <div class="w-44">
+                            <x-form.date-picker
+                                id="filter-from"
+                                wireModel="filterFrom"
+                                :value="$filterFrom"
+                                placeholder="dd/mm/aaaa"
+                            />
+                        </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label for="filter-to" class="text-sm text-gray-600 dark:text-gray-400">Hasta:</label>
-                        <input type="date" id="filter-to" wire:model.live="filterTo"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        <label class="shrink-0 text-sm text-gray-600 dark:text-gray-400">Hasta:</label>
+                        <div class="w-44">
+                            <x-form.date-picker
+                                id="filter-to"
+                                wireModel="filterTo"
+                                :value="$filterTo"
+                                placeholder="dd/mm/aaaa"
+                            />
+                        </div>
                     </div>
                 </div>
             @endif

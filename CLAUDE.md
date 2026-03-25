@@ -4,6 +4,20 @@ Este archivo define los estándares, convenciones y guía de arquitectura del pr
 
 ---
 
+## Regla de Planificación Obligatoria
+
+> **ANTES de escribir cualquier código de implementación, el agente `Plan` DEBE ser lanzado para diseñar la estrategia de implementación.**
+
+Esta regla aplica siempre que se vaya a implementar una nueva funcionalidad, modificar lógica de negocio existente, o realizar cambios que afecten más de un archivo. El flujo obligatorio es:
+
+1. **Lanzar `Agent Plan`** → obtener el plan de implementación
+2. **Presentar el plan al usuario** → esperar aprobación
+3. **Implementar** → seguir el plan aprobado paso a paso
+
+Solo se puede omitir este paso para correcciones triviales (typos, estilos, cambios de una línea).
+
+---
+
 ## Descripción del Proyecto
 
 **WIS ASCUN** es el sistema de gestión integral para la Asociación Colombiana de Universidades (ASCUN). Es una migración del sistema legacy `app.wisascun.com` (PHP sin framework) a **Laravel 12** con una arquitectura moderna, segura y mantenible.

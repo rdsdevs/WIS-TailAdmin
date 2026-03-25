@@ -40,6 +40,7 @@ new class extends Component {
     public string  $positionEmail     = '';
     public string  $status            = 'Vigente';
     public string  $collaboratorType  = '';
+    public bool    $prefillApplied    = false;
 
     // ── Paso 3: comprometidos ─────────────────────────────────────────────────
     // Cuenta contable: única para todo el contrato
@@ -170,6 +171,9 @@ new class extends Component {
 
             // Sugerir número de contrato
             $this->autoFillContractNumber();
+
+            // Precargar datos del último contrato
+            $this->prefillFromLastContract();
         }
     }
 
@@ -178,6 +182,10 @@ new class extends Component {
         $this->selectedCollaborator = null;
         $this->collaboratorId       = null;
         $this->collaboratorSearch   = '';
+        $this->prefillApplied       = false;
+        $this->object               = '';
+        $this->obligations          = '';
+        $this->fees                 = '';
     }
 
     // ── Autocompletado de cuenta contable ─────────────────────────────────────
@@ -664,6 +672,39 @@ new class extends Component {
             $this->contractNumber = $suggested;
         }
     }
+
+    private function prefillFromLastContract(): void
+    {
+        if (! $this->collaboratorId) {
+            return;
+        }
+
+        $institutionId = auth()->user()?->institution_id;
+
+        $lastContract = Contract::withTrashed()
+            ->where('collaborator_id', $this->collaboratorId)
+            ->where('institution_id', $institutionId)
+            ->orderByDesc('start_date')
+            ->first();
+
+        if (! $lastContract) {
+            return;
+        }
+
+        if ($this->object === '' && $lastContract->object) {
+            $this->object = $lastContract->object;
+        }
+
+        if ($this->obligations === '' && $lastContract->obligations) {
+            $this->obligations = $lastContract->obligations;
+        }
+
+        if ($this->fees === '' && (float) ($lastContract->fees ?? 0) > 0) {
+            $this->fees = (string) $lastContract->fees;
+        }
+
+        $this->prefillApplied = true;
+    }
 };
 ?>
 
@@ -857,6 +898,36 @@ new class extends Component {
                     .
                 @endif
             </p>
+
+            {{-- Banner: datos prellenados desde el último contrato --}}
+            @if($prefillApplied)
+                <div
+                    x-data="{ show: true }"
+                    x-show="show"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="mb-5 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3.5 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                    role="alert"
+                >
+                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                    </svg>
+                    <span class="flex-1">
+                        El objeto, las obligaciones y los honorarios fueron prellenados con los valores del último contrato de este colaborador. Puedes editarlos antes de guardar.
+                    </span>
+                    <button
+                        type="button"
+                        @click="show = false; $wire.set('prefillApplied', false)"
+                        class="ml-1 shrink-0 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
+                        aria-label="Cerrar aviso"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
 
             <div class="space-y-5">
 

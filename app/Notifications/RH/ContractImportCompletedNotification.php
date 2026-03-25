@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Notifications\RH;
 
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class ContractImportCompletedNotification extends Notification
@@ -16,7 +15,7 @@ class ContractImportCompletedNotification extends Notification
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database'];
     }
 
     /** @return array<string, mixed> */
@@ -38,28 +37,5 @@ class ContractImportCompletedNotification extends Notification
             'url' => route('rh.contratos.index'),
             'type' => 'contract_import_completed',
         ];
-    }
-
-    public function toMail(object $notifiable): MailMessage
-    {
-        $isError = isset($this->result['error']);
-        $imported = $this->result['imported'] ?? 0;
-        $updated = $this->result['updated'] ?? 0;
-        $skipped = $this->result['skipped'] ?? 0;
-
-        $subject = $isError
-            ? 'Error en importación de contratos'
-            : 'Importación de contratos completada';
-
-        $message = $isError
-            ? ($this->result['error'] ?? 'Ocurrió un error durante la importación.')
-            : "Se importaron {$imported} contratos. Actualizados: {$updated}. Omitidos: {$skipped}.";
-
-        return (new MailMessage)
-            ->subject($subject)
-            ->greeting('Hola, '.$notifiable->name.'.')
-            ->line($message)
-            ->action('Ver contratos', route('rh.contratos.index'))
-            ->line('Este mensaje fue generado automáticamente por WIS ASCUN.');
     }
 }

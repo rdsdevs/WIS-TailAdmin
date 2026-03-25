@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Notifications\RH;
 
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class CollaboratorImportCompletedNotification extends Notification
@@ -16,7 +15,7 @@ class CollaboratorImportCompletedNotification extends Notification
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database'];
     }
 
     /** @return array<string, mixed> */
@@ -37,27 +36,5 @@ class CollaboratorImportCompletedNotification extends Notification
             'url' => route('rh.colaboradores.index'),
             'type' => 'collaborator_import_completed',
         ];
-    }
-
-    public function toMail(object $notifiable): MailMessage
-    {
-        $isError = isset($this->result['error']);
-        $imported = $this->result['imported'] ?? 0;
-        $skipped = $this->result['skipped'] ?? 0;
-
-        $subject = $isError
-            ? 'Error en importación de colaboradores'
-            : 'Importación de colaboradores completada';
-
-        $message = $isError
-            ? ($this->result['error'] ?? 'Ocurrió un error durante la importación.')
-            : "Se importaron {$imported} colaboradores. Omitidos: {$skipped}.";
-
-        return (new MailMessage)
-            ->subject($subject)
-            ->greeting('Hola, '.$notifiable->name.'.')
-            ->line($message)
-            ->action('Ver colaboradores', route('rh.colaboradores.index'))
-            ->line('Este mensaje fue generado automáticamente por WIS ASCUN.');
     }
 }

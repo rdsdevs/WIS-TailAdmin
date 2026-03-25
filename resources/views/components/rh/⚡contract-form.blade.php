@@ -392,6 +392,21 @@ new class extends Component {
         return $this->needsCommitted ? 3 : 2;
     }
 
+    /** Retorna true si la fecha de inicio pertenece a un año anterior al actual. */
+    public function getIsHistoricalContractProperty(): bool
+    {
+        return $this->contractYear > 0 && $this->contractYear < now()->year;
+    }
+
+    // ── Lifecycle hooks ───────────────────────────────────────────────────────
+
+    public function updatedStartDate(): void
+    {
+        if ($this->isHistoricalContract) {
+            $this->status = 'Terminado';
+        }
+    }
+
     // ── Guardar ───────────────────────────────────────────────────────────────
 
     public function save(): void
@@ -442,6 +457,11 @@ new class extends Component {
             $contractCode = $this->contractNumber . '-' . $year;
         }
 
+        // Contratos históricos siempre se registran como Terminado
+        if ($this->isHistoricalContract) {
+            $this->status = 'Terminado';
+        }
+
         $data = [
             'institution_id'   => auth()->user()->institution_id,
             'collaborator_id'  => $this->collaboratorId,
@@ -479,10 +499,13 @@ new class extends Component {
                     }
                 }
 
-                auth()->user()?->notify(new ContractUpdatedNotification(
-                    contractCode: $contract->contract_code ?? '',
-                    contractId: $contract->id,
-                ));
+                // No notificar contratos históricos (años anteriores al actual)
+                if (! $contract->isFromPreviousYear()) {
+                    auth()->user()?->notify(new ContractUpdatedNotification(
+                        contractCode: $contract->contract_code ?? '',
+                        contractId: $contract->id,
+                    ));
+                }
 
                 session()->flash('success', 'Contrato actualizado correctamente.');
             } else {
@@ -501,12 +524,15 @@ new class extends Component {
                     }
                 }
 
-                $contract->load('collaborator');
-                auth()->user()?->notify(new ContractCreatedNotification(
-                    contractCode: $contract->contract_code ?? '',
-                    contractId: $contract->id,
-                    collaboratorName: $contract->collaborator?->full_name ?? '',
-                ));
+                // No notificar contratos históricos (años anteriores al actual)
+                if (! $contract->isFromPreviousYear()) {
+                    $contract->load('collaborator');
+                    auth()->user()?->notify(new ContractCreatedNotification(
+                        contractCode: $contract->contract_code ?? '',
+                        contractId: $contract->id,
+                        collaboratorName: $contract->collaborator?->full_name ?? '',
+                    ));
+                }
 
                 session()->flash('success', 'Contrato registrado correctamente.');
             }
@@ -1433,14 +1459,26 @@ new class extends Component {
                         <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Estado del contrato <span class="text-red-500" aria-hidden="true">*</span>
                         </label>
-                        <select
-                            wire:model="status"
-                            id="status"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                            <option value="Vigente">Vigente</option>
-                            <option value="Terminado">Terminado</option>
-                            <option value="Liquidado">Liquidado</option>
-                        </select>
+                        @if($this->isHistoricalContract)
+                            {{-- Contratos de años anteriores: estado fijo = Terminado --}}
+                            <div class="mt-1.5 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-600 dark:bg-gray-700/50">
+                                <svg class="h-4 w-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                                <span class="text-sm font-medium text-gray-700 dark:text-white">Terminado</span>
+                                <span class="ml-auto text-xs text-gray-400 dark:text-gray-500">Contrato de año anterior — no modificable</span>
+                            </div>
+                            <input type="hidden" wire:model="status" value="Terminado">
+                        @else
+                            <select
+                                wire:model="status"
+                                id="status"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                <option value="Vigente">Vigente</option>
+                                <option value="Terminado">Terminado</option>
+                                <option value="Liquidado">Liquidado</option>
+                            </select>
+                        @endif
                     </div>
                 </div>
 

@@ -94,11 +94,38 @@ class Contract extends Model implements Auditable
         return $this->belongsTo(User::class, 'early_terminated_by');
     }
 
-    // ── Accessors ─────────────────────────────────────────────────────────────
+    // ── Accessors / Helpers de dominio ───────────────────────────────────────
 
     public function isEarlyTerminated(): bool
     {
         return $this->early_termination_date !== null;
+    }
+
+    /** Retorna true si el contrato pertenece a un año anterior al actual. */
+    public function isFromPreviousYear(): bool
+    {
+        return $this->start_date !== null && $this->start_date->year < now()->year;
+    }
+
+    /** Retorna true si el contrato pertenece al año actual. */
+    public function isCurrentYear(): bool
+    {
+        return $this->start_date !== null && $this->start_date->year === now()->year;
+    }
+
+    /**
+     * Retorna true si el contrato puede ser prorrogado:
+     * - Vigente (cualquier año), O
+     * - Terminado + año actual.
+     * Retorna false si está Terminado + año anterior.
+     */
+    public function canBeProrrogated(): bool
+    {
+        if ($this->status === 'Vigente') {
+            return true;
+        }
+
+        return $this->status === 'Terminado' && $this->isCurrentYear();
     }
 
     // ── Scopes ───────────────────────────────────────────────────────────────

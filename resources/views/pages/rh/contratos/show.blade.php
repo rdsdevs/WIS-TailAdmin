@@ -208,8 +208,8 @@
                     </a>
                 @endcan
 
-                {{-- Prorrogar --}}
-                @if($contrato->status === 'Vigente')
+                {{-- Prorrogar (flujo normal: Vigente o Terminado año actual) --}}
+                @if($contrato->canBeProrrogated())
                     @can('applyProroga', $contrato)
                         <button type="button"
                                 x-on:click="Livewire.dispatch('open-proroga-modal', { contractId: '{{ $contrato->id }}' })"
@@ -218,6 +218,21 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
                             Prorrogar
+                        </button>
+                    @endcan
+                @endif
+
+                {{-- Prorrogar avanzado (solo Terminado + año anterior) --}}
+                @if($contrato->isFromPreviousYear() && $contrato->status === 'Terminado')
+                    @can('applyProrrogaAdvanced', $contrato)
+                        <button type="button"
+                                x-on:click="Livewire.dispatch('open-proroga-modal', { contractId: '{{ $contrato->id }}', isAdvancedMode: true })"
+                                title="Prórroga avanzada: contrato de año anterior, máximo hasta 31/12/{{ $contrato->start_date->year }}"
+                                class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-orange-900/20">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            Prorrogar (Avanzado)
                         </button>
                     @endcan
                 @endif

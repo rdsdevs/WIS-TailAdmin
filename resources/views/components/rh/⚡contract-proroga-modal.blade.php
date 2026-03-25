@@ -13,6 +13,9 @@ new class extends Component {
     public ?string $contractId = null;
     public ?Contract $contract = null;
 
+    /** Indica si la prórroga se realiza desde el módulo de opciones avanzadas. */
+    public bool $isAdvancedMode = false;
+
     // Formulario
     public string $extensionType = 'tiempo';
     public string $extensionMonths = '';
@@ -27,10 +30,20 @@ new class extends Component {
     public array $committedValueOptions = [];
 
     #[On('open-proroga-modal')]
-    public function openFor(string $contractId): void
+    public function openFor(string $contractId, bool $isAdvancedMode = false): void
     {
-        $this->contract = Contract::with(['committedValues'])->findOrFail($contractId);
+        $contract = Contract::with(['committedValues', 'collaborator'])->findOrFail($contractId);
+
+        // Contratos históricos (Terminado + año anterior) solo por modo avanzado
+        if ($contract->isFromPreviousYear() && $contract->status === 'Terminado' && ! $isAdvancedMode) {
+            $this->dispatch('notify-error', message: 'Este contrato solo puede prorrogarse desde el módulo de opciones avanzadas.');
+            return;
+        }
+
+        $this->contract = $contract;
         $this->contractId = $contractId;
+        $this->isAdvancedMode = $isAdvancedMode;
+
         $service = app(ContractProrogaService::class);
         $this->needsCostCenterSelection = $service->needsCostCenterSelection($this->contract);
         if ($this->needsCostCenterSelection) {
@@ -55,7 +68,18 @@ new class extends Component {
 
     public function save(): void
     {
-        $this->authorize('applyProroga', $this->contract);
+        if ($this->isAdvancedMode) {
+            $this->authorize('applyProrrogaAdvanced', $this->contract);
+        } else {
+            $this->authorize('applyProroga', $this->contract);
+        }
+
+        // Determinar fecha máxima para contratos históricos
+        $maxDate = app(ContractProrogaService::class)->getMaxExtensionDate($this->contract);
+        $approvalDateRules = ['required', 'date'];
+        if ($maxDate !== null) {
+            $approvalDateRules[] = 'before_or_equal:' . $maxDate->format('Y-m-d');
+        }
 
         $this->validate([
             'extensionType'    => ['required', 'in:tiempo,valor,tiempo_y_valor'],
@@ -63,8 +87,12 @@ new class extends Component {
             'extensionDays'    => ['nullable', 'integer', 'min:0', 'max:365'],
             'extensionValue'   => ['nullable', 'numeric', 'min:0'],
             'committedValueId' => ['nullable', 'uuid'],
-            'approvalDate'     => ['required', 'date'],
+            'approvalDate'     => $approvalDateRules,
             'reason'           => ['nullable', 'string', 'max:1000'],
+        ], [
+            'approvalDate.before_or_equal' => $maxDate
+                ? "La fecha de aprobación no puede exceder el {$maxDate->format('d/m/Y')} para contratos del año {$this->contract->start_date->year}."
+                : '',
         ]);
 
         $data = [
@@ -80,7 +108,7 @@ new class extends Component {
 
         app(ContractProrogaService::class)->apply($this->contract, $data);
 
-        $this->reset(['open', 'contractId', 'contract', 'extensionType', 'extensionMonths', 'extensionDays', 'extensionValue', 'committedValueId', 'approvalDate', 'reason', 'needsCostCenterSelection', 'committedValueOptions']);
+        $this->reset(['open', 'contractId', 'contract', 'isAdvancedMode', 'extensionType', 'extensionMonths', 'extensionDays', 'extensionValue', 'committedValueId', 'approvalDate', 'reason', 'needsCostCenterSelection', 'committedValueOptions']);
         $this->extensionType = 'tiempo';
 
         $this->dispatch('contract-updated');
@@ -89,8 +117,22 @@ new class extends Component {
 
     public function cancel(): void
     {
-        $this->reset(['open', 'contractId', 'contract', 'extensionType', 'extensionMonths', 'extensionDays', 'extensionValue', 'committedValueId', 'approvalDate', 'reason', 'needsCostCenterSelection', 'committedValueOptions']);
+        $this->reset(['open', 'contractId', 'contract', 'isAdvancedMode', 'extensionType', 'extensionMonths', 'extensionDays', 'extensionValue', 'committedValueId', 'approvalDate', 'reason', 'needsCostCenterSelection', 'committedValueOptions']);
         $this->extensionType = 'tiempo';
+    }
+
+    /** Fecha máxima de prórroga formateada para contratos históricos (null si no aplica). */
+    public function getMaxExtensionDateFormattedProperty(): ?string
+    {
+        $maxDate = app(ContractProrogaService::class)->getMaxExtensionDate($this->contract);
+        return $maxDate?->format('d/m/Y');
+    }
+
+    /** Fecha máxima en formato Y-m-d para el atributo max del input date. */
+    public function getMaxExtensionDateInputProperty(): ?string
+    {
+        $maxDate = app(ContractProrogaService::class)->getMaxExtensionDate($this->contract);
+        return $maxDate?->format('Y-m-d');
     }
 
     public function getPreviewEndDateProperty(): ?string
@@ -151,6 +193,24 @@ new class extends Component {
 
                 {{-- Cuerpo --}}
                 <div class="space-y-5 px-6 py-5">
+
+                    {{-- Banner: contrato histórico en modo avanzado --}}
+                    @if($isAdvancedMode && $this->contract?->isFromPreviousYear())
+                        <div class="flex items-start gap-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800/50 dark:bg-orange-900/20">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0 text-orange-500 dark:text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-orange-700 dark:text-orange-300">
+                                    Prórroga de contrato histórico — Opciones avanzadas
+                                </p>
+                                <p class="mt-0.5 text-xs text-orange-600 dark:text-orange-400">
+                                    La prórroga máxima para contratos del año {{ $this->contract->start_date->year }} es hasta el
+                                    <strong>{{ $this->maxExtensionDateFormatted }}</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Errores de validación --}}
                     @if($errors->any())
@@ -315,6 +375,7 @@ new class extends Component {
                             type="date"
                             wire:model="approvalDate"
                             required
+                            @if($this->maxExtensionDateInput) max="{{ $this->maxExtensionDateInput }}" @endif
                             class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('approvalDate') border-red-500 dark:border-red-500 @enderror"
                         />
                         @error('approvalDate')

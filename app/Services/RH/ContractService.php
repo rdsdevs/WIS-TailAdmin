@@ -71,20 +71,31 @@ final class ContractService
             $validated = $request->validated();
             $committedLines = $validated['committed_values'] ?? [];
 
-            $contract = Contract::create(
-                collect($validated)->except('committed_values')->all()
-            );
+            $data = collect($validated)->except('committed_values')->all();
+
+            // Contratos de años anteriores se registran siempre como Terminado
+            if (isset($data['start_date'])) {
+                $startYear = \Carbon\Carbon::parse($data['start_date'])->year;
+                if ($startYear < now()->year) {
+                    $data['status'] = 'Terminado';
+                }
+            }
+
+            $contract = Contract::create($data);
 
             if (! empty($committedLines)) {
                 $this->persistCommittedValues($contract, $committedLines);
             }
 
-            $contract->load('collaborator');
-            auth()->user()?->notify(new ContractCreatedNotification(
-                $contract->contract_code ?? '',
-                $contract->id,
-                $contract->collaborator?->full_name ?? '',
-            ));
+            // No notificar contratos históricos
+            if (! $contract->isFromPreviousYear()) {
+                $contract->load('collaborator');
+                auth()->user()?->notify(new ContractCreatedNotification(
+                    $contract->contract_code ?? '',
+                    $contract->id,
+                    $contract->collaborator?->full_name ?? '',
+                ));
+            }
 
             return $contract;
         });
@@ -99,19 +110,27 @@ final class ContractService
             $validated = $request->validated();
             $committedLines = $validated['committed_values'] ?? null;
 
-            $contract->update(
-                collect($validated)->except('committed_values')->all()
-            );
+            $data = collect($validated)->except('committed_values')->all();
+
+            // Contratos de años anteriores mantienen siempre status = Terminado
+            if ($contract->isFromPreviousYear()) {
+                $data['status'] = 'Terminado';
+            }
+
+            $contract->update($data);
 
             // Solo sincronizar si el array viene explícitamente en el request
             if ($committedLines !== null) {
                 $this->syncCommittedValues($contract, $committedLines);
             }
 
-            auth()->user()?->notify(new ContractUpdatedNotification(
-                $contract->contract_code ?? '',
-                $contract->id,
-            ));
+            // No notificar contratos históricos
+            if (! $contract->isFromPreviousYear()) {
+                auth()->user()?->notify(new ContractUpdatedNotification(
+                    $contract->contract_code ?? '',
+                    $contract->id,
+                ));
+            }
         });
 
         return $contract->fresh();

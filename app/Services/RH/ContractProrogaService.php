@@ -52,6 +52,20 @@ final class ContractProrogaService
      *   institution_id: string,
      * }  $data
      */
+    /**
+     * Retorna la fecha máxima de prórroga para un contrato.
+     * Para contratos históricos (año anterior) es el 31/12 de ese año.
+     * Para contratos del año actual no hay límite artificial.
+     */
+    public function getMaxExtensionDate(Contract $contract): ?\Carbon\Carbon
+    {
+        if ($contract->isFromPreviousYear()) {
+            return \Carbon\Carbon::create($contract->start_date->year, 12, 31);
+        }
+
+        return null;
+    }
+
     public function apply(Contract $contract, array $data): ContractExtension
     {
         return DB::transaction(function () use ($contract, $data): ContractExtension {
@@ -72,6 +86,14 @@ final class ContractProrogaService
                 }
 
                 $newEndDate = $date->toDateString();
+
+                // Validar fecha máxima para contratos históricos
+                $maxDate = $this->getMaxExtensionDate($contract);
+                if ($maxDate !== null && \Carbon\Carbon::parse($newEndDate)->gt($maxDate)) {
+                    throw new \InvalidArgumentException(
+                        "La prórroga no puede exceder el {$maxDate->format('d/m/Y')} para contratos del año {$contract->start_date->year}."
+                    );
+                }
 
                 $contract->update(['end_date' => $newEndDate]);
             }
@@ -116,12 +138,14 @@ final class ContractProrogaService
                 'committed_value_id' => $data['committed_value_id'] ?? null,
             ]);
 
-            // 4. Notificar
-            auth()->user()?->notify(new ContractProrogaAppliedNotification(
-                $contract->contract_code ?? '',
-                $contract->id,
-                $extensionType,
-            ));
+            // 4. Notificar solo si no es contrato histórico
+            if (! $contract->isFromPreviousYear()) {
+                auth()->user()?->notify(new ContractProrogaAppliedNotification(
+                    $contract->contract_code ?? '',
+                    $contract->id,
+                    $extensionType,
+                ));
+            }
 
             Log::info('Prórroga aplicada al contrato', [
                 'contract_id' => $contract->id,

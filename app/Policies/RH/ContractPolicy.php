@@ -118,6 +118,41 @@ class ContractPolicy
             return false;
         }
 
+        // Contratos históricos (Terminado + año anterior) solo por flujo avanzado
+        if (! $contract->canBeProrrogated()) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(self::CONTRACTOR_ONLY)) {
+            $collaborator = $contract->relationLoaded('collaborator')
+                ? $contract->collaborator
+                : $contract->collaborator()->first();
+
+            return $collaborator !== null && $collaborator->type === 'Contratista';
+        }
+
+        return true;
+    }
+
+    /**
+     * Prórroga avanzada: solo para contratos Terminado + año anterior.
+     * Disponible únicamente desde el módulo de opciones avanzadas.
+     */
+    public function applyProrrogaAdvanced(User $user, Contract $contract): bool
+    {
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        // Solo aplica para contratos históricos terminados
+        if (! ($contract->status === 'Terminado' && $contract->isFromPreviousYear())) {
+            return false;
+        }
+
         if ($user->hasAnyRole(self::CONTRACTOR_ONLY)) {
             $collaborator = $contract->relationLoaded('collaborator')
                 ? $contract->collaborator

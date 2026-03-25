@@ -377,15 +377,15 @@ new class extends Component {
             <button
                 wire:click="$set('tab', 'vigentes')"
                 class="{{ $tab === 'vigentes'
-                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
                 <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Vigentes
                 @if(isset($this->counts['vigentes']) && $this->counts['vigentes'] > 0)
                     <span class="{{ $tab === 'vigentes'
-                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-medium text-white dark:bg-gray-900/20 dark:text-gray-900'
+                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 px-1.5 text-xs font-medium text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                         : 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 px-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300' }}">
                         {{ $this->counts['vigentes'] }}
                     </span>
@@ -396,15 +396,15 @@ new class extends Component {
             <button
                 wire:click="$set('tab', 'por_vencer')"
                 class="{{ $tab === 'por_vencer'
-                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
                 <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
                 Por vencer
                 @if(isset($this->counts['por_vencer']) && $this->counts['por_vencer'] > 0)
                     <span class="{{ $tab === 'por_vencer'
-                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-medium text-white dark:bg-gray-900/20 dark:text-gray-900'
+                        ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 px-1.5 text-xs font-medium text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                         : 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }}">
                         {{ $this->counts['por_vencer'] }}
                     </span>
@@ -415,8 +415,8 @@ new class extends Component {
             <button
                 wire:click="$set('tab', 'terminados')"
                 class="{{ $tab === 'terminados'
-                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
                 <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
@@ -427,8 +427,8 @@ new class extends Component {
             <button
                 wire:click="$set('tab', 'todos')"
                 class="{{ $tab === 'todos'
-                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
                 <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                 </svg>

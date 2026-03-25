@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use App\Notifications\Auth\PasswordResetByAdminNotification;
+use App\Notifications\Auth\UserCreatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 final class UserService
 {
@@ -58,6 +61,17 @@ final class UserService
             $user = User::create($data);
             $user->assignRole($roles);
 
+            // Notificar al nuevo usuario (solo si tiene email)
+            if ($user->email) {
+                $temporaryPassword = $data['password'] ?? ''; // Ya fue hasheado, usar el raw si está disponible
+                $user->notify(new UserCreatedNotification(
+                    userName: $user->name,
+                    userEmail: $user->email,
+                    temporaryPassword: '(ver con el administrador)',
+                    roleName: implode(', ', $roles),
+                ));
+            }
+
             return $user;
         });
     }
@@ -82,6 +96,23 @@ final class UserService
             $user->syncRoles($roles);
 
             return $user->fresh(['institution', 'roles']);
+        });
+    }
+
+    /**
+     * Restablece la contraseña de un usuario y notifica al afectado.
+     */
+    public function resetPassword(User $user, string $newPassword, User $admin): User
+    {
+        return DB::transaction(function () use ($user, $newPassword, $admin): User {
+            $user->update(['password' => Hash::make($newPassword)]);
+            $user->notify(new PasswordResetByAdminNotification(
+                userName: $user->name,
+                temporaryPassword: $newPassword,
+                adminName: $admin->name,
+            ));
+
+            return $user->fresh();
         });
     }
 

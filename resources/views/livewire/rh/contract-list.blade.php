@@ -1,0 +1,1 @@
+../../components/rh/⚡contract-list.blade.php

@@ -15,6 +15,7 @@
 
     <div class="relative">
         <input
+            {{ $attributes->except(['class']) }}
             :type="show ? 'text' : 'password'"
             id="{{ $id }}"
             name="{{ $name }}"

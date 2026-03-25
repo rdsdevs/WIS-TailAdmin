@@ -601,13 +601,27 @@ new class extends Component {
                                 {{-- ··· Menú de más acciones (Terminar / Prorrogar / Terminar anticipadamente) --}}
                                 @if($hasDropdown)
                                     <div
-                                        x-data="{ open: false }"
-                                        class="relative inline-flex"
+                                        x-data="{
+                                            open: false,
+                                            top: 0,
+                                            right: 0,
+                                            toggle() {
+                                                this.open = !this.open;
+                                                if (this.open) {
+                                                    const r = this.$refs.btn.getBoundingClientRect();
+                                                    this.top  = r.bottom + 4;
+                                                    this.right = window.innerWidth - r.right;
+                                                }
+                                            }
+                                        }"
+                                        class="inline-flex"
                                         @click.outside="open = false"
                                         @keydown.escape.window="open = false"
+                                        @scroll.window="open = false"
                                     >
                                         <button
-                                            @click.stop="open = !open"
+                                            x-ref="btn"
+                                            @click.stop="toggle()"
                                             class="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
                                             aria-label="Más acciones"
                                             :aria-expanded="open"
@@ -625,7 +639,8 @@ new class extends Component {
                                             x-transition:leave="transition ease-in duration-75"
                                             x-transition:leave-start="opacity-100 scale-100"
                                             x-transition:leave-end="opacity-0 scale-95"
-                                            class="absolute right-0 top-full z-30 mt-1 w-52 origin-top-right rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                                            :style="`position:fixed;top:${top}px;right:${right}px;z-index:9999;`"
+                                            class="w-52 origin-top-right rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                                             style="display: none;"
                                         >
                                             {{-- Terminar --}}

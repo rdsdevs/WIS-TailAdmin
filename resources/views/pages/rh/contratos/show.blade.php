@@ -185,67 +185,72 @@
         {{-- Fila de botones de acción --}}
         <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
 
-            {{-- Volver al listado --}}
-            <a href="{{ route('rh.contratos.index') }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-                </svg>
-                Contratos
-            </a>
+            {{-- Button Group Right Icon --}}
+            <div class="flex divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
 
-            {{-- Editar --}}
-            @can('update', $contrato)
-                <a href="{{ route('rh.contratos.edit', $contrato) }}"
-                   class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                {{-- Volver al listado --}}
+                <a href="{{ route('rh.contratos.index') }}"
+                   class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Contratos
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                     </svg>
-                    Editar
                 </a>
-            @endcan
 
-            {{-- Prorrogar --}}
-            @if($contrato->status === 'Vigente')
-                @can('applyProroga', $contrato)
-                    <button type="button"
-                            x-on:click="Livewire.dispatch('open-proroga-modal', { contractId: '{{ $contrato->id }}' })"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+                {{-- Editar --}}
+                @can('update', $contrato)
+                    <a href="{{ route('rh.contratos.edit', $contrato) }}"
+                       class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                        Editar
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
                         </svg>
-                        Prorrogar
+                    </a>
+                @endcan
+
+                {{-- Prorrogar --}}
+                @if($contrato->status === 'Vigente')
+                    @can('applyProroga', $contrato)
+                        <button type="button"
+                                x-on:click="Livewire.dispatch('open-proroga-modal', { contractId: '{{ $contrato->id }}' })"
+                                class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-blue-900/20">
+                            Prorrogar
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </button>
+                    @endcan
+                @endif
+
+                {{-- Terminar anticipadamente --}}
+                @if($contrato->status === 'Vigente')
+                    @can('earlyTerminate', $contrato)
+                        <button type="button"
+                                x-on:click="Livewire.dispatch('open-early-termination-modal', { contractId: '{{ $contrato->id }}' })"
+                                class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20">
+                            Terminar anticipadamente
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    @endcan
+                @endif
+
+                {{-- PDF Certificación (próximamente) --}}
+                @can('view', $contrato)
+                    <button type="button"
+                            disabled
+                            aria-disabled="true"
+                            title="Próximamente disponible"
+                            class="inline-flex cursor-not-allowed items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-400 opacity-50 dark:bg-gray-800 dark:text-gray-500">
+                        PDF Certificación
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
                     </button>
                 @endcan
-            @endif
 
-            {{-- Terminar anticipadamente --}}
-            @if($contrato->status === 'Vigente')
-                @can('earlyTerminate', $contrato)
-                    <button type="button"
-                            x-on:click="Livewire.dispatch('open-early-termination-modal', { contractId: '{{ $contrato->id }}' })"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                        Terminar anticipadamente
-                    </button>
-                @endcan
-            @endif
-
-            {{-- Generar certificación (placeholder) --}}
-            @can('view', $contrato)
-                <button type="button"
-                        disabled
-                        aria-disabled="true"
-                        title="Próximamente disponible"
-                        class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-400 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>
-                    PDF Certificación
-                </button>
-            @endcan
+            </div>
         </div>
     </div>
 

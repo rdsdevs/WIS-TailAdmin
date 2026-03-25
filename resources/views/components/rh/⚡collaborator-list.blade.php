@@ -67,14 +67,19 @@ new class extends Component {
         return Collaborator::query()
             ->where('institution_id', $institutionId)
             ->with(['documentType', 'status', 'activeContract.position'])
-            ->when($this->search, fn ($q) => $q->where(
-                fn ($q2) => $q2
-                    ->where('first_name', 'like', "%{$this->search}%")
-                    ->orWhere('first_surname', 'like', "%{$this->search}%")
-                    ->orWhere('second_surname', 'like', "%{$this->search}%")
-                    ->orWhere('company_name', 'like', "%{$this->search}%")
-                    ->orWhere('document_number', 'like', "%{$this->search}%")
-            ))
+            ->when($this->search, function ($q): void {
+                $words = array_filter(explode(' ', trim($this->search)));
+                foreach ($words as $word) {
+                    $q->where(fn ($q2) => $q2
+                        ->where('first_name', 'like', "%{$word}%")
+                        ->orWhere('second_name', 'like', "%{$word}%")
+                        ->orWhere('first_surname', 'like', "%{$word}%")
+                        ->orWhere('second_surname', 'like', "%{$word}%")
+                        ->orWhere('company_name', 'like', "%{$word}%")
+                        ->orWhere('document_number', 'like', "%{$word}%")
+                    );
+                }
+            })
             ->when($this->filterType, fn ($q) => $q->where('type', $this->filterType))
             ->when($this->filterStatus, fn ($q) => $q->where('status_id', $this->filterStatus))
             ->orderBy('first_surname')

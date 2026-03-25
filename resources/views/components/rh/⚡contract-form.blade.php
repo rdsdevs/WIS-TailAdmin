@@ -517,15 +517,22 @@ new class extends Component {
             return [];
         }
 
-        return Collaborator::query()
-            ->where('institution_id', auth()->user()->institution_id)
-            ->where(fn ($q) => $q
-                ->where('first_name', 'like', "%{$this->collaboratorSearch}%")
-                ->orWhere('first_surname', 'like', "%{$this->collaboratorSearch}%")
-                ->orWhere('company_name', 'like', "%{$this->collaboratorSearch}%")
-                ->orWhere('document_number', 'like', "%{$this->collaboratorSearch}%")
-            )
-            ->limit(8)
+        $query = Collaborator::query()
+            ->where('institution_id', auth()->user()->institution_id);
+
+        $words = array_filter(explode(' ', trim($this->collaboratorSearch)));
+        foreach ($words as $word) {
+            $query->where(fn ($q) => $q
+                ->where('first_name', 'like', "%{$word}%")
+                ->orWhere('second_name', 'like', "%{$word}%")
+                ->orWhere('first_surname', 'like', "%{$word}%")
+                ->orWhere('second_surname', 'like', "%{$word}%")
+                ->orWhere('company_name', 'like', "%{$word}%")
+                ->orWhere('document_number', 'like', "%{$word}%")
+            );
+        }
+
+        return $query->limit(8)
             ->get()
             ->map(fn ($c) => [
                 'id'   => $c->id,

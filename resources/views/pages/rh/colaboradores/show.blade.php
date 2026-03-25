@@ -413,16 +413,9 @@
             @endif
 
             {{-- Historial de contratos --}}
-            <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                        Historial de contratos
-                    </h4>
-                </div>
-                <div class="p-5">
-                    <livewire:rh.timeline-contratos :collaborator-id="$collaborator->id" />
-                </div>
-            </div>
+            <livewire:rh.timeline-contratos
+                :collaborator-id="$collaborator->id"
+                :collaborator-type="$collaborator->type" />
 
         </div>
     </div>

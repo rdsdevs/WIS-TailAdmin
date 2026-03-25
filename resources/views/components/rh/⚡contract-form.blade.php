@@ -6,6 +6,8 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Models\RH\Contract;
 use App\Services\RH\ContractService;
+use App\Notifications\RH\ContractCreatedNotification;
+use App\Notifications\RH\ContractUpdatedNotification;
 use App\Models\RH\CommittedValue;
 use App\Models\RH\Collaborator;
 use App\Models\RH\ContractType;
@@ -477,6 +479,11 @@ new class extends Component {
                     }
                 }
 
+                auth()->user()?->notify(new ContractUpdatedNotification(
+                    contractCode: $contract->contract_code ?? '',
+                    contractId: $contract->id,
+                ));
+
                 session()->flash('success', 'Contrato actualizado correctamente.');
             } else {
                 $this->authorize('create', Contract::class);
@@ -493,6 +500,13 @@ new class extends Component {
                         ]);
                     }
                 }
+
+                $contract->load('collaborator');
+                auth()->user()?->notify(new ContractCreatedNotification(
+                    contractCode: $contract->contract_code ?? '',
+                    contractId: $contract->id,
+                    collaboratorName: $contract->collaborator?->full_name ?? '',
+                ));
 
                 session()->flash('success', 'Contrato registrado correctamente.');
             }

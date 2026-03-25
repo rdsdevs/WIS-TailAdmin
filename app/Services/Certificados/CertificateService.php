@@ -9,12 +9,15 @@ use App\Models\RH\CertificateSignature;
 use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 final class CertificateService
 {
@@ -228,15 +231,16 @@ final class CertificateService
         $signature  = $certificate->signature;
         $institution = $certificate->institution;
 
-        $qrBase64 = base64_encode(
-            QrCode::format('png')
-                ->size(120)
-                ->generate(route('certificados.verificar', $certificate->verification_code))
-        );
+        $qrUrl      = route('certificados.verificar', $certificate->verification_code);
+        $qrRenderer = new ImageRenderer(new RendererStyle(120), new SvgImageBackEnd());
+        $qrSvg      = (new Writer($qrRenderer))->writeString($qrUrl);
+        $qrBase64   = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
 
         $logoBase64 = $institution?->logo
             ? 'data:image/png;base64,' . $institution->logo
-            : null;
+            : $this->loadAssetBase64('logo.png', 'image/png');
+
+        $footerBase64 = $this->loadAssetBase64('footer.png', 'image/png');
 
         $viewName = $certificate->certificate_type === 'empleado'
             ? 'pdf.certificado-empleado'
@@ -250,20 +254,38 @@ final class CertificateService
             'signature'             => $signature,
             'qr_base64'             => $qrBase64,
             'logo_base64'           => $logoBase64,
+            'footer_base64'         => $footerBase64,
             'institution_name'      => $institution?->name ?? 'ASCUN',
             'addressed_to'          => $certificate->getAddressedToLabel(),
             'issued_at'             => $certificate->issued_at,
         ])
         ->setPaper('letter', 'portrait')
         ->setOptions([
-            'defaultFont'          => 'DejaVu Sans',
+            'defaultFont'          => 'Arial',
             'dpi'                  => 150,
             'isRemoteEnabled'      => false,
             'isHtml5ParserEnabled' => true,
+            'isPhpEnabled'         => true,
+            'fontDir'              => storage_path('fonts'),
+            'fontCache'            => storage_path('fonts'),
         ]);
     }
 
     // ── Privados ─────────────────────────────────────────────────────────────
+
+    /**
+     * Carga un asset de PDF (imagen) como data URI base64.
+     */
+    private function loadAssetBase64(string $filename, string $mime): ?string
+    {
+        $path = resource_path('pdf-assets/' . $filename);
+
+        if (! file_exists($path)) {
+            return null;
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+    }
 
     /**
      * Construye el snapshot del colaborador al momento de emisión.

@@ -398,15 +398,6 @@ new class extends Component {
         return $this->contractYear > 0 && $this->contractYear < now()->year;
     }
 
-    // ── Lifecycle hooks ───────────────────────────────────────────────────────
-
-    public function updatedStartDate(): void
-    {
-        if ($this->isHistoricalContract) {
-            $this->status = 'Terminado';
-        }
-    }
-
     // ── Guardar ───────────────────────────────────────────────────────────────
 
     public function save(): void
@@ -616,7 +607,12 @@ new class extends Component {
 
     public function updatedStartDate(): void
     {
-        // Siempre recalcular el número cuando cambia la fecha (el año puede cambiar)
+        // Forzar status Terminado si la fecha es de un año anterior
+        if ($this->isHistoricalContract) {
+            $this->status = 'Terminado';
+        }
+
+        // Recalcular el número cuando cambia la fecha (el año puede cambiar)
         $suggested = $this->getSuggestedContractNumber();
         if ($suggested !== '') {
             $this->contractNumber = $suggested;

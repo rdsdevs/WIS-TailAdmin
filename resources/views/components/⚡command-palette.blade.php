@@ -70,14 +70,32 @@ new class extends Component {
         $institutionId = auth()->user()->institution_id;
         $isSuperAdmin = auth()->user()->hasRole('super-admin');
 
+        $words = array_filter(explode(' ', trim($q)));
+
         $query = Collaborator::query()
             ->when(! $isSuperAdmin, fn ($q2) => $q2->where('institution_id', $institutionId))
-            ->where(fn ($q2) => $q2
-                ->where('first_name', 'like', "%{$q}%")
-                ->orWhere('first_surname', 'like', "%{$q}%")
-                ->orWhere('company_name', 'like', "%{$q}%")
-                ->orWhere('document_number', 'like', "%{$q}%")
-            )
+            ->where(function ($q2) use ($words, $q): void {
+                if (count($words) > 1) {
+                    // Búsqueda multi-palabra: cada palabra debe coincidir en algún campo de nombre
+                    foreach ($words as $word) {
+                        $q2->where(fn ($q3) => $q3
+                            ->where('first_name', 'like', "%{$word}%")
+                            ->orWhere('second_name', 'like', "%{$word}%")
+                            ->orWhere('first_surname', 'like', "%{$word}%")
+                            ->orWhere('second_surname', 'like', "%{$word}%")
+                            ->orWhere('company_name', 'like', "%{$word}%")
+                        );
+                    }
+                } else {
+                    // Búsqueda simple: OR en todos los campos
+                    $q2->where('first_name', 'like', "%{$q}%")
+                        ->orWhere('second_name', 'like', "%{$q}%")
+                        ->orWhere('first_surname', 'like', "%{$q}%")
+                        ->orWhere('second_surname', 'like', "%{$q}%")
+                        ->orWhere('company_name', 'like', "%{$q}%")
+                        ->orWhere('document_number', 'like', "%{$q}%");
+                }
+            })
             ->limit(5)
             ->get();
 

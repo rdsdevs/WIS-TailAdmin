@@ -88,15 +88,24 @@ class ContractPolicy
 
     public function earlyTerminate(User $user, Contract $contract): bool
     {
-        if ($user->hasAnyRole(self::CONTRACTOR_ONLY)) {
-            return false;
-        }
-
         if (! $user->hasAnyRole(self::MANAGERS)) {
             return false;
         }
 
-        return $user->institution_id === $contract->institution_id;
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        // contractor-manager solo puede terminar anticipadamente contratos de contratistas
+        if ($user->hasAnyRole(self::CONTRACTOR_ONLY)) {
+            $collaborator = $contract->relationLoaded('collaborator')
+                ? $contract->collaborator
+                : $contract->collaborator()->first();
+
+            return $collaborator !== null && $collaborator->type === 'Contratista';
+        }
+
+        return true;
     }
 
     public function applyProroga(User $user, Contract $contract): bool

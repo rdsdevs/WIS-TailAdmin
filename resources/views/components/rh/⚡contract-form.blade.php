@@ -492,10 +492,24 @@ new class extends Component {
 
                 // No notificar contratos históricos (años anteriores al actual)
                 if (! $contract->isFromPreviousYear()) {
+                    $contract->loadMissing('collaborator');
+                    $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                    $collaboratorEmail = $contract->collaborator?->email ?? '';
+
                     auth()->user()?->notify(new ContractUpdatedNotification(
                         contractCode: $contract->contract_code ?? '',
                         contractId: $contract->id,
+                        collaboratorName: $collaboratorName,
                     ));
+
+                    if ($collaboratorEmail !== '') {
+                        \Illuminate\Support\Facades\Notification::route('mail', $collaboratorEmail)
+                            ->notify(new ContractUpdatedNotification(
+                                contractCode: $contract->contract_code ?? '',
+                                contractId: $contract->id,
+                                collaboratorName: $collaboratorName,
+                            ));
+                    }
                 }
 
                 session()->flash('success', 'Contrato actualizado correctamente.');
@@ -518,11 +532,23 @@ new class extends Component {
                 // No notificar contratos históricos (años anteriores al actual)
                 if (! $contract->isFromPreviousYear()) {
                     $contract->load('collaborator');
+                    $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                    $collaboratorEmail = $contract->collaborator?->email ?? '';
+
                     auth()->user()?->notify(new ContractCreatedNotification(
                         contractCode: $contract->contract_code ?? '',
                         contractId: $contract->id,
-                        collaboratorName: $contract->collaborator?->full_name ?? '',
+                        collaboratorName: $collaboratorName,
                     ));
+
+                    if ($collaboratorEmail !== '') {
+                        \Illuminate\Support\Facades\Notification::route('mail', $collaboratorEmail)
+                            ->notify(new ContractCreatedNotification(
+                                contractCode: $contract->contract_code ?? '',
+                                contractId: $contract->id,
+                                collaboratorName: $collaboratorName,
+                            ));
+                    }
                 }
 
                 session()->flash('success', 'Contrato registrado correctamente.');

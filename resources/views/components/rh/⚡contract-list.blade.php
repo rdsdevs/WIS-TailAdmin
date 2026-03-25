@@ -360,7 +360,7 @@ new class extends Component {
                 >
                     <div class="flex items-center gap-2">
                         <label class="shrink-0 text-sm text-gray-600 dark:text-gray-400">Desde:</label>
-                        <div class="w-44">
+                        <div class="w-44" wire:ignore>
                             <x-form.date-picker
                                 id="filter-from"
                                 wireModel="filterFrom"
@@ -371,7 +371,7 @@ new class extends Component {
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="shrink-0 text-sm text-gray-600 dark:text-gray-400">Hasta:</label>
-                        <div class="w-44">
+                        <div class="w-44" wire:ignore>
                             <x-form.date-picker
                                 id="filter-to"
                                 wireModel="filterTo"

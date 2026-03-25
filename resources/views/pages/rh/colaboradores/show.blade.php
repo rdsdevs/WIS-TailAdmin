@@ -349,18 +349,18 @@
                                 <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-white">{{ $activeContract->contractType->name }}</p>
                             </div>
                         @endif
-                        @if($activeContract->salary)
+                        @if((float) $activeContract->salary > 0)
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">Salario</p>
                                 <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
-                                    $ {{ number_format((float)$activeContract->salary, 0, ',', '.') }}
+                                    $ {{ number_format((float) $activeContract->salary, 0, ',', '.') }}
                                 </p>
                             </div>
-                        @elseif($activeContract->fees)
+                        @elseif((float) $activeContract->fees > 0)
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">Honorarios</p>
                                 <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
-                                    $ {{ number_format((float)$activeContract->fees, 0, ',', '.') }}
+                                    $ {{ number_format((float) $activeContract->fees, 0, ',', '.') }}
                                 </p>
                             </div>
                         @endif
@@ -372,19 +372,19 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400">Fin</p>
-                            <p class="mt-0.5 text-sm font-medium {{ $activeContract->end_date && $activeContract->end_date->diffInDays(now()) <= 30 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' }}">
+                            <p class="mt-0.5 text-sm font-medium {{ $activeContract->end_date && $activeContract->end_date->isFuture() && now()->diffInDays($activeContract->end_date) <= 30 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' }}">
                                 {{ $activeContract->end_date ? $activeContract->end_date->format('d/m/Y') : 'Indefinido' }}
                             </p>
                         </div>
                     </div>
 
                     {{-- Alerta si vence pronto --}}
-                    @if($activeContract->end_date && $activeContract->end_date->isFuture() && $activeContract->end_date->diffInDays(now()) <= 30)
+                    @if($activeContract->end_date && $activeContract->end_date->isFuture() && now()->diffInDays($activeContract->end_date) <= 30)
                         <div class="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
                             <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                             </svg>
-                            Este contrato vence en {{ $activeContract->end_date->diffInDays(now()) }} días.
+                            Este contrato vence en {{ (int) now()->diffInDays($activeContract->end_date) }} días.
                         </div>
                     @endif
 

@@ -545,8 +545,16 @@ new class extends Component {
                             @endif
                         </td>
                         <td class="px-4 py-3">
+                            @php
+                                $canTerminate         = auth()->user()->can('update', $contract) && $contract->status === 'Vigente';
+                                $canProrrogar         = auth()->user()->can('applyProroga', $contract) && $contract->canBeProrrogated();
+                                $canProrrogarAvanzado = auth()->user()->can('applyProrrogaAdvanced', $contract) && $contract->isFromPreviousYear() && $contract->status === 'Terminado';
+                                $canEarlyTerminate    = auth()->user()->can('earlyTerminate', $contract) && $contract->status === 'Vigente';
+                                $hasDropdown          = $canTerminate || $canProrrogar || $canProrrogarAvanzado || $canEarlyTerminate;
+                            @endphp
                             <div class="flex items-center justify-end gap-0.5">
-                                {{-- Ver detalle --}}
+
+                                {{-- ① Ver detalle --}}
                                 @can('view', $contract)
                                     <div class="relative group inline-flex">
                                         <a href="{{ route('rh.contratos.show', $contract) }}"
@@ -560,7 +568,8 @@ new class extends Component {
                                         <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Ver detalle</span>
                                     </div>
                                 @endcan
-                                {{-- Editar --}}
+
+                                {{-- ② Editar --}}
                                 @can('update', $contract)
                                     <div class="relative group inline-flex">
                                         <a href="{{ route('rh.contratos.edit', $contract) }}"
@@ -573,56 +582,8 @@ new class extends Component {
                                         <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Editar</span>
                                     </div>
                                 @endcan
-                                {{-- Terminar --}}
-                                @can('update', $contract)
-                                    @if($contract->status === 'Vigente')
-                                        <div class="relative group inline-flex">
-                                            <button
-                                                wire:click="terminate('{{ $contract->id }}')"
-                                                wire:confirm="¿Desea terminar este contrato?"
-                                                class="p-1.5 rounded-md text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-300 transition-colors"
-                                                aria-label="Terminar contrato">
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </button>
-                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Terminar</span>
-                                        </div>
-                                    @endif
-                                @endcan
-                                {{-- Prorrogar --}}
-                                @can('applyProroga', $contract)
-                                    @if($contract->status === 'Vigente')
-                                        <div class="relative group inline-flex">
-                                            <button
-                                                wire:click="$dispatch('open-proroga-modal', { contractId: '{{ $contract->id }}' })"
-                                                class="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 transition-colors"
-                                                aria-label="Aplicar prórroga">
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
-                                                </svg>
-                                            </button>
-                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Prorrogar</span>
-                                        </div>
-                                    @endif
-                                @endcan
-                                {{-- Terminar anticipadamente --}}
-                                @can('earlyTerminate', $contract)
-                                    @if($contract->status === 'Vigente')
-                                        <div class="relative group inline-flex">
-                                            <button
-                                                wire:click="$dispatch('open-early-termination-modal', { contractId: '{{ $contract->id }}' })"
-                                                class="p-1.5 rounded-md text-orange-500 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors"
-                                                aria-label="Terminar anticipadamente">
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-                                                </svg>
-                                            </button>
-                                            <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Terminar anticipadamente</span>
-                                        </div>
-                                    @endif
-                                @endcan
-                                {{-- Eliminar --}}
+
+                                {{-- ③ Eliminar --}}
                                 @can('delete', $contract)
                                     <div class="relative group inline-flex">
                                         <button
@@ -636,6 +597,96 @@ new class extends Component {
                                         <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Eliminar</span>
                                     </div>
                                 @endcan
+
+                                {{-- ··· Menú de más acciones (Terminar / Prorrogar / Terminar anticipadamente) --}}
+                                @if($hasDropdown)
+                                    <div
+                                        x-data="{ open: false }"
+                                        class="relative inline-flex"
+                                        @click.outside="open = false"
+                                        @keydown.escape.window="open = false"
+                                    >
+                                        <button
+                                            @click.stop="open = !open"
+                                            class="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+                                            aria-label="Más acciones"
+                                            :aria-expanded="open"
+                                        >
+                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                                <path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z" />
+                                            </svg>
+                                        </button>
+
+                                        <div
+                                            x-show="open"
+                                            x-transition:enter="transition ease-out duration-100"
+                                            x-transition:enter-start="opacity-0 scale-95"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-75"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-95"
+                                            class="absolute right-0 top-full z-30 mt-1 w-52 origin-top-right rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                                            style="display: none;"
+                                        >
+                                            {{-- Terminar --}}
+                                            @if($canTerminate)
+                                                <button
+                                                    wire:click="terminate('{{ $contract->id }}')"
+                                                    wire:confirm="¿Desea terminar este contrato?"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20">
+                                                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Terminar
+                                                </button>
+                                            @endif
+
+                                            {{-- Prorrogar (flujo normal) --}}
+                                            @if($canProrrogar)
+                                                <button
+                                                    wire:click="$dispatch('open-proroga-modal', { contractId: '{{ $contract->id }}' })"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
+                                                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                                    </svg>
+                                                    Prorrogar
+                                                </button>
+                                            @endif
+
+                                            {{-- Prorrogar avanzado (contratos históricos) --}}
+                                            @if($canProrrogarAvanzado)
+                                                <button
+                                                    wire:click="$dispatch('open-proroga-modal', { contractId: '{{ $contract->id }}', isAdvancedMode: true })"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20">
+                                                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                                    </svg>
+                                                    Prorrogar (Avanzado)
+                                                </button>
+                                            @endif
+
+                                            {{-- Terminar anticipadamente --}}
+                                            @if($canEarlyTerminate)
+                                                @if($canTerminate || $canProrrogar || $canProrrogarAvanzado)
+                                                    <div class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
+                                                @endif
+                                                <button
+                                                    wire:click="$dispatch('open-early-termination-modal', { contractId: '{{ $contract->id }}' })"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                                                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                                    </svg>
+                                                    Terminar anticipadamente
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
                             </div>
                         </td>
                     </tr>

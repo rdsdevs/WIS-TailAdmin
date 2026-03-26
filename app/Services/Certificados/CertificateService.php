@@ -9,11 +9,14 @@ use App\Models\RH\CertificateSignature;
 use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\User;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\Label\Font\Font;
+use Endroid\QrCode\Label\LabelAlignment;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Writer\PngWriter;
+use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -60,9 +63,6 @@ final class CertificateService
 
     /**
      * Genera un certificado laboral para un colaborador empleado.
-     *
-     * @param  array<string>  $contractIds  UUIDs de contratos a incluir
-     * @param  array<string, bool>  $options  ['show_salary', 'show_position_history']
      */
     public function generateEmployee(
         Collaborator $collaborator,
@@ -133,9 +133,6 @@ final class CertificateService
 
     /**
      * Genera un certificado de contratación para un colaborador contratista.
-     *
-     * @param  array<string>  $contractIds
-     * @param  array<string, bool>  $options  ['show_object', 'show_obligations', 'show_value', 'show_prorrogas', 'show_early_termination']
      */
     public function generateContractor(
         Collaborator $collaborator,
@@ -211,9 +208,6 @@ final class CertificateService
         });
     }
 
-    /**
-     * Busca un certificado por su código de verificación (ruta pública).
-     */
     public function findByVerificationCode(string $code): ?Certificate
     {
         return Certificate::with(['signature', 'institution'])
@@ -224,7 +218,7 @@ final class CertificateService
     /**
      * Construye y retorna el objeto PDF listo para descargar.
      */
-    public function buildPdf(Certificate $certificate): \Barryvdh\DomPDF\PDF
+    public function buildPdf(Certificate $certificate): \Mccarlosen\LaravelMpdf\LaravelMpdf
     {
         $certificate->loadMissing(['signature', 'institution']);
 
@@ -232,9 +226,27 @@ final class CertificateService
         $institution = $certificate->institution;
 
         $qrUrl      = route('certificados.verificar', $certificate->verification_code);
-        $qrRenderer = new ImageRenderer(new RendererStyle(120), new SvgImageBackEnd());
-        $qrSvg      = (new Writer($qrRenderer))->writeString($qrUrl);
-        $qrBase64   = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
+        
+        // Generar QR con etiqueta integrada usando Endroid
+        $fontPath = resource_path('pdf-assets/fonts/arial.ttf');
+        if (!file_exists($fontPath)) {
+            $fontPath = storage_path('fonts/arial.ttf');
+        }
+
+        $qrResult = Builder::create()
+            ->writer(new PngWriter())
+            ->data($qrUrl)
+            ->encoding(new Encoding('UTF-8'))
+            ->errorCorrectionLevel(ErrorCorrectionLevel::High)
+            ->size(400)
+            ->margin(0)
+            ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
+            ->labelText('Escanea para validar el certificado')
+            ->labelFont(new Font($fontPath, 19))
+            ->labelAlignment(LabelAlignment::Center)
+            ->build();
+
+        $qrBase64 = $qrResult->getDataUri();
 
         $logoBase64 = $institution?->logo
             ? 'data:image/png;base64,' . $institution->logo
@@ -242,56 +254,60 @@ final class CertificateService
 
         $footerBase64 = $this->loadAssetBase64('footer.png', 'image/png');
 
+        $signatureBase64 = null;
+        if ($signature) {
+            $rawImage = $signature->signature_image;
+            if ($rawImage) {
+                if (str_starts_with($rawImage, 'data:')) {
+                    $signatureBase64 = $rawImage;
+                } elseif (file_exists(public_path($rawImage))) {
+                    $signatureBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents(public_path($rawImage)));
+                } elseif (strlen($rawImage) > 100) {
+                    $prefix = str_starts_with($rawImage, '/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,';
+                    $signatureBase64 = $prefix . $rawImage;
+                }
+            }
+        }
+
         $viewName = $certificate->certificate_type === 'empleado'
             ? 'pdf.certificado-empleado'
             : 'pdf.certificado-contratista';
 
-        return Pdf::loadView($viewName, [
+        $data = [
             'certificate'           => $certificate,
             'collaborator_snapshot' => $certificate->collaborator_snapshot,
             'contracts_snapshot'    => $certificate->contracts_snapshot,
             'options_snapshot'      => $certificate->options_snapshot,
             'signature'             => $signature,
+            'signature_base64'      => $signatureBase64,
             'qr_base64'             => $qrBase64,
             'logo_base64'           => $logoBase64,
             'footer_base64'         => $footerBase64,
             'institution_name'      => $institution?->name ?? 'ASCUN',
             'addressed_to'          => $certificate->getAddressedToLabel(),
             'issued_at'             => $certificate->issued_at,
-        ])
-        ->setPaper('letter', 'portrait')
-        ->setOptions([
-            'defaultFont'          => 'Arial',
-            'dpi'                  => 150,
-            'isRemoteEnabled'      => false,
-            'isHtml5ParserEnabled' => true,
-            'isPhpEnabled'         => true,
-            'fontDir'              => storage_path('fonts'),
-            'fontCache'            => storage_path('fonts'),
+            'date'                  => $certificate->issued_at->locale('es')->isoFormat('D [de] MMMM [de] YYYY'),
+        ];
+
+        return PDF::loadView($viewName, $data, [], [
+            'format' => 'Letter',
+            'margin_left' => 32,   /* Aumentado de 25 a 32 para estrechar el bloque de texto */
+            'margin_right' => 32,  /* Aumentado de 25 a 32 */
+            'margin_top' => 60,
+            'margin_bottom' => 35, /* Aumentado para proteger el footer */
+            'margin_header' => 10,
+            'margin_footer' => 10,
+            'default_font' => 'arial'
         ]);
     }
 
-    // ── Privados ─────────────────────────────────────────────────────────────
-
-    /**
-     * Carga un asset de PDF (imagen) como data URI base64.
-     */
     private function loadAssetBase64(string $filename, string $mime): ?string
     {
         $path = resource_path('pdf-assets/' . $filename);
-
-        if (! file_exists($path)) {
-            return null;
-        }
-
+        if (! file_exists($path)) return null;
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
     }
 
-    /**
-     * Construye el snapshot del colaborador al momento de emisión.
-     *
-     * @return array<string, mixed>
-     */
     private function buildCollaboratorSnapshot(Collaborator $collaborator): array
     {
         return [

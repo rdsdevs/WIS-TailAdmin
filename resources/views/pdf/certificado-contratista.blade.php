@@ -1,312 +1,269 @@
-@php
-    $meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    $diasSemana = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-    $fechaLarga = $diasSemana[$issued_at->dayOfWeek] . ', ' . $issued_at->day . ' de ' . $meses[$issued_at->month - 1] . ' de ' . $issued_at->year;
-
-    $nombre       = $collaborator_snapshot['is_company']
-        ? ($collaborator_snapshot['company_name'] ?? $collaborator_snapshot['full_name'] ?? '')
-        : ($collaborator_snapshot['full_name'] ?? '');
-    $tipoDoc      = $collaborator_snapshot['document_type_name'] ?? 'Cédula de Ciudadanía';
-    $tipoDocCorto = $collaborator_snapshot['document_type'] ?? 'cc';
-    $numDoc       = $collaborator_snapshot['document_number'] ?? '';
-    $genero       = $collaborator_snapshot['gender'] ?? 'M';
-    $isCompany    = ! empty($collaborator_snapshot['is_company']);
-    $identificado = $isCompany ? 'identificada' : ($genero === 'F' ? 'identificada' : 'identificado');
-    $numContratos = count($contracts_snapshot);
-
-    $showObject           = ! empty($options_snapshot['show_object']);
-    $showObligations      = ! empty($options_snapshot['show_obligations']);
-    $showValue            = ! empty($options_snapshot['show_value']);
-    $showProrrogas        = ! empty($options_snapshot['show_prorrogas']);
-    $showEarlyTermination = ! empty($options_snapshot['show_early_termination']);
-
-    // Determina el género del cargo firmante para "EL SUSCRITO" / "LA SUSCRITA"
-    $cargoFirmante = strtolower($signature->signer_position ?? '');
-    $laSuscrita    = (str_contains($cargoFirmante, 'director') && ! str_contains($cargoFirmante, 'directora'))
-        ? 'EL SUSCRITO'
-        : 'LA SUSCRITA';
-
-    // Helper: fecha larga desde string d/m/Y
-    function fechaLargaCont(string $fecha): string {
-        $mesesL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-        try {
-            $d = \Carbon\Carbon::createFromFormat('d/m/Y', $fecha);
-            return $d->day . ' de ' . $mesesL[$d->month - 1] . ' de ' . $d->year;
-        } catch (\Throwable) {
-            return $fecha;
-        }
-    }
-
-    // Helper: monto a texto
-    function montoATextoCont(float $monto): string {
-        $fmt = new \NumberFormatter('es_CO', \NumberFormatter::SPELLOUT);
-        return strtoupper($fmt->format((int) $monto));
-    }
-@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Certificado de Contratación</title>
+    <title>Certificado de Contratación - {{ $collaborator_snapshot['full_name'] }}</title>
     <style>
         @page {
-            margin-top: 120px;
-            margin-bottom: 55px;
-            margin-left: 2cm;
-            margin-right: 1.8cm;
+            header: page-header;
+            footer: page-footer;
+            margin-top: 60mm;
+            margin-bottom: 45mm;
+            margin-left: 10mm;
+            margin-right: 15mm;
+
         }
         body {
-            font-family: "Arial", sans-serif;
-            font-size: 11pt;
-            color: #000;
-            line-height: 1.45;
-        }
-        header {
-            position: fixed;
-            top: -105px;
-            left: 0;
-            right: 0;
-            height: 90px;
-        }
-        footer {
-            position: fixed;
-            bottom: -45px;
-            left: 0;
-            right: 0;
-            height: 44px;
-        }
-        .bold        { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-justify { text-align: justify; }
-        .section-label { font-weight: bold; }
-        .page-break { page-break-before: always; }
-        .certifica-header {
-            text-align: center;
-            font-weight: bold;
+            font-family: 'Arial', sans-serif;
             font-size: 12pt;
             line-height: 1.5;
-            margin-top: 15px;
-            margin-bottom: 20px;
+            color: #000;
         }
-        .intro-paragraph {
-            font-size: 12pt;
-            text-align: justify;
-            margin-bottom: 12px;
-        }
-        .contract-title {
-            font-weight: bold;
-            font-size: 11.5pt;
-            margin-top: 12px;
-            margin-bottom: 4px;
-        }
-        .contract-section {
-            text-align: justify;
-            margin-bottom: 4px;
-            font-size: 11pt;
-        }
-        .firma-block {
+        
+        .main-cert-title {
             text-align: center;
-            margin-top: 50px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            font-size: 12pt;
         }
-        .firma-block img {
+
+        .content-paragraph {
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+        .contract-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        .section-label {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .section-content {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .signature-image {
+            width: 175px;
+            margin-bottom: 5px;
+        }
+        .signer-name {
+            font-weight: bold;
+            text-transform: uppercase;
             display: block;
-            margin: 0 auto 2px auto;
-            width: 160px;
+            font-size: 11pt;
+            margin: 0;
         }
+        .signer-title {
+            text-transform: uppercase;
+            display: block;
+            font-size: 10.5pt;
+            margin: 0;
+        }
+
+        .bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+        .justify { text-align: justify; }
     </style>
 </head>
 <body>
+    @php
+        $nombre = $collaborator_snapshot['full_name'];
+        $tipoDoc = strtolower($collaborator_snapshot['document_type'] ?? 'cc');
+        $numDoc = number_format((float)$collaborator_snapshot['document_number'], 0, ',', '.');
+        $genero = $collaborator_snapshot['gender'] ?? 'M';
+        $identificada = ($genero === 'F') ? 'identificada' : 'identificado';
+        
+        $cargoFirmante = strtolower($signature->signer_position ?? '');
+        $laSuscrita = (str_contains($cargoFirmante, 'director') && !str_contains($cargoFirmante, 'directora')) 
+            ? 'EL SUSCRITO' 
+            : 'LA SUSCRITA';
 
-{{-- Script para numeración de página --}}
-<script type="text/php">
-    if (isset($pdf)) {
-        $font = $fontMetrics->get_font("Arial", "normal");
-        $w    = $pdf->get_width();
-        $pdf->page_text($w - 95, 17, "Página {PAGE_NUM} de {PAGE_COUNT}", $font, 7.5, [0.1, 0.1, 0.1]);
-    }
-</script>
+        if (!function_exists('formatMoneyLocal')) {
+            function formatMoneyLocal($val) { return '$' . number_format((float)$val, 0, ',', '.'); }
+        }
+        
+        if (!function_exists('numeroALetrasLocal')) {
+            function numeroALetrasLocal($valor) {
+                $valor = intval($valor);
+                if ($valor == 0) return 'CERO';
+                $control = array(0 => "", 1 => "UNO", 2 => "DOS", 3 => "TRES", 4 => "CUATRO", 5 => "CINCO", 6 => "SEIS", 7 => "SIETE", 8 => "OCHO", 9 => "NUEVE", 10 => "DIEZ", 11 => "ONCE", 12 => "DOCE", 13 => "TRECE", 14 => "CATORCE", 15 => "QUINCE", 16 => "DIECISÉIS", 17 => "DIECISIETE", 18 => "DIECIOCHO", 19 => "DIECINUEVE", 20 => "VEINTE", 21 => "VEINTIUNO", 22 => "VEINTIDÓS", 23 => "VEINTITRÉS", 24 => "VEINTICUATRO", 25 => "VEINTICINCO", 26 => "VEINTISÉIS", 27 => "VEINTISIETE", 28 => "VEINTIOCHO", 29 => "VEINTINUEVE");
+                $decenas = array(30 => "TREINTA", 40 => "CUARENTA", 50 => "CINCUENTA", 60 => "SESENTA", 70 => "SETENTA", 80 => "OCHENTA", 90 => "NOVENTA");
+                $centenas = array(100 => "CIEN", 200 => "DOSCIENTOS", 300 => "TRESCIENTOS", 400 => "CUATROCIENTOS", 500 => "QUINIENTOS", 600 => "SEISCIENTOS", 700 => "SETECIENTOS", 800 => "OCHOCIENTOS", 900 => "NOVECIENTOS");
+                if ($valor <= 29) return $control[$valor];
+                if ($valor < 100) { $d = intval($valor / 10) * 10; $u = $valor % 10; return $decenas[$d] . ($u > 0 ? " Y " . $control[$u] : ""); }
+                if ($valor == 100) return "CIEN";
+                if ($valor < 1000) { $c = intval($valor / 100) * 100; $r = $valor % 100; if ($c == 100) return "CIENTO " . numeroALetrasLocal($r); return $centenas[$c] . ($r > 0 ? " " . numeroALetrasLocal($r) : ""); }
+                if ($valor < 1000000) { $m = intval($valor / 1000); $r = $valor % 1000; $str = ($m == 1 ? "MIL" : numeroALetrasLocal($m) . " MIL"); return $str . ($r > 0 ? " " . numeroALetrasLocal($r) : ""); }
+                if ($valor < 1000000000000) { $m = intval($valor / 1000000); $r = $valor % 1000000; $str = ($m == 1 ? "UN MILLÓN" : numeroALetrasLocal($m) . " MILLONES"); return $str . ($r > 0 ? " " . numeroALetrasLocal($r) : ""); }
+                return "VALOR DEMASIADO ALTO";
+            }
+        }
+    @endphp
 
-{{-- ── Header fijo ─────────────────────────────────────────────────────── --}}
-<header>
-    <table style="border-collapse: collapse; border: none; width: 100%; padding: 0; margin: 0;">
-        <tr>
-            {{-- Izquierda: QR --}}
-            <td style="border: none; vertical-align: top; text-align: left; width: 18%;">
-                <img src="{{ $qr_base64 }}" style="height: 68px; width: 68px;">
-                <br><span style="font-size: 6pt; color: #555;">Escanea para validar el certificado</span>
-            </td>
-            {{-- Centro: Nombre institución --}}
-            <td style="border: none; vertical-align: middle; text-align: left; width: 42%; padding-left: 6px;">
-                <strong style="font-size: 9.5pt; color: #1a1a1a;">{{ strtoupper($institution_name) }}</strong>
-            </td>
-            {{-- Derecha: Logo --}}
-            <td style="border: none; vertical-align: top; text-align: right; width: 40%;">
-                @if ($logo_base64)
-                    <img src="{{ $logo_base64 }}" style="max-height: 72px; max-width: 180px;">
-                @endif
-            </td>
-        </tr>
-    </table>
-    <hr style="border: 0; border-top: 1.5px solid #1a3a6b; margin: 4px 0 0 0;">
-</header>
-
-{{-- ── Footer fijo ─────────────────────────────────────────────────────── --}}
-<footer>
-    @if ($footer_base64)
-        <img src="{{ $footer_base64 }}" style="width: 100%; height: 44px;">
-    @else
-        <div style="background-color: #1a3a6b; padding: 5px 10px; text-align: center; color: #fff; font-size: 7.5pt;">
-            <span style="margin: 0 6px;">&#9679; Calle 93 No. 16 - 43</span>
-            <span style="margin: 0 6px;">&#9679; (57 - 1) 623 15 80</span>
-            <span style="margin: 0 6px;">&#9679; ascun@ascun.org.co</span>
-            <span style="margin: 0 6px;">&#9679; www.ascun.org.co</span>
-            <span style="margin: 0 6px;">&#9679; Bogotá - Colombia</span>
+    <htmlpageheader name="page-header">
+        <div style="font-family: arial; font-size: 12pt; margin-bottom: 10px;">
+            <table width="100%" style="border-collapse: collapse; vertical-align: top;">
+                <tr>
+                    <td width="60%" style="text-align: left; vertical-align: top;">
+                        <div style="margin-bottom: 15px;">
+                            <strong>ASOCIACIÓN COLOMBIANA DE UNIVERSIDADES</strong>
+                        </div>
+                        <img src="{{ $qr_base64 }}" style="height: 137px; margin-top: 10px;">
+                    </td>
+                    <td width="40%" style="text-align: right; vertical-align: top;">
+                        @if($logo_base64)
+                            <img src="{{ $logo_base64 }}" style="height: 90px; margin-bottom: 10px;"><br>
+                        @endif
+                        <span style="font-size: 10pt;">Página {PAGENO} de {nbpg}</span>
+                    </td>
+                </tr>
+            </table>
         </div>
-    @endif
-</footer>
+    </htmlpageheader>
 
-{{-- ── Contenido principal ──────────────────────────────────────────────── --}}
-<main>
+    <htmlpagefooter name="page-footer">
+        <div style="text-align: center;">
+            @if($footer_base64)
+                <img src="{{ $footer_base64 }}" width="100%" style="margin-bottom: 10px;">
+            @endif
+        </div>
+    </htmlpagefooter>
 
-    {{-- Bloque CERTIFICA --}}
-    <div class="certifica-header">
-        LA SUSCRITA {{ strtoupper($signature->signer_position ?? '') }}<br>
+    <div class="main-cert-title">
+        {{ $laSuscrita }} {{ strtoupper($signature->signer_position ?? '') }}<br>
         DE LA ASOCIACIÓN COLOMBIANA DE UNIVERSIDADES -ASCÚN-<br>
         NIT. 860.025.721-0<br>
         CERTIFICA:
     </div>
 
-    {{-- Párrafo introductorio --}}
-    <p class="intro-paragraph">
-        Que <strong>{{ strtoupper($nombre) }}</strong>,
-        {{ $identificado }} con {{ strtolower($tipoDocCorto) }} N°
-        {{ number_format((float) $numDoc, 0, ',', '.') }},
-        cuenta con la siguiente información relacionada a
-        {{ $numContratos > 1 ? 'sus contratos' : 'su contrato' }}
-        de acuerdo con la base de datos de contratación.
-    </p>
-
-    {{-- Contratos --}}
-    @foreach ($contracts_snapshot as $idx => $contrato)
-        @php
-            $fees   = (float) ($contrato['fees']   ?? 0);
-            $salary = (float) ($contrato['salary'] ?? 0);
-            $valor  = $fees > 0 ? $fees : $salary;
-
-            $startLargo = ! empty($contrato['start_date']) ? fechaLargaCont($contrato['start_date']) : '—';
-            $endLargo   = ! empty($contrato['end_date'])   ? fechaLargaCont($contrato['end_date'])   : 'fecha indeterminada';
-        @endphp
-
-        <p class="contract-title">
-            CONTRATO DE {{ strtoupper($contrato['contract_type'] ?? '') }}
-            No. {{ $contrato['contract_code'] ?? '' }}
-        </p>
-
-        @if ($showObject && ! empty($contrato['object']))
-            <p class="contract-section">
-                <span class="section-label">OBJETO</span>:
-                {!! $contrato['object'] !!}
-            </p>
-        @endif
-
-        <p class="contract-section">
-            <span class="section-label">PLAZO DE EJECUCIÓN</span>:
-            Por el periodo comprendido entre el {{ $startLargo }} y el {{ $endLargo }}.
-        </p>
-
-        @if ($showValue && $valor > 0)
-            <p class="contract-section">
-                <span class="section-label">VALOR DEL CONTRATO</span>:
-                {{ montoATextoCont($valor) }} PESOS
-                (${{ number_format($valor, 0, ',', '.') }}) M/cte.
-            </p>
-        @endif
-
-        @if ($showObligations && ! empty($contrato['obligations']))
-            <p class="contract-section">
-                <span class="section-label">OBLIGACIONES</span>:
-                {!! $contrato['obligations'] !!}
-            </p>
-        @endif
-
-        @if ($showProrrogas && ! empty($contrato['extensions']))
-            @foreach ($contrato['extensions'] as $ext)
-                <p class="contract-section" style="margin-left: 0;">
-                    @if (! empty($ext['approval_date']))
-                        El presente contrato suscribió una prórroga
-                        @if (! empty($ext['extension_months']))
-                            de {{ $ext['extension_months'] }} mes(es)
-                        @elseif (! empty($ext['extension_days']))
-                            de {{ $ext['extension_days'] }} día(s)
-                        @endif
-                        @if (! empty($ext['new_end_date']))
-                            hasta el <strong>{{ fechaLargaCont($ext['new_end_date']) }}</strong>
-                        @endif
-                        , aprobada el {{ fechaLargaCont($ext['approval_date']) }}.
-                        @if (! empty($ext['extension_value']))
-                            Se adicionó un valor de
-                            <strong>$ {{ number_format((float) $ext['extension_value'], 0, ',', '.') }}</strong> M/cte.
-                        @endif
-                    @endif
-                </p>
-            @endforeach
-        @endif
-
-        @if ($showEarlyTermination && ! empty($contrato['early_termination_date']))
-            <p class="contract-section">
-                <span class="section-label">TERMINACIÓN ANTICIPADA</span>:
-                El contrato fue terminado anticipadamente el
-                <strong>{{ fechaLargaCont($contrato['early_termination_date']) }}</strong>.
-                @if (! empty($contrato['early_termination_reason']))
-                    Motivo: {{ $contrato['early_termination_reason'] }}.
-                @endif
-            </p>
-        @endif
-
-        <p class="contract-section">
-            <span class="section-label">ESTADO DEL CONTRATO</span>:
-            {{ $contrato['status'] ?? '—' }}
-        </p>
-
-        <p class="contract-section" style="font-size: 10.5pt;">
-            De acuerdo con lo dispuesto por el numeral 3° del artículo 32 de la Ley 80 de 1993,
-            en ningún caso estos contratos generaron relación laboral, ni prestaciones sociales
-            por las obligaciones contratadas y se celebraron por el término estrictamente
-            indispensable.
-        </p>
-
-        @if ($idx < $numContratos - 1)
-            <div class="page-break"></div>
-        @endif
-    @endforeach
-
-    {{-- Cierre --}}
-    <p class="text-justify" style="font-size: 11pt; margin-top: 25px;">
-        Se expide la presente certificación a petición de
-        <strong>{{ $addressed_to }}</strong>
-        el {{ $fechaLarga }}.
-    </p>
-
-    {{-- Firma centrada --}}
-    <div class="firma-block" style="margin-top: 30px;">
-        @if (! empty($signature->signature_path))
-            <img src="{{ $signature->signature_path }}" style="width: 200px; margin-bottom: 2px;">
-        @else
-            <br><br><br>
-        @endif
-        <p style="margin: 0; font-weight: bold; font-size: 11.5pt;">
-            {{ strtoupper($signature->signer_name ?? '') }}
-        </p>
-        <p style="margin: 0; font-size: 11pt;">
-            {{ strtoupper($signature->signer_position ?? '') }}
-        </p>
+    <div class="content-paragraph">
+        Que <span class="bold uppercase">{{ $nombre }}</span>, 
+        identificada con {{ $tipoDoc }} N° {{ $numDoc }}, 
+        cuenta con la siguiente información relacionada a {{ count($contracts_snapshot) > 1 ? 'sus contratos' : 'su contrato' }} de acuerdo con la base de datos de contratación.
     </div>
 
-</main>
+    @foreach($contracts_snapshot as $contrato)
+        @php
+            $valor = (float)($contrato['fees'] ?? $contrato['salary'] ?? 0);
+        @endphp
+        
+        <div class="contract-header">
+            CONTRATO DE {{ strtoupper($contrato['contract_type']) }} No. {{ $contrato['contract_code'] }}
+        </div>
 
-{{-- Página final: texto legal --}}
-<div class="page-break"></div>
-@include('pdf.partials.certificado-legal')
+        @if(!empty($contrato['object']) && !empty($options_snapshot['show_object']))
+            <div class="section-content">
+                <span class="section-label">OBJETO:</span> 
+                {!! strip_tags($contrato['object']) !!}
+            </div>
+        @endif
 
+        <div class="section-content">
+            <span class="section-label">PLAZO DE EJECUCIÓN:</span> 
+            Por el periodo comprendido entre el {{ $contrato['start_date'] }} 
+            y el {{ !empty($contrato['end_date']) ? $contrato['end_date'] : 'fecha indeterminada' }}.
+        </div>
+
+        @if($valor > 0 && !empty($options_snapshot['show_value']))
+            <div class="section-content">
+                <span class="section-label">VALOR DEL CONTRATO:</span> 
+                {{ numeroALetrasLocal($valor) }} PESOS 
+                ({{ formatMoneyLocal($valor) }}) M/cte.
+            </div>
+        @endif
+
+        @if(!empty($contrato['obligations']) && !empty($options_snapshot['show_obligations']))
+            <div class="section-content">
+                <span class="section-label">OBLIGACIONES:</span> 
+                {!! strip_tags($contrato['obligations']) !!}
+            </div>
+        @endif
+
+        @if(!empty($contrato['extensions']) && !empty($options_snapshot['show_prorrogas']))
+            <div class="section-content">
+                <span class="section-label">PRÓRROGAS Y ADICIONES:</span>
+                <ul style="padding-left: 20px; margin-top: 5px;">
+                    @foreach($contrato['extensions'] as $ext)
+                        <li>
+                            Adición aprobada el {{ $ext['approval_date'] }}.
+                            @if(!empty($ext['extension_months']) || !empty($ext['extension_days']))
+                                Duración: {{ $ext['extension_months'] ?? 0 }} meses y {{ $ext['extension_days'] ?? 0 }} días.
+                            @endif
+                            @if(!empty($ext['extension_value']) && $ext['extension_value'] > 0)
+                                Valor adicionado: {{ formatMoneyLocal($ext['extension_value']) }}.
+                            @endif
+                            @if(!empty($ext['new_end_date']))
+                                Nueva fecha de finalización: {{ $ext['new_end_date'] }}.
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if(!empty($contrato['early_termination_date']) && !empty($options_snapshot['show_early_termination']))
+            <div class="section-content">
+                <span class="section-label">TERMINACIÓN ANTICIPADA:</span> 
+                El contrato fue terminado el {{ $contrato['early_termination_date'] }}
+                @if(!empty($contrato['early_termination_reason']))
+                    por el siguiente motivo: {{ $contrato['early_termination_reason'] }}.
+                @endif
+            </div>
+        @endif
+
+        <div class="section-content">
+            <span class="section-label">ESTADO DEL CONTRATO:</span> {{ $contrato['status'] }}
+        </div>
+    @endforeach
+
+    <div style="page-break-inside: avoid;">
+        <div class="content-paragraph" style="margin-top: 25px;">
+            De acuerdo con lo dispuesto por el numeral 3° del artículo 32 de la Ley 80 de 1993, en ningún caso estos contratos generaron relación laboral, ni prestaciones sociales por las obligaciones contratadas y se celebraron por el término estrictamente indispensable.
+        </div>
+
+        <div class="content-paragraph">
+            Se expide la presente certificación a petición de <strong>{{ $addressed_to }}</strong> el {{ $date }}.
+        </div>
+
+        <div class="signature-section">
+            @if($signature_base64)
+                <img src="{{ $signature_base64 }}" class="signature-image"><br>
+            @else
+                <br><br><br>
+            @endif
+            <div class="signer-name">{{ strtoupper($signature->signer_name ?? '') }}</div>
+            <div class="signer-title">{{ strtoupper($signature->signer_position ?? '') }}</div>
+        </div>
+    </div>
+
+    <pagebreak />
+
+    <div class="content-paragraph">
+        <div class="bold uppercase" style="margin-bottom: 15px;">Validación de Documento</div>
+        <p>Este certificado requiere para su plena validez y confiabilidad que la información aquí consignada sea verificada y convalidada.</p>
+        <ol type="a" style="padding-left: 20px;">
+            <li>Por medio del código QR presente en este certificado.</li>
+            <li>Por el link: <a href="{{ route('certificados.verificar', $certificate->verification_code) }}">{{ route('certificados.verificar', $certificate->verification_code) }}</a></li>
+            <li>Con Gestión documental a través de la <strong>línea 6231580 Ext.:603</strong> o a través del correo electrónico <strong>gestiondocumental@ascun.org.co</strong>; Si la certificación anterior no es refrendada a través de alguna de las formas mencionadas, la misma solo tendrá el valor probatorio que las partes le den, y será equiparada para todos los efectos legales a una prueba sumaria. La Asociación Colombiana de Universidades no asume ningún tipo de responsabilidad por el contenido y/o por la firma consignada en este tipo de documentos, hasta tanto no sea validado o confirmado por alguno de los medios ya mencionados.</li>
+        </ol>
+
+        <div style="text-align: justify; margin-top: 10px;">
+            <strong>APLICACIÓN DE LAS NORMAS VIGENTES SOBRE COMERCIO ELECTRÓNICO:</strong> Todas las comunicaciones que se expresen vía Mensaje de Datos (Internet, Correo Electrónico, Teléfono), tendrán el mismo alcance, efecto y valor probatorio que las normas vigentes y aplicables sobre Comercio Electrónico consignadas en la Ley 527 de 1999, Ley 588 de 2000, Decreto Reglamentario 1747 de 2000, y la Resolución 26930 de 2000 y demás que las remplacen o modifiquen. Este documento se rige bajo La política de tratamiento de datos, Ley 1581 de 2012 y el Decreto 377 de 2013, entendiendo que, por solicitud propia, se tiene el consentimiento de la persona de presentar la información descrita es este documento.
+        </div>
+    </div>
+    
+    <div style="text-align: center; color: red; font-size: 9pt; margin-top: 50px;">
+        Documento generado electrónicamente por el sistema de certificaciones WIS-ASCUN<br>
+        Código de validación: {{ $certificate->verification_code }}
+    </div>
 </body>
 </html>

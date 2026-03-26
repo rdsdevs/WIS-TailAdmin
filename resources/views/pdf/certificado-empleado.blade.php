@@ -1,171 +1,157 @@
-@php
-    $meses      = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    $diasSemana = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-    $fechaLarga = $diasSemana[$issued_at->dayOfWeek] . ', ' . $issued_at->day . ' de ' . $meses[$issued_at->month - 1] . ' de ' . $issued_at->year;
-
-    $nombre       = $collaborator_snapshot['full_name'] ?? '';
-    $tipoDoc      = $collaborator_snapshot['document_type_name'] ?? 'Cédula de Ciudadanía';
-    $numDoc       = $collaborator_snapshot['document_number'] ?? '';
-    $genero       = $collaborator_snapshot['gender'] ?? 'M';
-    $identificado = $genero === 'F' ? 'identificada' : 'identificado';
-    $numContratos = count($contracts_snapshot);
-
-    $showSalary          = ! empty($options_snapshot['show_salary']);
-    $showPositionHistory = ! empty($options_snapshot['show_position_history']);
-
-    $cargoFirmante = strtolower($signature->signer_position ?? '');
-    $laSuscrita    = (str_contains($cargoFirmante, 'director') && ! str_contains($cargoFirmante, 'directora'))
-        ? 'EL SUSCRITO'
-        : 'LA SUSCRITA';
-@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Certificado Laboral</title>
+    <title>Certificado Laboral - {{ $collaborator_snapshot['full_name'] }}</title>
     <style>
         @page {
-            margin-top: 120px;
-            margin-bottom: 55px;
-            margin-left: 2cm;
-            margin-right: 1.8cm;
+            header: page-header;
+            footer: page-footer;
+            margin-top: 60mm;
+            margin-bottom: 45mm;
+            margin-left: 10mm;
+            margin-right: 15mm;
         }
         body {
-            font-family: "Arial", sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 11pt;
+            line-height: 1.4;
             color: #000;
-            line-height: 1.45;
         }
-        header {
-            position: fixed;
-            top: -105px;
-            left: 0;
-            right: 0;
-            height: 90px;
-        }
-        footer {
-            position: fixed;
-            bottom: -45px;
-            left: 0;
-            right: 0;
-            height: 44px;
-        }
-        .bold         { font-weight: bold; }
-        .text-center  { text-align: center; }
-        .text-justify { text-align: justify; }
-        .section-title {
+        
+        .main-cert-title {
+            text-align: center;
             font-weight: bold;
-            font-size: 10pt;
-            margin-top: 10px;
-            margin-bottom: 4px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            font-size: 12pt;
         }
-        table {
+
+        .content-paragraph {
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+        
+        table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 1em;
+            margin-bottom: 1.5em;
+            font-size: 9.5pt;
+        }
+        table.data-table th {
+            background-color: #f3f4f6;
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        table.data-table td {
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 15px;
             font-size: 10pt;
         }
-        th {
-            background-color: #dde3ef;
-            border: 1px solid #777;
-            padding: 5px 6px;
+
+        .signature-section {
+            margin-top: 40px;
             text-align: center;
+        }
+        .signature-image {
+            width: 175px;
+            margin-bottom: 5px;
+        }
+        .signer-name {
             font-weight: bold;
+            text-transform: uppercase;
+            display: block;
+            font-size: 11pt;
+            margin: 0;
         }
-        td {
-            border: 1px solid #777;
-            padding: 5px 6px;
-            text-align: center;
+        .signer-title {
+            text-transform: uppercase;
+            display: block;
+            font-size: 10.5pt;
+            margin: 0;
         }
-        .certifica-header {
-            text-align: center;
-            font-weight: bold;
-            font-size: 12pt;
-            line-height: 1.7;
-            margin-top: 30px;
-            margin-bottom: 30px;
+
+        .bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+        
+        table.header-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .intro-paragraph {
-            font-size: 12pt;
-            text-align: justify;
-            margin-bottom: 18px;
-        }
-        .firma-block {
-            text-align: center;
-            margin-top: 50px;
-        }
-        .page-break { page-break-before: always; }
     </style>
 </head>
 <body>
+    @php
+        $nombre = $collaborator_snapshot['full_name'] ?? '';
+        $tipoDoc = strtolower($collaborator_snapshot['document_type'] ?? 'cc');
+        $numDoc = number_format((float)($collaborator_snapshot['document_number'] ?? 0), 0, ',', '.');
+        $genero = $collaborator_snapshot['gender'] ?? 'M';
+        $identificado = ($genero === 'F') ? 'identificada' : 'identificado';
+        
+        $cargoFirmante = strtolower($signature->signer_position ?? '');
+        $laSuscrita = (str_contains($cargoFirmante, 'director') && !str_contains($cargoFirmante, 'directora')) 
+            ? 'EL SUSCRITO' 
+            : 'LA SUSCRITA';
 
-{{-- Numeración de página --}}
-<script type="text/php">
-    if (isset($pdf)) {
-        $font = $fontMetrics->get_font("Arial", "normal");
-        $w    = $pdf->get_width();
-        $pdf->page_text($w - 95, 17, "Página {PAGE_NUM} de {PAGE_COUNT}", $font, 7.5, [0.1, 0.1, 0.1]);
-    }
-</script>
+        $showSalary = !empty($options_snapshot['show_salary']);
+        $showPositionHistory = !empty($options_snapshot['show_position_history']);
+    @endphp
 
-{{-- ── Header fijo ─────────────────────────────────────────────────────── --}}
-<header>
-    <table style="border-collapse: collapse; border: none; width: 100%; padding: 0; margin: 0;">
-        <tr>
-            <td style="border: none; vertical-align: top; text-align: left; width: 18%;">
-                <img src="{{ $qr_base64 }}" style="height: 68px; width: 68px;">
-                <br><span style="font-size: 6pt; color: #555;">Escanea para validar el certificado</span>
-            </td>
-            <td style="border: none; vertical-align: middle; text-align: left; width: 42%; padding-left: 6px;">
-                <strong style="font-size: 9.5pt; color: #1a1a1a;">{{ strtoupper($institution_name) }}</strong>
-            </td>
-            <td style="border: none; vertical-align: top; text-align: right; width: 40%;">
-                @if ($logo_base64)
-                    <img src="{{ $logo_base64 }}" style="max-height: 72px; max-width: 180px;">
-                @endif
-            </td>
-        </tr>
-    </table>
-    <hr style="border: 0; border-top: 1.5px solid #1a3a6b; margin: 4px 0 0 0;">
-</header>
-
-{{-- ── Footer fijo ─────────────────────────────────────────────────────── --}}
-<footer>
-    @if ($footer_base64)
-        <img src="{{ $footer_base64 }}" style="width: 100%; height: 44px;">
-    @else
-        <div style="background-color: #1a3a6b; padding: 5px 10px; text-align: center; color: #fff; font-size: 7.5pt;">
-            <span style="margin: 0 6px;">&#9679; Calle 93 No. 16 - 43</span>
-            <span style="margin: 0 6px;">&#9679; (57 - 1) 623 15 80</span>
-            <span style="margin: 0 6px;">&#9679; ascun@ascun.org.co</span>
-            <span style="margin: 0 6px;">&#9679; www.ascun.org.co</span>
-            <span style="margin: 0 6px;">&#9679; Bogotá - Colombia</span>
+    <htmlpageheader name="page-header">
+        <div style="font-family: arial; font-size: 12pt; margin-bottom: 10px;">
+            <table width="100%" style="border-collapse: collapse; vertical-align: top;">
+                <tr>
+                    <td width="60%" style="text-align: left; vertical-align: top;">
+                        <div style="margin-bottom: 15px;">
+                            <strong>ASOCIACIÓN COLOMBIANA DE UNIVERSIDADES</strong>
+                        </div>
+                        <img src="{{ $qr_base64 }}" style="height: 137px; margin-top: 10px;">
+                    </td>
+                    <td width="40%" style="text-align: right; vertical-align: top;">
+                        @if($logo_base64)
+                            <img src="{{ $logo_base64 }}" style="height: 90px; margin-bottom: 10px;"><br>
+                        @endif
+                        <span style="font-size: 10pt;">Página {PAGENO} de {nbpg}</span>
+                    </td>
+                </tr>
+            </table>
         </div>
-    @endif
-</footer>
+    </htmlpageheader>
 
-{{-- ── Contenido principal ──────────────────────────────────────────────── --}}
-<main>
+    <htmlpagefooter name="page-footer">
+        <div style="text-align: center;">
+            @if($footer_base64)
+                <img src="{{ $footer_base64 }}" style="width: 100%; margin-bottom: 10px;">
+            @endif
+        </div>
+    </htmlpagefooter>
 
-    <div class="certifica-header">
+    <div class="main-cert-title">
         {{ $laSuscrita }} {{ strtoupper($signature->signer_position ?? '') }}<br>
-        DE {{ strtoupper($institution_name) }}<br>
+        DE LA ASOCIACIÓN COLOMBIANA DE UNIVERSIDADES -ASCÚN-<br>
+        NIT. 860.025.721-0<br>
         CERTIFICA:
     </div>
 
-    <p class="intro-paragraph">
-        Que <strong>{{ strtoupper($nombre) }}</strong>,
-        {{ $identificado }} con {{ strtolower($tipoDoc) }}
-        N° {{ number_format((float) $numDoc, 0, ',', '.') }},
-        cuenta con la siguiente información relacionada a
-        {{ $numContratos > 1 ? 'sus contratos laborales' : 'su contrato laboral' }}
-        de acuerdo con la base de datos de su historia laboral.
-    </p>
+    <div class="content-paragraph">
+        Que <span class="bold uppercase">{{ $nombre }}</span>, 
+        {{ $identificado }} con {{ $tipoDoc }} N° {{ $numDoc }}, 
+        cuenta con la siguiente información relacionada a {{ count($contracts_snapshot) > 1 ? 'sus contratos laborales' : 'su contrato laboral' }} de acuerdo con la base de datos de su historia laboral.
+    </div>
 
-    @foreach ($contracts_snapshot as $i => $contrato)
-
-        {{-- Tabla principal del contrato --}}
-        <table>
+    @foreach ($contracts_snapshot as $contrato)
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Tipo de Contrato</th>
@@ -198,10 +184,9 @@
             </tbody>
         </table>
 
-        {{-- Historial de cargos --}}
         @if ($showPositionHistory && ! empty($contrato['position_changes']))
-            <p class="section-title">HISTORIAL DE CARGOS:</p>
-            <table>
+            <div class="section-title">HISTORIAL DE CARGOS:</div>
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>Cargo anterior</th>
@@ -223,37 +208,46 @@
             </table>
         @endif
 
-        @if ($i < $numContratos - 1)
-            <div class="page-break"></div>
+        @if(!$loop->last)
+            <pagebreak />
         @endif
     @endforeach
 
-    <p class="text-justify" style="font-size: 11pt; margin-top: 20px;">
-        Se expide la presente certificación a petición de
-        <strong>{{ $addressed_to }}</strong>
-        el {{ $fechaLarga }}.
-    </p>
+    <div style="page-break-inside: avoid;">
+        <div class="content-paragraph" style="margin-top: 25px;">
+            Se expide la presente certificación a petición de <strong>{{ $addressed_to }}</strong> el {{ $date }}.
+        </div>
 
-    {{-- Firma centrada --}}
-    <div class="firma-block">
-        @if (! empty($signature->signature_image))
-            <img src="{{ $signature->signature_image }}" style="width: 160px; margin-bottom: -10px;">
-        @else
-            <br><br><br>
-        @endif
-        <p style="margin: 0; font-weight: bold; font-size: 11pt;">
-            {{ strtoupper($signature->signer_name ?? '') }}
-        </p>
-        <p style="margin: 2px 0 0 0; font-size: 11pt;">
-            {{ strtoupper($signature->signer_position ?? '') }}
-        </p>
+        <div class="signature-section">
+            @if($signature_base64)
+                <img src="{{ $signature_base64 }}" class="signature-image"><br>
+            @else
+                <br><br><br>
+            @endif
+            <div class="signer-name">{{ strtoupper($signature->signer_name ?? '') }}</div>
+            <div class="signer-title">{{ strtoupper($signature->signer_position ?? '') }}</div>
+        </div>
     </div>
 
-</main>
+    <pagebreak />
 
-{{-- Página final: texto legal --}}
-<div class="page-break"></div>
-@include('pdf.partials.certificado-legal')
+    <div class="content-paragraph">
+        <div class="bold uppercase" style="margin-bottom: 15px;">Validación de Documento</div>
+        <p>Este certificado requiere para su plena validez y confiabilidad que la información aquí consignada sea verificada y convalidada.</p>
+        <ol type="a" style="padding-left: 20px;">
+            <li>Por medio del código QR presente en este certificado.</li>
+            <li>Por el link: <a href="{{ route('certificados.verificar', $certificate->verification_code) }}">{{ route('certificados.verificar', $certificate->verification_code) }}</a></li>
+            <li>Con Gestión documental a través de la <strong>línea 6231580 Ext.:603</strong> o a través del correo electrónico <strong>gestiondocumental@ascun.org.co</strong>; Si la certificación anterior no es refrendada a través de alguna de las formas mencionadas, la misma solo tendrá el valor probatorio que las partes le den, y será equiparada para todos los efectos legales a una prueba sumaria. La Asociación Colombiana de Universidades no asume ningún tipo de responsabilidad por el contenido y/o por la firma consignada en este tipo de documentos, hasta tanto no sea validado o confirmado por alguno de los medios ya mencionados.</li>
+        </ol>
 
+        <div style="text-align: justify; margin-top: 10px;">
+            <strong>APLICACIÓN DE LAS NORMAS VIGENTES SOBRE COMERCIO ELECTRÓNICO:</strong> Todas las comunicaciones que se expresen vía Mensaje de Datos (Internet, Correo Electrónico, Teléfono), tendrán el mismo alcance, efecto y valor probatorio que las normas vigentes y aplicables sobre Comercio Electrónico consignadas en la Ley 527 de 1999, Ley 588 de 2000, Decreto Reglamentario 1747 de 2000, y la Resolución 26930 de 2000 y demás que las remplacen o modifiquen. Este documento se rige bajo La política de tratamiento de datos, Ley 1581 de 2012 y el Decreto 377 de 2013, entendiendo que, por solicitud propia, se tiene el consentimiento de la persona de presentar la información descrita es este documento.
+        </div>
+    </div>
+    
+    <div style="text-align: center; color: red; font-size: 9pt; margin-top: 50px;">
+        Documento generado electrónicamente por el sistema de certificaciones WIS-ASCUN<br>
+        Código de validación: {{ $certificate->verification_code }}
+    </div>
 </body>
 </html>

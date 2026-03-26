@@ -1,15 +1,15 @@
-{{-- Página 2: Texto legal y código de verificación --}}
-<div style="font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; text-align: justify; line-height: 1.5;">
+{{-- Página de Validación: Texto legal y código de verificación --}}
+<div style="font-family: Arial, sans-serif; font-size: 11.5pt; text-align: justify; line-height: 1.4; color: #000;">
     <p>
         Este certificado requiere para su plena validez y confiabilidad que la información aquí consignada sea
         verificada y convalidada:
     </p>
-    <p>
+    <p style="margin-left: 10px;">
         a). Por medio del código QR presente en este certificado.<br>
         b). Por el enlace:
-        <strong>{{ route('certificados.verificar', $certificate->verification_code) }}</strong><br>
+        <span style="color: #d32f2f;">{{ route('certificados.verificar', $certificate->verification_code) }}</span><br>
         c). Con Gestión documental a través de la línea 6231580 Ext.:603 o a través del correo electrónico
-        <strong>gestiondocumental@ascun.org.co</strong>.
+        <span style="color: #d32f2f;">gestiondocumental@ascun.org.co</span>.
     </p>
     <p>
         Si la certificación anterior no es refrendada a través de alguna de las formas mencionadas, la misma
@@ -30,8 +30,9 @@
         2013, entendiendo que, por solicitud propia, se tiene el consentimiento de la persona de presentar la
         información descrita en este documento.
     </p>
-    <div style="margin-top: 40px; text-align: center; color: #666;">
-        <p style="font-size: 9pt;">
+
+    <div style="margin-top: 60px; text-align: center;">
+        <p style="font-size: 10.5pt; color: #d32f2f; line-height: 1.5;">
             Documento generado electrónicamente por el sistema de certificaciones <strong>WIS-ASCUN</strong><br>
             Código de validación: <strong>{{ $certificate->verification_code }}</strong>
         </p>

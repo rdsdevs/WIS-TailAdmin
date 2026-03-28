@@ -63,15 +63,15 @@
         :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
         'xl:justify-center' :
         'justify-start'">
-        <a href="/">
-            <img x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                class="dark:hidden" src="/images/logo/logo.svg" alt="Logo" width="150" height="40" />
-            <img x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                class="hidden dark:block" src="/images/logo/logo-dark.svg" alt="Logo" width="150"
-                height="40" />
+        <a href="/" class="flex items-center gap-3">
+            <img x-show="$store.sidebar.isExpanded || $store.sidebar.isMobileOpen || $store.sidebar.isHovered"
+                src="{{ asset('images/brand/w.svg') }}" alt="W" width="32" height="32" />
+            <span x-show="$store.sidebar.isExpanded || $store.sidebar.isMobileOpen || $store.sidebar.isHovered"
+                class="text-xl font-bold text-[#161950] dark:text-white">
+                WIS ASCUN
+            </span>
             <img x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
-                src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
-
+                src="{{ asset('images/brand/w.svg') }}" alt="Logo Icon" width="32" height="32" />
         </a>
     </div>
 

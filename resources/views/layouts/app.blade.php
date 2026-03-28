@@ -8,6 +8,8 @@
 
     <title>{{ $title ?? 'Panel de control' }} | WIS ASCUN</title>
 
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/favicon.svg') }}">
+
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

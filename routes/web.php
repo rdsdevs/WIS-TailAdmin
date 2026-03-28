@@ -99,6 +99,7 @@ Route::get('/calendar', function () {
 // Perfil de usuario
 Route::get('/profile', function () {
     $user = auth()->user()->load('institution', 'roles');
+
     return view('pages.profile', ['title' => 'Mi perfil', 'user' => $user]);
 })->middleware('auth')->name('profile');
 

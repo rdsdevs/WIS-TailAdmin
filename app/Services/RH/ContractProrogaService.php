@@ -142,7 +142,7 @@ final class ContractProrogaService
             // 4. Notificar solo si no es contrato histórico
             if (! $contract->isFromPreviousYear()) {
                 $contract->loadMissing('collaborator');
-                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorName = $contract->collaborator?->full_name ?? '';
                 $collaboratorEmail = $contract->collaborator?->email ?? '';
 
                 // Campana al usuario autenticado

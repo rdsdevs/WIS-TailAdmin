@@ -44,6 +44,15 @@ class UpdateContractRequest extends FormRequest
         $rules['committed_values.*.cost_center'] = ['required', 'string', 'max:200'];
         $rules['committed_values.*.amount'] = ['required', 'numeric', 'min:0'];
 
+        // Detalle de Nómina (Opcional)
+        $rules['payroll_detail.base_salary'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.transport_allowance'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.non_statutory_bonuses'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.sena_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.icbf_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.compensation_fund_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.health_check_verified_at'] = ['nullable', 'date'];
+
         return $rules;
     }
 

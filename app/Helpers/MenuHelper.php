@@ -34,8 +34,8 @@ class MenuHelper
 
         return [
             [
-                'icon'     => 'rh',
-                'name'     => 'Recursos Humanos',
+                'icon' => 'rh',
+                'name' => 'Recursos Humanos',
                 'subItems' => $subItems,
             ],
         ];
@@ -89,8 +89,8 @@ class MenuHelper
 
         return [
             [
-                'icon'     => 'certificate',
-                'name'     => 'Certificados',
+                'icon' => 'certificate',
+                'name' => 'Certificados',
                 'subItems' => $subItems,
             ],
         ];
@@ -160,17 +160,17 @@ class MenuHelper
     public static function rolLabel(string $role): string
     {
         return match ($role) {
-            'super-admin'          => 'Super Administrador',
-            'admin'                => 'Administrador',
-            'rh-manager'           => 'Gestor de RH',
-            'rh-viewer'            => 'Consultor de RH',
-            'accounting-manager'   => 'Gestor de Contabilidad',
-            'accounting-viewer'    => 'Consultor de Contabilidad',
-            'inventory-manager'    => 'Gestor de Inventario',
-            'inventory-viewer'     => 'Consultor de Inventario',
-            'contractor-manager'   => 'Gestor de Contratistas',
-            'employee-manager'     => 'Gestor de Empleados',
-            default                => ucwords(str_replace('-', ' ', $role)),
+            'super-admin' => 'Super Administrador',
+            'admin' => 'Administrador',
+            'rh-manager' => 'Gestor de RH',
+            'rh-viewer' => 'Consultor de RH',
+            'accounting-manager' => 'Gestor de Contabilidad',
+            'accounting-viewer' => 'Consultor de Contabilidad',
+            'inventory-manager' => 'Gestor de Inventario',
+            'inventory-viewer' => 'Consultor de Inventario',
+            'contractor-manager' => 'Gestor de Contratistas',
+            'employee-manager' => 'Gestor de Empleados',
+            default => ucwords(str_replace('-', ' ', $role)),
         };
     }
 }

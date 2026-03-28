@@ -13,9 +13,10 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CollaboratorTemplateSheet implements FromArray, WithTitle, WithStyles, WithColumnWidths
+class CollaboratorTemplateSheet implements FromArray, WithColumnWidths, WithStyles, WithTitle
 {
     private array $headings;
+
     private array $exampleRow;
 
     public function __construct(
@@ -60,10 +61,10 @@ class CollaboratorTemplateSheet implements FromArray, WithTitle, WithStyles, Wit
 
         // Encabezado: fondo azul oscuro, texto blanco, negrita
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFFFFFFF']]],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFFFFFFF']]],
         ]);
 
         // Fila de ejemplo: cursiva, color gris tenue

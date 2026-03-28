@@ -36,20 +36,20 @@ final class CertificateSignatureService
     /**
      * Crea una nueva firma digital.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function create(array $data, string $institutionId): CertificateSignature
     {
         return DB::transaction(function () use ($data, $institutionId): CertificateSignature {
             return CertificateSignature::create([
-                'institution_id'             => $institutionId,
-                'signer_name'                => $data['signer_name'],
-                'signer_position'            => $data['signer_position'],
-                'signature_image'            => $data['signature_image'],
-                'replacement_name'           => $data['replacement_name'] ?? null,
-                'replacement_position'       => $data['replacement_position'] ?? null,
+                'institution_id' => $institutionId,
+                'signer_name' => $data['signer_name'],
+                'signer_position' => $data['signer_position'],
+                'signature_image' => $data['signature_image'],
+                'replacement_name' => $data['replacement_name'] ?? null,
+                'replacement_position' => $data['replacement_position'] ?? null,
                 'replacement_signature_image' => $data['replacement_signature_image'] ?? null,
-                'is_active'                  => $data['is_active'] ?? true,
+                'is_active' => $data['is_active'] ?? true,
             ]);
         });
     }
@@ -57,19 +57,19 @@ final class CertificateSignatureService
     /**
      * Actualiza una firma digital existente.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function update(CertificateSignature $signature, array $data): CertificateSignature
     {
         return DB::transaction(function () use ($signature, $data): CertificateSignature {
             $signature->update(array_filter([
-                'signer_name'                => $data['signer_name'] ?? null,
-                'signer_position'            => $data['signer_position'] ?? null,
-                'signature_image'            => $data['signature_image'] ?? null,
-                'replacement_name'           => $data['replacement_name'] ?? null,
-                'replacement_position'       => $data['replacement_position'] ?? null,
+                'signer_name' => $data['signer_name'] ?? null,
+                'signer_position' => $data['signer_position'] ?? null,
+                'signature_image' => $data['signature_image'] ?? null,
+                'replacement_name' => $data['replacement_name'] ?? null,
+                'replacement_position' => $data['replacement_position'] ?? null,
                 'replacement_signature_image' => $data['replacement_signature_image'] ?? null,
-                'is_active'                  => $data['is_active'] ?? null,
+                'is_active' => $data['is_active'] ?? null,
             ], fn ($v) => $v !== null));
 
             return $signature->fresh();

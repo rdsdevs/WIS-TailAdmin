@@ -20,7 +20,7 @@ class CollaboratorTemplateExport implements WithMultipleSheets
         if (in_array($this->type, ['todos', 'contratistas'])) {
             $sheets[] = new CollaboratorTemplateSheet('Contratistas', true);
         }
-        $sheets[] = new CollaboratorCatalogsSheet();
+        $sheets[] = new CollaboratorCatalogsSheet;
 
         return $sheets;
     }

@@ -13,8 +13,8 @@ class ContractTemplateExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            new ContractTemplateSheet(),
-            new CommittedValueTemplateSheet(),
+            new ContractTemplateSheet,
+            new CommittedValueTemplateSheet,
             new ContractCatalogsSheet($this->institutionId),
         ];
     }

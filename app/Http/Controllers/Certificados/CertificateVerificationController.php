@@ -19,14 +19,14 @@ class CertificateVerificationController extends Controller
         if ($certificate === null) {
             return view('pages.certificados.verificar', [
                 'certificate' => null,
-                'notFound'    => true,
+                'notFound' => true,
             ]);
         }
 
         // La verificación pública NO muestra salario/honorarios
         return view('pages.certificados.verificar', [
             'certificate' => $certificate,
-            'notFound'    => false,
+            'notFound' => false,
         ]);
     }
 }

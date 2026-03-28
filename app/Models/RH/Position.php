@@ -45,6 +45,11 @@ class Position extends Model implements Auditable
         return $this->belongsTo(Department::class);
     }
 
+    public function emails(): HasMany
+    {
+        return $this->hasMany(PositionEmail::class);
+    }
+
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);

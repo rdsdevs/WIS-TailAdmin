@@ -46,6 +46,15 @@ new class extends Component {
     public string  $collaboratorType  = '';
     public bool    $prefillApplied    = false;
 
+    // ── Sección: detalle de nómina (CST) ──────────────────────────────────────
+    public string $baseSalary             = '';
+    public string $transportAllowance     = '';
+    public string $nonStatutoryBonuses    = '';
+    public string $senaRate               = '2.00';
+    public string $icbfRate               = '3.00';
+    public string $compensationFundRate   = '4.00';
+    public string $healthCheckVerifiedAt  = '';
+
     // ── Guardia: contrato vigente ─────────────────────────────────────────────
     public bool    $showActiveContractAlert = false;
     public ?string $activeContractId        = null;
@@ -83,6 +92,16 @@ new class extends Component {
             $this->obligations     = $c->obligations ?? '';
             $this->positionEmail   = $c->position_email ?? '';
             $this->status          = $c->status ?? 'Vigente';
+
+            if ($c->payrollDetail) {
+                $this->baseSalary            = (string) ($c->payrollDetail->base_salary ?? '');
+                $this->transportAllowance    = (string) ($c->payrollDetail->transport_allowance ?? '');
+                $this->nonStatutoryBonuses   = (string) ($c->payrollDetail->non_statutory_bonuses ?? '');
+                $this->senaRate              = (string) ($c->payrollDetail->sena_rate ?? '2.00');
+                $this->icbfRate              = (string) ($c->payrollDetail->icbf_rate ?? '3.00');
+                $this->compensationFundRate  = (string) ($c->payrollDetail->compensation_fund_rate ?? '4.00');
+                $this->healthCheckVerifiedAt = $c->payrollDetail->health_check_verified_at?->format('Y-m-d') ?? '';
+            }
 
             if ($c->collaborator) {
                 $this->selectedCollaborator = [
@@ -284,13 +303,18 @@ new class extends Component {
                 $this->validateStep1();
             } elseif ($this->step === 2) {
                 $this->validateStep2();
-                // Si el año es < 2025 y se intenta ir al paso 3, no hay paso 3
-                if ($target === 3 && ! $this->needsCommitted) {
+            } elseif ($this->step === 3) {
+                // El paso 3 es opcional, no requiere validación estricta por ahora
+                if ($target === 4 && ! $this->needsCommitted) {
                     $this->save();
                     return;
                 }
             }
         }
+
+        // Si estamos en el paso 2 y el año es < 2025 y el target es 3, 
+        // pero el usuario no es empleado, podríamos saltar o no.
+        // El usuario dijo que sean opcionales, así que siempre permitimos entrar al paso 3.
 
         $this->step = $target;
         $this->resetValidation();
@@ -389,7 +413,8 @@ new class extends Component {
 
     public function getTotalStepsProperty(): int
     {
-        return $this->needsCommitted ? 3 : 2;
+        // 1: Colaborador | 2: Contrato | 3: Nómina (Opcional) | 4: Contable (si aplica)
+        return $this->needsCommitted ? 4 : 3;
     }
 
     /** Retorna true si la fecha de inicio pertenece a un año anterior al actual. */
@@ -470,11 +495,26 @@ new class extends Component {
             'status'           => $this->status,
         ];
 
-        DB::transaction(function () use ($data): void {
+        $payrollDetailData = [
+            'base_salary'            => $this->baseSalary !== '' ? $this->baseSalary : null,
+            'transport_allowance'    => $this->transportAllowance !== '' ? $this->transportAllowance : null,
+            'non_statutory_bonuses'   => $this->nonStatutoryBonuses !== '' ? $this->nonStatutoryBonuses : null,
+            'sena_rate'              => $this->senaRate !== '' ? $this->senaRate : 2.00,
+            'icbf_rate'              => $this->icbfRate !== '' ? $this->icbfRate : 3.00,
+            'compensation_fund_rate'  => $this->compensationFundRate !== '' ? $this->compensationFundRate : 4.00,
+            'health_check_verified_at' => $this->healthCheckVerifiedAt ?: null,
+        ];
+
+        DB::transaction(function () use ($data, $payrollDetailData): void {
             if ($this->contractId) {
                 $contract = Contract::findOrFail($this->contractId);
                 $this->authorize('update', $contract);
                 $contract->update($data);
+
+                $contract->payrollDetail()->updateOrCreate(
+                    ['contract_id' => $contract->id],
+                    $payrollDetailData
+                );
 
                 // Reemplazar comprometidos si el contrato requiere
                 if ($this->needsCommitted) {
@@ -516,6 +556,10 @@ new class extends Component {
             } else {
                 $this->authorize('create', Contract::class);
                 $contract = Contract::create($data);
+
+                if ($this->collaboratorType === 'Empleado' || !empty(array_filter($payrollDetailData))) {
+                    $contract->payrollDetail()->create($payrollDetailData);
+                }
 
                 if ($this->needsCommitted) {
                     $accountCode = $this->selectedAccount['code'] ?? '';
@@ -942,7 +986,7 @@ new class extends Component {
         {{-- Paso 1 --}}
         <button
             type="button"
-            wire:click="$set('step', 1)"
+            wire:click="goToStep(1)"
             class="flex items-center gap-2 focus:outline-none"
             aria-label="Ir al paso 1: Colaborador">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
@@ -968,7 +1012,7 @@ new class extends Component {
         {{-- Paso 2 --}}
         <button
             type="button"
-            wire:click="$set('step', 2)"
+            wire:click="goToStep(2)"
             class="flex items-center gap-2 focus:outline-none"
             aria-label="Ir al paso 2: Datos del contrato">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
@@ -989,23 +1033,49 @@ new class extends Component {
             </span>
         </button>
 
-        @if($this->needsCommitted || $step === 3)
+        <div class="mx-2 h-px flex-1 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></div>
+
+        {{-- Paso 3: Nómina --}}
+        <button
+            type="button"
+            wire:click="goToStep(3)"
+            class="flex items-center gap-2 focus:outline-none"
+            aria-label="Ir al paso 3: Nómina">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
+                {{ $step === 3
+                    ? 'bg-blue-600 text-white'
+                    : ($step > 3 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400') }}">
+                @if($step > 3)
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                @else
+                    3
+                @endif
+            </span>
+            <span class="hidden text-xs font-medium sm:block
+                {{ $step === 3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">
+                Nómina
+            </span>
+        </button>
+
+        @if($this->needsCommitted || $step === 4)
             <div class="mx-2 h-px flex-1 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></div>
 
-            {{-- Paso 3 (solo si aplica) --}}
+            {{-- Paso 4 --}}
             <button
                 type="button"
-                wire:click="$set('step', 3)"
+                wire:click="goToStep(4)"
                 class="flex items-center gap-2 focus:outline-none"
-                aria-label="Ir al paso 3: Info contable">
+                aria-label="Ir al paso 4: Info contable">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
-                    {{ $step === 3
+                    {{ $step === 4
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' }}">
-                    3
+                    4
                 </span>
                 <span class="hidden text-xs font-medium sm:block
-                    {{ $step === 3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">
+                    {{ $step === 4 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">
                     Contable
                 </span>
             </button>
@@ -1508,9 +1578,67 @@ new class extends Component {
         @endif
 
         {{-- ══════════════════════════════════════════════════════════════════ --}}
-        {{-- PASO 3: Info contable (solo año >= 2025)                          --}}
+        {{-- PASO 3: Detalle de Nómina (Opcional)                              --}}
         {{-- ══════════════════════════════════════════════════════════════════ --}}
         @if($step === 3)
+            <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Detalle de Nómina</h2>
+            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                Información salarial y prestacional (opcional, recomendada para empleados).
+            </p>
+
+            <div class="space-y-5">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="baseSalary" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sueldo Básico (COP)</label>
+                        <input wire:model.blur="baseSalary" id="baseSalary" type="number" placeholder="Ej: 1300000"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                        <label for="transportAllowance" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Auxilio de Transporte (COP)</label>
+                        <input wire:model.blur="transportAllowance" id="transportAllowance" type="number" placeholder="Ej: 162000"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div>
+                    <label for="nonStatutoryBonuses" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bonificaciones No Prestacionales (COP)</label>
+                    <input wire:model.blur="nonStatutoryBonuses" id="nonStatutoryBonuses" type="number" placeholder="Ej: 500000"
+                        class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                </div>
+
+                <div class="rounded-lg border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Porcentajes de Parafiscales</h3>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                            <label for="senaRate" class="block text-xs font-medium text-gray-500 dark:text-gray-400">SENA (%)</label>
+                            <input wire:model.blur="senaRate" id="senaRate" type="number" step="0.01"
+                                class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label for="icbfRate" class="block text-xs font-medium text-gray-500 dark:text-gray-400">ICBF (%)</label>
+                            <input wire:model.blur="icbfRate" id="icbfRate" type="number" step="0.01"
+                                class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label for="compensationFundRate" class="block text-xs font-medium text-gray-500 dark:text-gray-400">Caja (%)</label>
+                            <input wire:model.blur="compensationFundRate" id="compensationFundRate" type="number" step="0.01"
+                                class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="healthCheckVerifiedAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Examen Médico de Ingreso</label>
+                    <input wire:model.blur="healthCheckVerifiedAt" id="healthCheckVerifiedAt" type="date"
+                        class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                </div>
+            </div>
+        @endif
+
+        {{-- ══════════════════════════════════════════════════════════════════ --}}
+        {{-- PASO 4: Info contable (solo año >= 2025)                          --}}
+        {{-- ══════════════════════════════════════════════════════════════════ --}}
+        @if($step === 4)
             <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Información contable</h2>
             <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
                 Registre las cuentas contables y centros de costos. La suma de los valores comprometidos
@@ -1835,10 +1963,21 @@ new class extends Component {
                 </svg>
             </button>
 
-        @elseif($step === 2 && $this->needsCommitted)
+        @elseif($step === 2)
             <button
                 type="button"
                 wire:click="goToStep(3)"
+                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Siguiente: Nómina
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+            </button>
+
+        @elseif($step === 3 && $this->needsCommitted)
+            <button
+                type="button"
+                wire:click="goToStep(4)"
                 class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Siguiente: Info contable
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1846,7 +1985,7 @@ new class extends Component {
                 </svg>
             </button>
 
-        @elseif($step === 2 && !$this->needsCommitted)
+        @elseif($step === 3 && !$this->needsCommitted)
             <button
                 type="button"
                 wire:click="save"
@@ -1867,7 +2006,7 @@ new class extends Component {
                 </span>
             </button>
 
-        @elseif($step === 3)
+        @elseif($step === 4)
             <button
                 type="button"
                 wire:click="save"

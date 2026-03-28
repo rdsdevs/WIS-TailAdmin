@@ -87,6 +87,11 @@ class Collaborator extends Model implements Auditable
         return $this->hasMany(Contract::class);
     }
 
+    public function employeeProfile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
+
     public function activeContract(): HasOne
     {
         return $this->hasOne(Contract::class)->where('status', 'Vigente')->latestOfMany('start_date');

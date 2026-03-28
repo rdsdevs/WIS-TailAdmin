@@ -18,7 +18,7 @@ class StoreContractImportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'archivo'      => ['required', 'file', 'mimes:xlsx', 'max:10240', new MaxImportRows(500)],
+            'archivo' => ['required', 'file', 'mimes:xlsx', 'max:10240', new MaxImportRows(500)],
             'sobrescribir' => ['nullable', 'boolean'],
         ];
     }
@@ -27,8 +27,8 @@ class StoreContractImportRequest extends FormRequest
     {
         return [
             'archivo.required' => 'Debe seleccionar un archivo para importar.',
-            'archivo.mimes'    => 'El archivo debe ser de tipo Excel (.xlsx).',
-            'archivo.max'      => 'El archivo no debe superar 10 MB.',
+            'archivo.mimes' => 'El archivo debe ser de tipo Excel (.xlsx).',
+            'archivo.max' => 'El archivo no debe superar 10 MB.',
         ];
     }
 }

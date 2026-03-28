@@ -18,8 +18,8 @@ class StoreCollaboratorImportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'archivo'      => ['required', 'file', 'mimes:xlsx,csv', 'max:5120', new MaxImportRows(500)],
-            'tipo'         => ['required', 'in:Empleado,Contratista'],
+            'archivo' => ['required', 'file', 'mimes:xlsx,csv', 'max:5120', new MaxImportRows(500)],
+            'tipo' => ['required', 'in:Empleado,Contratista'],
             'sobrescribir' => ['nullable', 'boolean'],
         ];
     }
@@ -28,11 +28,11 @@ class StoreCollaboratorImportRequest extends FormRequest
     {
         return [
             'archivo.required' => 'Seleccione un archivo para importar.',
-            'archivo.file'     => 'El archivo no es válido.',
-            'archivo.mimes'    => 'Solo se permiten archivos .xlsx o .csv.',
-            'archivo.max'      => 'El archivo no puede superar 5 MB.',
-            'tipo.required'    => 'Seleccione el tipo de colaborador.',
-            'tipo.in'          => 'El tipo debe ser Empleado o Contratista.',
+            'archivo.file' => 'El archivo no es válido.',
+            'archivo.mimes' => 'Solo se permiten archivos .xlsx o .csv.',
+            'archivo.max' => 'El archivo no puede superar 5 MB.',
+            'tipo.required' => 'Seleccione el tipo de colaborador.',
+            'tipo.in' => 'El tipo debe ser Empleado o Contratista.',
         ];
     }
 }

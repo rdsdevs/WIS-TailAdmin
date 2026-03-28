@@ -34,6 +34,17 @@ new class extends Component {
     public string $phone   = '';
     public string $address = '';
 
+    // ── Sección: perfil empleado (nómina) ─────────────────────────────────────
+    public string $eps                     = '';
+    public string $pensionFund             = '';
+    public string $arl                     = '';
+    public string $compensationFund        = '';
+    public string $severanceFund           = '';
+    public string $bloodType               = '';
+    public string $emergencyContactName    = '';
+    public string $emergencyContactPhone   = '';
+    public string $backgroundCheckVerifiedAt = '';
+
     // ── Sección: estado ───────────────────────────────────────────────────────
     public string $statusId = '';
 
@@ -45,7 +56,7 @@ new class extends Component {
         $this->collaboratorId = $collaboratorId;
 
         if ($collaboratorId) {
-            $c = Collaborator::findOrFail($collaboratorId);
+            $c = Collaborator::with('employeeProfile')->findOrFail($collaboratorId);
 
             $this->type              = $c->type ?? 'Empleado';
             $this->isCompany         = (bool) $c->is_company;
@@ -64,6 +75,18 @@ new class extends Component {
             $this->phone             = $c->phone ?? '';
             $this->address           = $c->address ?? '';
             $this->statusId          = (string) ($c->status_id ?? '');
+
+            if ($c->employeeProfile) {
+                $this->eps                     = $c->employeeProfile->eps ?? '';
+                $this->pensionFund             = $c->employeeProfile->pension_fund ?? '';
+                $this->arl                     = $c->employeeProfile->arl ?? '';
+                $this->compensationFund        = $c->employeeProfile->compensation_fund ?? '';
+                $this->severanceFund           = $c->employeeProfile->severance_fund ?? '';
+                $this->bloodType               = $c->employeeProfile->blood_type ?? '';
+                $this->emergencyContactName    = $c->employeeProfile->emergency_contact_name ?? '';
+                $this->emergencyContactPhone   = $c->employeeProfile->emergency_contact_phone ?? '';
+                $this->backgroundCheckVerifiedAt = $c->employeeProfile->background_check_verified_at?->format('Y-m-d') ?? '';
+            }
         }
     }
 
@@ -75,6 +98,17 @@ new class extends Component {
             'email'    => 'nullable|email|max:200',
             'phone'    => 'nullable|string|max:50',
             'address'  => 'nullable|string|max:300',
+
+            // Reglas opcionales para perfil de empleado
+            'eps'                     => 'nullable|string|max:100',
+            'pensionFund'             => 'nullable|string|max:100',
+            'arl'                     => 'nullable|string|max:100',
+            'compensationFund'        => 'nullable|string|max:100',
+            'severanceFund'           => 'nullable|string|max:100',
+            'bloodType'               => 'nullable|string|max:5',
+            'emergencyContactName'    => 'nullable|string|max:150',
+            'emergencyContactPhone'   => 'nullable|string|max:30',
+            'backgroundCheckVerifiedAt' => 'nullable|date',
         ];
 
         if ($this->isCompany) {
@@ -130,6 +164,18 @@ new class extends Component {
             'address'        => $this->address ?: null,
         ];
 
+        $employeeProfileData = [
+            'eps'                     => $this->eps ?: null,
+            'pension_fund'             => $this->pensionFund ?: null,
+            'arl'                     => $this->arl ?: null,
+            'compensation_fund'        => $this->compensationFund ?: null,
+            'severance_fund'           => $this->severanceFund ?: null,
+            'blood_type'               => $this->bloodType ?: null,
+            'emergency_contact_name'    => $this->emergencyContactName ?: null,
+            'emergency_contact_phone'   => $this->emergencyContactPhone ?: null,
+            'background_check_verified_at' => $this->backgroundCheckVerifiedAt ?: null,
+        ];
+
         if ($this->isCompany) {
             $data['company_name']         = $this->companyName;
             $data['legal_representative'] = $this->legalRepresentative ?: null;
@@ -150,13 +196,25 @@ new class extends Component {
         }
 
         if ($this->collaboratorId) {
-            $this->authorize('update', Collaborator::findOrFail($this->collaboratorId));
-            Collaborator::findOrFail($this->collaboratorId)->update($data);
+            $collaborator = Collaborator::findOrFail($this->collaboratorId);
+            $this->authorize('update', $collaborator);
+            
+            $collaborator->update($data);
+            $collaborator->employeeProfile()->updateOrCreate(
+                ['collaborator_id' => $collaborator->id],
+                $employeeProfileData
+            );
+            
             session()->flash('success', 'Colaborador actualizado correctamente.');
             $this->redirect(route('rh.colaboradores.show', $this->collaboratorId), navigate: false);
         } else {
             $this->authorize('create', Collaborator::class);
             $collaborator = Collaborator::create($data);
+            
+            if ($this->type === 'Empleado' || !empty(array_filter($employeeProfileData))) {
+                $collaborator->employeeProfile()->create($employeeProfileData);
+            }
+            
             session()->flash('success', 'Colaborador registrado correctamente.');
             $this->redirect(route('rh.colaboradores.show', $collaborator->id), navigate: false);
         }
@@ -177,8 +235,8 @@ new class extends Component {
 <div class="mx-auto max-w-2xl">
     {{-- Indicador de pasos --}}
     <div class="mb-8 flex items-center justify-between">
-        @foreach([1 => 'Tipo', 2 => 'Datos', 3 => 'Contacto'] as $n => $label)
-            <div class="flex flex-1 items-center {{ $n < 3 ? 'after:h-px after:flex-1 after:bg-gray-200 dark:after:bg-gray-700' : '' }}">
+        @foreach([1 => 'Tipo', 2 => 'Datos', 3 => 'Seguridad Social', 4 => 'Contacto'] as $n => $label)
+            <div class="flex flex-1 items-center {{ $n < 4 ? 'after:h-px after:flex-1 after:bg-gray-200 dark:after:bg-gray-700' : '' }}">
                 <button
                     wire:click="$set('step', {{ $n }})"
                     class="flex items-center gap-2 focus:outline-none"
@@ -566,8 +624,87 @@ new class extends Component {
             </div>
         @endif
 
-        {{-- PASO 3: Contacto y estado --}}
+        {{-- PASO 3: Seguridad Social (Opcional) --}}
         @if($step === 3)
+            <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Seguridad Social y Salud</h2>
+            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Información prestacional y de emergencia (opcional para contratistas, recomendada para empleados).</p>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="eps" class="block text-sm font-medium text-gray-700 dark:text-gray-300">EPS</label>
+                        <input wire:model.blur="eps" id="eps" type="text" placeholder="Ej: Sanitas"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                        <label for="pensionFund" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fondo de Pensión</label>
+                        <input wire:model.blur="pensionFund" id="pensionFund" type="text" placeholder="Ej: Porvenir"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="arl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ARL</label>
+                        <input wire:model.blur="arl" id="arl" type="text" placeholder="Ej: Sura"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                        <label for="compensationFund" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Caja de Compensación</label>
+                        <input wire:model.blur="compensationFund" id="compensationFund" type="text" placeholder="Ej: Compensar"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="bloodType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo Sanguíneo</label>
+                        <select wire:model="bloodType" id="bloodType"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            <option value="">Seleccione...</option>
+                            @foreach(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as $bt)
+                                <option value="{{ $bt }}">{{ $bt }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="backgroundCheckVerifiedAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Verificación Ley 1918</label>
+                        <input wire:model="backgroundCheckVerifiedAt" id="backgroundCheckVerifiedAt" type="date"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contacto de Emergencia</h3>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="emergencyContactName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                            <input wire:model.blur="emergencyContactName" id="emergencyContactName" type="text"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label for="emergencyContactPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+                            <input wire:model.blur="emergencyContactPhone" id="emergencyContactPhone" type="text"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button type="button" wire:click="$set('step', 2)"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    Anterior
+                </button>
+                <button type="button" wire:click="$set('step', 4)"
+                    class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Siguiente
+                </button>
+            </div>
+        @endif
+
+        {{-- PASO 4: Contacto y estado --}}
+        @if($step === 4)
             <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Datos de contacto y estado</h2>
             <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Información de contacto y estado del colaborador en el sistema.</p>
 
@@ -635,7 +772,7 @@ new class extends Component {
             </div>
 
             <div class="mt-6 flex justify-between">
-                <button type="button" wire:click="$set('step', 2)"
+                <button type="button" wire:click="$set('step', 3)"
                     class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />

@@ -84,6 +84,11 @@ class Contract extends Model implements Auditable
         return $this->hasMany(CommittedValue::class);
     }
 
+    public function payrollDetail(): HasOne
+    {
+        return $this->hasOne(PayrollContractDetail::class);
+    }
+
     public function positionChangeHistory(): HasMany
     {
         return $this->hasMany(PositionChangeHistory::class);

@@ -45,7 +45,7 @@ class ContractImportController extends Controller
     public function template(): BinaryFileResponse
     {
         $institutionId = auth()->user()->institution_id;
-        $filename      = 'plantilla_contratos_'.now()->format('Ymd').'.xlsx';
+        $filename = 'plantilla_contratos_'.now()->format('Ymd').'.xlsx';
 
         return Excel::download(new ContractTemplateExport($institutionId), $filename);
     }

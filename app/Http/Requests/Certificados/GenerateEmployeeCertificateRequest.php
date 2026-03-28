@@ -8,7 +8,6 @@ use App\Models\RH\CertificateSignature;
 use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class GenerateEmployeeCertificateRequest extends FormRequest
 {
@@ -21,13 +20,13 @@ class GenerateEmployeeCertificateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'collaborator_id'            => ['required', 'uuid', 'exists:collaborators,id'],
-            'certificate_signature_id'   => ['required', 'uuid', 'exists:certificate_signatures,id'],
-            'contract_ids'               => ['required', 'array', 'min:1'],
-            'contract_ids.*'             => ['uuid', 'exists:contracts,id'],
-            'options.show_salary'        => ['boolean'],
+            'collaborator_id' => ['required', 'uuid', 'exists:collaborators,id'],
+            'certificate_signature_id' => ['required', 'uuid', 'exists:certificate_signatures,id'],
+            'contract_ids' => ['required', 'array', 'min:1'],
+            'contract_ids.*' => ['uuid', 'exists:contracts,id'],
+            'options.show_salary' => ['boolean'],
             'options.show_position_history' => ['boolean'],
-            'addressed_to'               => ['nullable', 'string', 'max:255'],
+            'addressed_to' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -35,10 +34,10 @@ class GenerateEmployeeCertificateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'collaborator_id.required'          => 'Debe seleccionar un colaborador.',
+            'collaborator_id.required' => 'Debe seleccionar un colaborador.',
             'certificate_signature_id.required' => 'Debe seleccionar una firma.',
-            'contract_ids.required'             => 'Debe seleccionar al menos un contrato.',
-            'contract_ids.min'                  => 'Debe seleccionar al menos un contrato.',
+            'contract_ids.required' => 'Debe seleccionar al menos un contrato.',
+            'contract_ids.min' => 'Debe seleccionar al menos un contrato.',
         ];
     }
 

@@ -17,14 +17,18 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class CollaboratorImport implements ToCollection, WithHeadingRow, WithValidation, SkipsOnFailure, WithChunkReading
+class CollaboratorImport implements SkipsOnFailure, ToCollection, WithChunkReading, WithHeadingRow, WithValidation
 {
     use SkipsFailures;
 
     private int $imported = 0;
-    private int $updated  = 0;
-    private int $skipped  = 0;
+
+    private int $updated = 0;
+
+    private int $skipped = 0;
+
     private array $documentTypeMap = [];
+
     private array $statusMap = [];
 
     public function __construct(
@@ -60,31 +64,31 @@ class CollaboratorImport implements ToCollection, WithHeadingRow, WithValidation
         $statusId = $this->statusMap[$estadoNombre] ?? null;
 
         $data = [
-            'institution_id'       => $this->institutionId,
-            'type'                 => $this->type,
-            'is_company'           => $isCompany,
-            'document_type_id'     => $documentTypeId,
-            'document_number'      => $documentNumber ?: null,
-            'document_issued_at'   => $this->parseFecha($row['fecha_expedicion'] ?? ''),
-            'first_name'           => $isCompany ? null : $this->normalizeString($row['primer_nombre'] ?? ''),
-            'second_name'          => $isCompany ? null : ($this->normalizeString($row['segundo_nombre'] ?? '') ?: null),
-            'first_surname'        => $isCompany ? null : $this->normalizeString($row['primer_apellido'] ?? ''),
-            'second_surname'       => $isCompany ? null : ($this->normalizeString($row['segundo_apellido'] ?? '') ?: null),
-            'birth_date'           => $this->parseFecha($row['fecha_nacimiento'] ?? ''),
-            'gender'               => $isCompany ? null : $this->parseGenero($row['genero'] ?? ''),
-            'company_name'         => $isCompany ? $this->normalizeString($row['razon_social'] ?? '') : null,
+            'institution_id' => $this->institutionId,
+            'type' => $this->type,
+            'is_company' => $isCompany,
+            'document_type_id' => $documentTypeId,
+            'document_number' => $documentNumber ?: null,
+            'document_issued_at' => $this->parseFecha($row['fecha_expedicion'] ?? ''),
+            'first_name' => $isCompany ? null : $this->normalizeString($row['primer_nombre'] ?? ''),
+            'second_name' => $isCompany ? null : ($this->normalizeString($row['segundo_nombre'] ?? '') ?: null),
+            'first_surname' => $isCompany ? null : $this->normalizeString($row['primer_apellido'] ?? ''),
+            'second_surname' => $isCompany ? null : ($this->normalizeString($row['segundo_apellido'] ?? '') ?: null),
+            'birth_date' => $this->parseFecha($row['fecha_nacimiento'] ?? ''),
+            'gender' => $isCompany ? null : $this->parseGenero($row['genero'] ?? ''),
+            'company_name' => $isCompany ? $this->normalizeString($row['razon_social'] ?? '') : null,
             'legal_representative' => $isCompany ? ($this->normalizeString($row['representante_legal'] ?? '') ?: null) : null,
-            'email'                => $this->normalizeString($row['correo'] ?? '') ?: null,
-            'phone'                => $this->normalizeString($row['telefono'] ?? '') ?: null,
-            'address'              => $this->normalizeString($row['direccion'] ?? '') ?: null,
-            'status_id'            => $statusId,
+            'email' => $this->normalizeString($row['correo'] ?? '') ?: null,
+            'phone' => $this->normalizeString($row['telefono'] ?? '') ?: null,
+            'address' => $this->normalizeString($row['direccion'] ?? '') ?: null,
+            'status_id' => $statusId,
         ];
 
         try {
             DB::transaction(function () use ($data): void {
                 $uniqueKey = [
-                    'institution_id'   => $this->institutionId,
-                    'document_number'  => $data['document_number'],
+                    'institution_id' => $this->institutionId,
+                    'document_number' => $data['document_number'],
                     'document_type_id' => $data['document_type_id'],
                 ];
 
@@ -173,11 +177,11 @@ class CollaboratorImport implements ToCollection, WithHeadingRow, WithValidation
     {
         $map = [
             'MASCULINO' => 'M',
-            'FEMENINO'  => 'F',
-            'OTRO'      => 'O',
-            'M'         => 'M',
-            'F'         => 'F',
-            'O'         => 'O',
+            'FEMENINO' => 'F',
+            'OTRO' => 'O',
+            'M' => 'M',
+            'F' => 'F',
+            'O' => 'O',
         ];
         $upper = strtoupper(trim((string) $value));
 

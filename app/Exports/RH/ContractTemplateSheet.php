@@ -15,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ContractTemplateSheet implements FromArray, WithTitle, WithStyles, WithColumnWidths, WithEvents
+class ContractTemplateSheet implements FromArray, WithColumnWidths, WithEvents, WithStyles, WithTitle
 {
     public function title(): string
     {
@@ -88,10 +88,10 @@ class ContractTemplateSheet implements FromArray, WithTitle, WithStyles, WithCol
     {
         // Encabezado: fondo azul oscuro, texto blanco, negrita, centrado
         $sheet->getStyle('A1:L1')->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFFFFFFF']]],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFFFFFFF']]],
         ]);
 
         // Fila de ejemplo: cursiva, fondo gris muy claro

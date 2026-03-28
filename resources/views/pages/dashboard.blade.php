@@ -222,68 +222,7 @@ $roleConfig = match($role) {
 
     @elseif($role === 'employee-manager')
 
-        {{-- Grid 4 cards especializadas para employee-manager --}}
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-
-            {{-- Card: Empleados activos --}}
-            <div class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['empleados']) }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Empleados activos</p>
-                </div>
-            </div>
-
-            {{-- Card: Contratos vigentes --}}
-            <div class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['vigentes']) }}</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        Contratos vigentes
-                        <span class="rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Activos</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Card: Por vencer --}}
-            <div class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['por_vencer']) }}</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        Por vencer
-                        <span class="rounded px-1.5 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">30 días</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Card: Terminados --}}
-            <div class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['terminados']) }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Contratos terminados</p>
-                </div>
-            </div>
-
-        </div>
+        <livewire:rh.employee-dashboard />
 
     @endif
 

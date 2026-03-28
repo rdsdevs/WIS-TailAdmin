@@ -42,22 +42,22 @@ class CertificateController extends Controller
     {
         $this->authorize('generateEmployee', Certificate::class);
 
-        $validated  = $request->validated();
+        $validated = $request->validated();
         $collaborator = Collaborator::findOrFail($validated['collaborator_id']);
-        $signature    = CertificateSignature::findOrFail($validated['certificate_signature_id']);
+        $signature = CertificateSignature::findOrFail($validated['certificate_signature_id']);
 
         $certificate = $this->service->generateEmployee(
             collaborator: $collaborator,
-            signature:    $signature,
-            contractIds:  $validated['contract_ids'],
-            options:      $validated['options'] ?? [],
-            addressedTo:  $validated['addressed_to'] ?? null,
-            issuedBy:     auth()->user(),
+            signature: $signature,
+            contractIds: $validated['contract_ids'],
+            options: $validated['options'] ?? [],
+            addressedTo: $validated['addressed_to'] ?? null,
+            issuedBy: auth()->user(),
         );
 
         $pdf = $this->service->buildPdf($certificate);
 
-        $filename = 'certificado_laboral_' . $collaborator->document_number . '_' . Carbon::now()->format('Ymd') . '.pdf';
+        $filename = 'certificado_laboral_'.$collaborator->document_number.'_'.Carbon::now()->format('Ymd').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -66,22 +66,22 @@ class CertificateController extends Controller
     {
         $this->authorize('generateContractor', Certificate::class);
 
-        $validated    = $request->validated();
+        $validated = $request->validated();
         $collaborator = Collaborator::findOrFail($validated['collaborator_id']);
-        $signature    = CertificateSignature::findOrFail($validated['certificate_signature_id']);
+        $signature = CertificateSignature::findOrFail($validated['certificate_signature_id']);
 
         $certificate = $this->service->generateContractor(
             collaborator: $collaborator,
-            signature:    $signature,
-            contractIds:  $validated['contract_ids'],
-            options:      $validated['options'] ?? [],
-            addressedTo:  $validated['addressed_to'] ?? null,
-            issuedBy:     auth()->user(),
+            signature: $signature,
+            contractIds: $validated['contract_ids'],
+            options: $validated['options'] ?? [],
+            addressedTo: $validated['addressed_to'] ?? null,
+            issuedBy: auth()->user(),
         );
 
         $pdf = $this->service->buildPdf($certificate);
 
-        $filename = 'certificado_contratacion_' . $collaborator->document_number . '_' . Carbon::now()->format('Ymd') . '.pdf';
+        $filename = 'certificado_contratacion_'.$collaborator->document_number.'_'.Carbon::now()->format('Ymd').'.pdf';
 
         return $pdf->download($filename);
     }

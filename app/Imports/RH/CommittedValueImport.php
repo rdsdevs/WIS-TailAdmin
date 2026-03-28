@@ -14,12 +14,14 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithTitle
+class CommittedValueImport implements SkipsOnFailure, ToCollection, WithHeadingRow, WithTitle
 {
     use SkipsFailures;
 
-    private int $imported  = 0;
-    private int $skipped   = 0;
+    private int $imported = 0;
+
+    private int $skipped = 0;
+
     private array $rowErrors = [];
 
     public function __construct(
@@ -52,8 +54,8 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
 
         if ($contractId === null) {
             $this->rowErrors[] = [
-                'fila'    => $rowNumber + 2,
-                'campo'   => 'codigo_contrato',
+                'fila' => $rowNumber + 2,
+                'campo' => 'codigo_contrato',
                 'mensaje' => "El código de contrato '{$codigoContrato}' no fue encontrado en la hoja Contratos ni existe previamente en el sistema.",
             ];
             $this->skipped++;
@@ -61,14 +63,14 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
             return;
         }
 
-        $cuentaContable  = trim((string) ($row['cuenta_contable'] ?? ''));
-        $centroDeCosto   = trim((string) ($row['centro_de_costo'] ?? ''));
-        $valor           = $row['valor'] ?? null;
+        $cuentaContable = trim((string) ($row['cuenta_contable'] ?? ''));
+        $centroDeCosto = trim((string) ($row['centro_de_costo'] ?? ''));
+        $valor = $row['valor'] ?? null;
 
         if (! is_numeric($valor) || (float) $valor < 0) {
             $this->rowErrors[] = [
-                'fila'    => $rowNumber + 2,
-                'campo'   => 'valor',
+                'fila' => $rowNumber + 2,
+                'campo' => 'valor',
                 'mensaje' => 'El valor comprometido debe ser un número mayor o igual a 0.',
             ];
             $this->skipped++;
@@ -78,8 +80,8 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
 
         if ($cuentaContable === '') {
             $this->rowErrors[] = [
-                'fila'    => $rowNumber + 2,
-                'campo'   => 'cuenta_contable',
+                'fila' => $rowNumber + 2,
+                'campo' => 'cuenta_contable',
                 'mensaje' => 'La cuenta contable es obligatoria.',
             ];
             $this->skipped++;
@@ -89,8 +91,8 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
 
         if ($centroDeCosto === '') {
             $this->rowErrors[] = [
-                'fila'    => $rowNumber + 2,
-                'campo'   => 'centro_de_costo',
+                'fila' => $rowNumber + 2,
+                'campo' => 'centro_de_costo',
                 'mensaje' => 'El centro de costo es obligatorio.',
             ];
             $this->skipped++;
@@ -101,24 +103,24 @@ class CommittedValueImport implements ToCollection, WithHeadingRow, SkipsOnFailu
         try {
             DB::transaction(function () use ($contractId, $cuentaContable, $centroDeCosto, $valor): void {
                 CommittedValue::create([
-                    'institution_id'    => $this->institutionId,
-                    'contract_id'       => $contractId,
+                    'institution_id' => $this->institutionId,
+                    'contract_id' => $contractId,
                     'accounting_account' => $cuentaContable,
-                    'cost_center'       => $centroDeCosto,
-                    'amount'            => (float) $valor,
+                    'cost_center' => $centroDeCosto,
+                    'amount' => (float) $valor,
                 ]);
 
                 $this->imported++;
             });
         } catch (\Exception $e) {
             Log::error('[CommittedValueImport] Error al guardar valor comprometido.', [
-                'fila'    => $rowNumber + 2,
-                'codigo'  => $codigoContrato,
-                'error'   => $e->getMessage(),
+                'fila' => $rowNumber + 2,
+                'codigo' => $codigoContrato,
+                'error' => $e->getMessage(),
             ]);
             $this->rowErrors[] = [
-                'fila'    => $rowNumber + 2,
-                'campo'   => 'general',
+                'fila' => $rowNumber + 2,
+                'campo' => 'general',
                 'mensaje' => 'Ocurrió un error inesperado al guardar el registro. Por favor intente de nuevo.',
             ];
             $this->skipped++;

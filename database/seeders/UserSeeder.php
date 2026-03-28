@@ -42,74 +42,74 @@ class UserSeeder extends Seeder
     {
         return [
             [
-                'document_number'    => '72295936',
+                'document_number' => '72295936',
                 'document_issued_at' => '2003-02-18',
-                'name'               => 'SUPER ADMINISTRADOR',
-                'email'              => 'ltoncel@rdssoft.com.co',
-                'role'               => 'super-admin',
+                'name' => 'SUPER ADMINISTRADOR',
+                'email' => 'ltoncel@rdssoft.com.co',
+                'role' => 'super-admin',
             ],
             [
-                'document_number'    => '37324165',
+                'document_number' => '37324165',
                 'document_issued_at' => '1989-12-11',
-                'name'               => 'HILIANET BARBOSA REYES',
-                'email'              => 'contabiludad@ascun.org.co',
-                'role'               => 'accounting-manager',
+                'name' => 'HILIANET BARBOSA REYES',
+                'email' => 'contabiludad@ascun.org.co',
+                'role' => 'accounting-manager',
             ],
             [
-                'document_number'    => '63549971',
+                'document_number' => '63549971',
                 'document_issued_at' => '2002-06-17',
-                'name'               => 'CAROLINA HENAO MONTOYA',
-                'email'              => 'administrativo@ascun.org.co',
-                'role'               => 'admin',
+                'name' => 'CAROLINA HENAO MONTOYA',
+                'email' => 'administrativo@ascun.org.co',
+                'role' => 'admin',
             ],
             [
-                'document_number'    => '52857025',
+                'document_number' => '52857025',
                 'document_issued_at' => '1999-04-19',
-                'name'               => 'ANA ISABEL REYES TORRES',
-                'email'              => 'gestiondocumental@ascun.org.co',
-                'role'               => 'rh-manager',
+                'name' => 'ANA ISABEL REYES TORRES',
+                'email' => 'gestiondocumental@ascun.org.co',
+                'role' => 'rh-manager',
             ],
             [
-                'document_number'    => '53135875',
+                'document_number' => '53135875',
                 'document_issued_at' => '2004-01-15',
-                'name'               => 'PAULA ANDREA VELASCO',
-                'email'              => 'tesoreria@ascun.org.co',
-                'role'               => 'inventory-manager',
+                'name' => 'PAULA ANDREA VELASCO',
+                'email' => 'tesoreria@ascun.org.co',
+                'role' => 'inventory-manager',
             ],
             [
-                'document_number'    => '1014233042',
+                'document_number' => '1014233042',
                 'document_issued_at' => '2010-06-03',
-                'name'               => 'JOAN SEBASTIÁN AREVALO',
-                'email'              => 'sistemas@ascun.org.co',
-                'role'               => 'admin',
+                'name' => 'JOAN SEBASTIÁN AREVALO',
+                'email' => 'sistemas@ascun.org.co',
+                'role' => 'admin',
             ],
             [
-                'document_number'    => '1026283309',
+                'document_number' => '1026283309',
                 'document_issued_at' => '2011-04-01',
-                'name'               => 'YESENIA KATERIN ROJAS MORENO',
-                'email'              => 'profesional.admin@ascun.org.co',
-                'role'               => 'rh-manager',
+                'name' => 'YESENIA KATERIN ROJAS MORENO',
+                'email' => 'profesional.admin@ascun.org.co',
+                'role' => 'rh-manager',
             ],
             [
-                'document_number'    => '1033815362',
+                'document_number' => '1033815362',
                 'document_issued_at' => '2017-04-19',
-                'name'               => 'INGRID TATIANA CAICEDO',
-                'email'              => 'apoyosistemas@ascun.org.co',
-                'role'               => 'admin',
+                'name' => 'INGRID TATIANA CAICEDO',
+                'email' => 'apoyosistemas@ascun.org.co',
+                'role' => 'admin',
             ],
             [
-                'document_number'    => '80759183',
+                'document_number' => '80759183',
                 'document_issued_at' => '2001-12-04',
-                'name'               => 'JORGE BERNAL',
-                'email'              => 'jbernal@tsedec.com',
-                'role'               => 'accounting-manager',
+                'name' => 'JORGE BERNAL',
+                'email' => 'jbernal@tsedec.com',
+                'role' => 'accounting-manager',
             ],
             [
-                'document_number'    => '1012410970',
+                'document_number' => '1012410970',
                 'document_issued_at' => '2012-06-01',
-                'name'               => 'JOHANNA MONTAÑEZ',
-                'email'              => 'contabilidad@ascun.org.co',
-                'role'               => 'accounting-manager',
+                'name' => 'JOHANNA MONTAÑEZ',
+                'email' => 'contabilidad@ascun.org.co',
+                'role' => 'accounting-manager',
             ],
         ];
     }
@@ -122,13 +122,13 @@ class UserSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['document_number' => $datos['document_number']],
                 [
-                    'institution_id'     => $institution->id,
-                    'document_type'      => 'CC',
+                    'institution_id' => $institution->id,
+                    'document_type' => 'CC',
                     'document_issued_at' => $datos['document_issued_at'],
-                    'name'               => $datos['name'],
-                    'email'              => $datos['email'],
-                    'password'           => Hash::make(self::PASSWORD_PRUEBAS),
-                    'is_active'          => true,
+                    'name' => $datos['name'],
+                    'email' => $datos['email'],
+                    'password' => Hash::make(self::PASSWORD_PRUEBAS),
+                    'is_active' => true,
                 ]
             );
 
@@ -148,7 +148,7 @@ class UserSeeder extends Seeder
         }
 
         $this->command->newLine();
-        $this->command->warn('Contraseña temporal de todos los usuarios: ' . self::PASSWORD_PRUEBAS);
+        $this->command->warn('Contraseña temporal de todos los usuarios: '.self::PASSWORD_PRUEBAS);
         $this->command->warn('Cambiar antes de subir a producción.');
     }
 }

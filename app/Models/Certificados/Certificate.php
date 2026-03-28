@@ -40,9 +40,9 @@ class Certificate extends Model implements Auditable
     /** @var array<string, string> */
     protected $casts = [
         'collaborator_snapshot' => 'array',
-        'contracts_snapshot'    => 'array',
-        'options_snapshot'      => 'array',
-        'issued_at'             => 'datetime',
+        'contracts_snapshot' => 'array',
+        'options_snapshot' => 'array',
+        'issued_at' => 'datetime',
     ];
 
     // ── Relaciones ───────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ContractCatalogsSheet implements FromArray, WithTitle, WithStyles
+class ContractCatalogsSheet implements FromArray, WithStyles, WithTitle
 {
     public function __construct(private readonly string $institutionId) {}
 
@@ -95,7 +95,7 @@ class ContractCatalogsSheet implements FromArray, WithTitle, WithStyles
     {
         // Identificar filas de encabezado de sección
         $sectionRows = [];
-        $data        = $this->array();
+        $data = $this->array();
 
         foreach ($data as $i => $row) {
             $cellValue = $row[0] ?? '';

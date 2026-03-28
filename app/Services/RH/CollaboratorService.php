@@ -60,7 +60,16 @@ final class CollaboratorService
     public function create(CreateCollaboratorRequest $request): Collaborator
     {
         return DB::transaction(function () use ($request): Collaborator {
-            $colaborador = Collaborator::create($request->validated());
+            $validated = $request->validated();
+            $employeeData = $validated['employee_profile'] ?? null;
+            $data = collect($validated)->except('employee_profile')->all();
+
+            $colaborador = Collaborator::create($data);
+
+            if ($employeeData !== null) {
+                $colaborador->employeeProfile()->create($employeeData);
+            }
+
             auth()->user()?->notify(new CollaboratorCreatedNotification($colaborador->full_name, $colaborador->id));
 
             return $colaborador;
@@ -73,11 +82,23 @@ final class CollaboratorService
     public function update(Collaborator $collaborator, UpdateCollaboratorRequest $request): Collaborator
     {
         DB::transaction(function () use ($collaborator, $request): void {
-            $collaborator->update($request->validated());
+            $validated = $request->validated();
+            $employeeData = $validated['employee_profile'] ?? null;
+            $data = collect($validated)->except('employee_profile')->all();
+
+            $collaborator->update($data);
+
+            if ($employeeData !== null) {
+                $collaborator->employeeProfile()->updateOrCreate(
+                    ['collaborator_id' => $collaborator->id],
+                    $employeeData
+                );
+            }
+
             auth()->user()?->notify(new CollaboratorUpdatedNotification($collaborator->full_name, $collaborator->id));
         });
 
-        return $collaborator->fresh(['documentType', 'status', 'activeContract.position']);
+        return $collaborator->fresh(['documentType', 'status', 'activeContract.position', 'employeeProfile']);
     }
 
     /**

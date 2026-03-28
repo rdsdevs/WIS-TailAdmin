@@ -15,8 +15,8 @@ class CostCenter extends Model implements Auditable
 {
     use HasFactory;
     use HasUuidPrimaryKey;
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $table = 'cost_centers';
 

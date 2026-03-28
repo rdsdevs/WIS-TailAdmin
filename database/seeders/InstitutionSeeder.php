@@ -19,8 +19,8 @@ class InstitutionSeeder extends Seeder
         $institution = Institution::firstOrCreate(
             ['nit' => '860006560'],
             [
-                'name'      => 'Asociación Colombiana de Universidades',
-                'city'      => 'Bogotá',
+                'name' => 'Asociación Colombiana de Universidades',
+                'city' => 'Bogotá',
                 'is_active' => true,
             ]
         );

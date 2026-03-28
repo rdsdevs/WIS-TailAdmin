@@ -10,7 +10,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CollaboratorCatalogsSheet implements FromArray, WithTitle, WithStyles
+class CollaboratorCatalogsSheet implements FromArray, WithStyles, WithTitle
 {
     public function title(): string
     {

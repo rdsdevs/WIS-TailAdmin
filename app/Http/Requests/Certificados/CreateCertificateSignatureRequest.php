@@ -17,13 +17,13 @@ class CreateCertificateSignatureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'signer_name'                  => ['required', 'string', 'max:200'],
-            'signer_position'              => ['required', 'string', 'max:200'],
-            'signature_image'              => ['required', 'string'],
-            'replacement_name'             => ['nullable', 'string', 'max:200'],
-            'replacement_position'         => ['nullable', 'string', 'max:200'],
-            'replacement_signature_image'  => ['nullable', 'string'],
-            'is_active'                    => ['boolean'],
+            'signer_name' => ['required', 'string', 'max:200'],
+            'signer_position' => ['required', 'string', 'max:200'],
+            'signature_image' => ['required', 'string'],
+            'replacement_name' => ['nullable', 'string', 'max:200'],
+            'replacement_position' => ['nullable', 'string', 'max:200'],
+            'replacement_signature_image' => ['nullable', 'string'],
+            'is_active' => ['boolean'],
         ];
     }
 
@@ -31,7 +31,7 @@ class CreateCertificateSignatureRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'signer_name.required'     => 'El nombre del firmante es requerido.',
+            'signer_name.required' => 'El nombre del firmante es requerido.',
             'signer_position.required' => 'El cargo del firmante es requerido.',
             'signature_image.required' => 'La imagen de la firma es requerida.',
         ];

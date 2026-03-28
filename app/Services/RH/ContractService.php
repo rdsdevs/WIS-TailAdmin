@@ -71,8 +71,9 @@ final class ContractService
         return DB::transaction(function () use ($request): Contract {
             $validated = $request->validated();
             $committedLines = $validated['committed_values'] ?? [];
+            $payrollData = $validated['payroll_detail'] ?? null;
 
-            $data = collect($validated)->except('committed_values')->all();
+            $data = collect($validated)->except(['committed_values', 'payroll_detail'])->all();
 
             // Contratos de años anteriores se registran siempre como Terminado
             if (isset($data['start_date'])) {
@@ -88,10 +89,14 @@ final class ContractService
                 $this->persistCommittedValues($contract, $committedLines);
             }
 
+            if ($payrollData !== null) {
+                $contract->payrollDetail()->create($payrollData);
+            }
+
             // No notificar contratos históricos
             if (! $contract->isFromPreviousYear()) {
                 $contract->load('collaborator');
-                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorName = $contract->collaborator?->full_name ?? '';
                 $collaboratorEmail = $contract->collaborator?->email ?? '';
 
                 // Campana al usuario autenticado
@@ -124,8 +129,9 @@ final class ContractService
         DB::transaction(function () use ($contract, $request): void {
             $validated = $request->validated();
             $committedLines = $validated['committed_values'] ?? null;
+            $payrollData = $validated['payroll_detail'] ?? null;
 
-            $data = collect($validated)->except('committed_values')->all();
+            $data = collect($validated)->except(['committed_values', 'payroll_detail'])->all();
 
             // Contratos de años anteriores mantienen siempre status = Terminado
             if ($contract->isFromPreviousYear()) {
@@ -139,10 +145,17 @@ final class ContractService
                 $this->syncCommittedValues($contract, $committedLines);
             }
 
+            if ($payrollData !== null) {
+                $contract->payrollDetail()->updateOrCreate(
+                    ['contract_id' => $contract->id],
+                    $payrollData
+                );
+            }
+
             // No notificar contratos históricos
             if (! $contract->isFromPreviousYear()) {
                 $contract->loadMissing('collaborator');
-                $collaboratorName  = $contract->collaborator?->full_name ?? '';
+                $collaboratorName = $contract->collaborator?->full_name ?? '';
                 $collaboratorEmail = $contract->collaborator?->email ?? '';
 
                 // Campana al usuario autenticado
@@ -164,7 +177,7 @@ final class ContractService
             }
         });
 
-        return $contract->fresh();
+        return $contract->fresh(['payrollDetail']);
     }
 
     /**
@@ -196,7 +209,7 @@ final class ContractService
         ]);
 
         $contract->loadMissing('collaborator');
-        $collaboratorName  = $contract->collaborator?->full_name ?? '';
+        $collaboratorName = $contract->collaborator?->full_name ?? '';
         $collaboratorEmail = $contract->collaborator?->email ?? '';
 
         // Campana al usuario autenticado
@@ -234,7 +247,7 @@ final class ContractService
             ]);
 
             $contract->loadMissing('collaborator');
-            $collaboratorName  = $contract->collaborator?->full_name ?? '';
+            $collaboratorName = $contract->collaborator?->full_name ?? '';
             $collaboratorEmail = $contract->collaborator?->email ?? '';
 
             // Campana al usuario autenticado

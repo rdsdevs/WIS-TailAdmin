@@ -20,16 +20,16 @@ class GenerateContractorCertificateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'collaborator_id'                   => ['required', 'uuid', 'exists:collaborators,id'],
-            'certificate_signature_id'          => ['required', 'uuid', 'exists:certificate_signatures,id'],
-            'contract_ids'                      => ['required', 'array', 'min:1'],
-            'contract_ids.*'                    => ['uuid', 'exists:contracts,id'],
-            'options.show_object'               => ['boolean'],
-            'options.show_obligations'          => ['boolean'],
-            'options.show_value'                => ['boolean'],
-            'options.show_prorrogas'            => ['boolean'],
-            'options.show_early_termination'    => ['boolean'],
-            'addressed_to'                      => ['nullable', 'string', 'max:255'],
+            'collaborator_id' => ['required', 'uuid', 'exists:collaborators,id'],
+            'certificate_signature_id' => ['required', 'uuid', 'exists:certificate_signatures,id'],
+            'contract_ids' => ['required', 'array', 'min:1'],
+            'contract_ids.*' => ['uuid', 'exists:contracts,id'],
+            'options.show_object' => ['boolean'],
+            'options.show_obligations' => ['boolean'],
+            'options.show_value' => ['boolean'],
+            'options.show_prorrogas' => ['boolean'],
+            'options.show_early_termination' => ['boolean'],
+            'addressed_to' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -37,10 +37,10 @@ class GenerateContractorCertificateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'collaborator_id.required'          => 'Debe seleccionar un colaborador.',
+            'collaborator_id.required' => 'Debe seleccionar un colaborador.',
             'certificate_signature_id.required' => 'Debe seleccionar una firma.',
-            'contract_ids.required'             => 'Debe seleccionar al menos un contrato.',
-            'contract_ids.min'                  => 'Debe seleccionar al menos un contrato.',
+            'contract_ids.required' => 'Debe seleccionar al menos un contrato.',
+            'contract_ids.min' => 'Debe seleccionar al menos un contrato.',
         ];
     }
 

@@ -11,6 +11,7 @@ use App\Models\RH\Contract;
 use App\Models\RH\Department;
 use App\Models\RH\Position;
 use App\Models\User;
+use App\Observers\RH\ContractObserver;
 use App\Policies\Certificados\CertificatePolicy;
 use App\Policies\Certificados\CertificateSignaturePolicy;
 use App\Policies\RH\CollaboratorPolicy;
@@ -36,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Contract::observe(ContractObserver::class);
+
         // Policies del módulo RH
         Gate::policy(Collaborator::class, CollaboratorPolicy::class);
         Gate::policy(Contract::class, ContractPolicy::class);

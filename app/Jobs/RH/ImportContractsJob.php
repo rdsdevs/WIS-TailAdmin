@@ -22,7 +22,8 @@ class ImportContractsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 600;
-    public int $tries   = 1;
+
+    public int $tries = 1;
 
     public function __construct(
         private readonly string $filePath,
@@ -33,7 +34,7 @@ class ImportContractsJob implements ShouldQueue
 
     public function handle(): void
     {
-        $absolutePath = storage_path('app/private/'.$this->filePath);
+        $absolutePath = Storage::disk('local')->path($this->filePath);
 
         // ── Importar hoja "Contratos" ─────────────────────────────────────────
         $contractImport = new ContractImport(
@@ -67,30 +68,30 @@ class ImportContractsJob implements ShouldQueue
         Cache::put(
             "import_contracts_result_{$this->userId}",
             [
-                'imported'                  => $contractImport->getImported(),
-                'updated'                   => $contractImport->getUpdated(),
-                'skipped'                   => $contractImport->getSkipped(),
-                'row_errors'                => $contractImport->getRowErrors(),
-                'category_counts'           => $contractImport->getCategoryCounts(),
+                'imported' => $contractImport->getImported(),
+                'updated' => $contractImport->getUpdated(),
+                'skipped' => $contractImport->getSkipped(),
+                'row_errors' => $contractImport->getRowErrors(),
+                'category_counts' => $contractImport->getCategoryCounts(),
                 'committed_values_imported' => $committedImport->getImported(),
-                'committed_values_skipped'  => $committedImport->getSkipped(),
-                'committed_values_errors'   => $committedImport->getRowErrors(),
-                'completado_at'             => now()->format('d/m/Y H:i'),
+                'committed_values_skipped' => $committedImport->getSkipped(),
+                'committed_values_errors' => $committedImport->getRowErrors(),
+                'completado_at' => now()->format('d/m/Y H:i'),
             ],
             now()->addHours(2)
         );
 
         // ── Notificar al usuario ──────────────────────────────────────────────
         User::find($this->userId)?->notify(new ContractImportCompletedNotification([
-            'imported'                  => $contractImport->getImported(),
-            'updated'                   => $contractImport->getUpdated(),
-            'skipped'                   => $contractImport->getSkipped(),
-            'row_errors'                => $contractImport->getRowErrors(),
-            'category_counts'           => $contractImport->getCategoryCounts(),
+            'imported' => $contractImport->getImported(),
+            'updated' => $contractImport->getUpdated(),
+            'skipped' => $contractImport->getSkipped(),
+            'row_errors' => $contractImport->getRowErrors(),
+            'category_counts' => $contractImport->getCategoryCounts(),
             'committed_values_imported' => $committedImport->getImported(),
-            'committed_values_skipped'  => $committedImport->getSkipped(),
-            'committed_values_errors'   => $committedImport->getRowErrors(),
-            'completado_at'             => now()->format('d/m/Y H:i'),
+            'committed_values_skipped' => $committedImport->getSkipped(),
+            'committed_values_errors' => $committedImport->getRowErrors(),
+            'completado_at' => now()->format('d/m/Y H:i'),
         ]));
 
         // ── Limpiar archivo temporal ──────────────────────────────────────────
@@ -100,7 +101,7 @@ class ImportContractsJob implements ShouldQueue
     public function failed(\Throwable $e): void
     {
         $errorData = [
-            'error'         => 'Error interno al procesar el archivo: '.$e->getMessage(),
+            'error' => 'Error interno al procesar el archivo: '.$e->getMessage(),
             'completado_at' => now()->format('d/m/Y H:i'),
         ];
 

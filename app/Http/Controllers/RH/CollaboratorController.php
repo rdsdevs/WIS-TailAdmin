@@ -144,14 +144,14 @@ class CollaboratorController extends Controller
     /**
      * Cambia el tipo del colaborador entre Empleado y Contratista.
      */
-    public function changeType(Collaborator $colaborador): RedirectResponse
+    public function changeType(Collaborator $collaborator): RedirectResponse
     {
-        $this->authorize('changeType', $colaborador);
+        $this->authorize('changeType', $collaborator);
 
-        $this->service->changeType($colaborador);
+        $this->service->changeType($collaborator);
 
         return redirect()
-            ->route('rh.colaboradores.show', $colaborador)
+            ->route('rh.colaboradores.show', $collaborator)
             ->with('exito', 'Tipo de colaborador actualizado exitosamente.');
     }
 }

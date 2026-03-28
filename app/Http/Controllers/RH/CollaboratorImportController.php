@@ -45,9 +45,9 @@ class CollaboratorImportController extends Controller
     public function template(string $tipo): BinaryFileResponse
     {
         $map = [
-            'empleados'    => 'empleados',
+            'empleados' => 'empleados',
             'contratistas' => 'contratistas',
-            'todos'        => 'todos',
+            'todos' => 'todos',
         ];
 
         $type = $map[$tipo] ?? 'todos';

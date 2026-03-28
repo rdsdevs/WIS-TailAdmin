@@ -25,9 +25,9 @@ class MigrarColaboradoresContratosCommand extends Command
     private const INSTITUTION_ID = '019d1967-c1f5-7038-a1bf-f3408cc2a4c9';
 
     private const TIPO_CONTRATO_MAP = [
-        '3'  => '019d1967-c999-7062-8014-113fe459c85e', // CPS
-        '6'  => '019d1967-c989-728a-a49d-970b3e66d259', // IDFD (Indefinido)
-        '9'  => '019d1967-c999-7062-8014-113fe459c85e', // CPS
+        '3' => '019d1967-c999-7062-8014-113fe459c85e', // CPS
+        '6' => '019d1967-c989-728a-a49d-970b3e66d259', // IDFD (Indefinido)
+        '9' => '019d1967-c999-7062-8014-113fe459c85e', // CPS
         '10' => '019d1967-c999-7062-8014-113fe459c85e', // CPS (default)
     ];
 
@@ -35,10 +35,10 @@ class MigrarColaboradoresContratosCommand extends Command
     private bool $dryRun = false;
 
     private array $stats = [
-        'contratos_creados'      => 0,
+        'contratos_creados' => 0,
         'contratos_actualizados' => 0,
-        'contratos_saltados'     => 0,
-        'comprometidos_creados'  => 0,
+        'contratos_saltados' => 0,
+        'comprometidos_creados' => 0,
         'comprometidos_saltados' => 0,
     ];
 
@@ -49,16 +49,17 @@ class MigrarColaboradoresContratosCommand extends Command
     {
         $this->dryRun = (bool) $this->option('dry-run');
 
-        $csvColabs    = $this->option('colaboradores')
+        $csvColabs = $this->option('colaboradores')
             ?? base_path('../../migate_db/colaboradores.csv');
         $csvContratos = $this->option('contratos')
             ?? base_path('../../migate_db/contratos_colaboradores.csv');
-        $csvComp      = $this->option('comprometidos')
+        $csvComp = $this->option('comprometidos')
             ?? base_path('../../migate_db/comprometidos_contratos_colaboradores.csv');
 
         foreach ([$csvColabs, $csvContratos, $csvComp] as $path) {
             if (! file_exists($path)) {
                 $this->error("No se encontró: {$path}");
+
                 return self::FAILURE;
             }
         }
@@ -76,7 +77,7 @@ class MigrarColaboradoresContratosCommand extends Command
         $this->info('');
         $this->info('Paso 0 — Cargando catálogos...');
         $mapaColabs = $this->cargarColaboradores($csvColabs);
-        $this->info("  Colaboradores en CSV: " . count($mapaColabs));
+        $this->info('  Colaboradores en CSV: '.count($mapaColabs));
 
         // Enriquecer con contratos ya en BD
         $this->contratoIdMap = Contract::query()
@@ -84,7 +85,7 @@ class MigrarColaboradoresContratosCommand extends Command
             ->whereNotNull('contract_code')
             ->pluck('id', 'contract_code')
             ->toArray();
-        $this->info("  Contratos pre-existentes en BD: " . count($this->contratoIdMap));
+        $this->info('  Contratos pre-existentes en BD: '.count($this->contratoIdMap));
 
         // Paso 1: Contratos
         $this->info('');
@@ -106,19 +107,20 @@ class MigrarColaboradoresContratosCommand extends Command
     /** @return array<string, array>  id_legacy → fila del CSV */
     private function cargarColaboradores(string $path): array
     {
-        $handle  = fopen($path, 'r');
+        $handle = fopen($path, 'r');
         $headers = array_map('trim', fgetcsv($handle));
-        $mapa    = [];
+        $mapa = [];
 
         while (($row = fgetcsv($handle)) !== false) {
             if (count($row) !== count($headers)) {
                 continue;
             }
-            $data        = array_combine($headers, array_map('trim', $row));
+            $data = array_combine($headers, array_map('trim', $row));
             $mapa[$data['id']] = $data;
         }
 
         fclose($handle);
+
         return $mapa;
     }
 
@@ -126,7 +128,7 @@ class MigrarColaboradoresContratosCommand extends Command
 
     private function migrarContratos(string $path, array $mapaColabs): void
     {
-        $handle  = fopen($path, 'r');
+        $handle = fopen($path, 'r');
         $headers = array_map('trim', fgetcsv($handle));
 
         $bar = $this->output->createProgressBar();
@@ -148,23 +150,24 @@ class MigrarColaboradoresContratosCommand extends Command
 
     private function procesarContrato(array $data, array $mapaColabs): void
     {
-        $legacyId    = $data['id'];
-        $codigo      = trim($data['codigo_contrato'] ?? '');
+        $legacyId = $data['id'];
+        $codigo = trim($data['codigo_contrato'] ?? '');
         $numContrato = trim($data['num_contrato'] ?? '');
         $colabLegacy = trim($data['colaborador_id'] ?? '');
-        $tipoLegacy  = trim($data['tipo_contrato_id'] ?? '9');
-        $inicio      = $this->parseDate($data['fecha_inicio'] ?? '');
-        $fin         = $this->parseDate($data['fecha_fin'] ?? '');
-        $objeto      = trim($data['objeto'] ?? '');
-        $obligs      = trim($data['obligaciones'] ?? '');
-        $honorarios  = (float) ($data['honorarios'] ?? 0);
-        $salario     = (float) ($data['salario'] ?? 0);
-        $correo      = trim($data['correo_cargo'] ?? '');
-        $estado      = $this->mapEstado($data['estado_contrato'] ?? '');
+        $tipoLegacy = trim($data['tipo_contrato_id'] ?? '9');
+        $inicio = $this->parseDate($data['fecha_inicio'] ?? '');
+        $fin = $this->parseDate($data['fecha_fin'] ?? '');
+        $objeto = trim($data['objeto'] ?? '');
+        $obligs = trim($data['obligaciones'] ?? '');
+        $honorarios = (float) ($data['honorarios'] ?? 0);
+        $salario = (float) ($data['salario'] ?? 0);
+        $correo = trim($data['correo_cargo'] ?? '');
+        $estado = $this->mapEstado($data['estado_contrato'] ?? '');
 
         // Validaciones mínimas
         if (! $inicio || (! $codigo && ! $numContrato)) {
             $this->stats['contratos_saltados']++;
+
             return;
         }
 
@@ -172,12 +175,14 @@ class MigrarColaboradoresContratosCommand extends Command
         $colabData = $mapaColabs[$colabLegacy] ?? null;
         if (! $colabData) {
             $this->stats['contratos_saltados']++;
+
             return;
         }
 
         $numdoc = trim($colabData['numdoc'] ?? '');
         if (! $numdoc) {
             $this->stats['contratos_saltados']++;
+
             return;
         }
 
@@ -197,6 +202,7 @@ class MigrarColaboradoresContratosCommand extends Command
 
             if (! $collaborator) {
                 $this->stats['contratos_saltados']++;
+
                 return;
             }
 
@@ -218,19 +224,19 @@ class MigrarColaboradoresContratosCommand extends Command
             }
 
             $contractData = [
-                'institution_id'   => self::INSTITUTION_ID,
-                'collaborator_id'  => $collaborator->id,
+                'institution_id' => self::INSTITUTION_ID,
+                'collaborator_id' => $collaborator->id,
                 'contract_type_id' => $contractTypeId,
-                'contract_number'  => $numContrato ?: null,
-                'contract_code'    => $codigo ?: null,
-                'start_date'       => $inicio,
-                'end_date'         => $fin ?: null,
-                'object'           => $objeto ?: null,
-                'obligations'      => $obligs ?: null,
-                'fees'             => $honorarios,
-                'salary'           => $salario,
-                'position_email'   => $correo ?: null,
-                'status'           => $estado,
+                'contract_number' => $numContrato ?: null,
+                'contract_code' => $codigo ?: null,
+                'start_date' => $inicio,
+                'end_date' => $fin ?: null,
+                'object' => $objeto ?: null,
+                'obligations' => $obligs ?: null,
+                'fees' => $honorarios,
+                'salary' => $salario,
+                'position_email' => $correo ?: null,
+                'status' => $estado,
             ];
 
             if ($existing) {
@@ -259,7 +265,7 @@ class MigrarColaboradoresContratosCommand extends Command
 
     private function migrarComprometidos(string $path): void
     {
-        $handle  = fopen($path, 'r');
+        $handle = fopen($path, 'r');
         $headers = array_map('trim', fgetcsv($handle));
 
         $bar = $this->output->createProgressBar();
@@ -270,15 +276,16 @@ class MigrarColaboradoresContratosCommand extends Command
                 continue;
             }
 
-            $data       = array_combine($headers, array_map('trim', $row));
+            $data = array_combine($headers, array_map('trim', $row));
             $contratoId = trim($data['contrato_id'] ?? '');
-            $cuenta     = trim($data['cuenta_contable'] ?? '');
-            $centro     = trim($data['centro_de_costo'] ?? '');
-            $valor      = (float) ($data['valor_comprometido'] ?? 0);
+            $cuenta = trim($data['cuenta_contable'] ?? '');
+            $centro = trim($data['centro_de_costo'] ?? '');
+            $valor = (float) ($data['valor_comprometido'] ?? 0);
 
             if (! $cuenta || ! $centro || $valor <= 0) {
                 $this->stats['comprometidos_saltados']++;
                 $bar->advance();
+
                 continue;
             }
 
@@ -295,6 +302,7 @@ class MigrarColaboradoresContratosCommand extends Command
             if (! $contractUuid) {
                 $this->stats['comprometidos_saltados']++;
                 $bar->advance();
+
                 continue;
             }
 
@@ -306,11 +314,11 @@ class MigrarColaboradoresContratosCommand extends Command
 
             if (! $yaExiste && ! $this->dryRun) {
                 CommittedValue::create([
-                    'institution_id'     => self::INSTITUTION_ID,
-                    'contract_id'        => $contractUuid,
+                    'institution_id' => self::INSTITUTION_ID,
+                    'contract_id' => $contractUuid,
                     'accounting_account' => $cuenta,
-                    'cost_center'        => $centro,
-                    'amount'             => $valor,
+                    'cost_center' => $centro,
+                    'amount' => $valor,
                 ]);
             }
 
@@ -342,17 +350,18 @@ class MigrarColaboradoresContratosCommand extends Command
         if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
             return substr($value, 0, 10);
         }
+
         return null;
     }
 
     private function mapEstado(string $estado): string
     {
         return match (strtolower(trim($estado))) {
-            'vigente'   => 'Vigente',
+            'vigente' => 'Vigente',
             'liquidado' => 'Liquidado',
             'terminado',
             'finalizado' => 'Terminado',
-            default      => 'Terminado',
+            default => 'Terminado',
         };
     }
 

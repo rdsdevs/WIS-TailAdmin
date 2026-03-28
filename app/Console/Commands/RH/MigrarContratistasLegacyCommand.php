@@ -21,35 +21,36 @@ class MigrarContratistasLegacyCommand extends Command
     protected $description = 'Migra contratistas legacy y sus valores comprometidos a la BD del nuevo sistema';
 
     // ── Catálogos (ASCUN) ────────────────────────────────────────────────────
-    private const INSTITUTION_ID  = '019d1967-c1f5-7038-a1bf-f3408cc2a4c9';
-    private const STATUS_ACTIVO   = '019d1967-c964-7364-a384-afdf74b15fbe';
+    private const INSTITUTION_ID = '019d1967-c1f5-7038-a1bf-f3408cc2a4c9';
+
+    private const STATUS_ACTIVO = '019d1967-c964-7364-a384-afdf74b15fbe';
 
     private const DOC_TYPES = [
-        'CC'  => '019d1967-c944-71e7-859e-6de40aeb681c',
-        'CE'  => '019d1967-c948-7007-a8eb-32fe515f3494',
+        'CC' => '019d1967-c944-71e7-859e-6de40aeb681c',
+        'CE' => '019d1967-c948-7007-a8eb-32fe515f3494',
         'NIT' => '019d1967-c94e-713d-bf52-d69b04844ab7',
         'PAP' => '019d1967-c953-7017-8cc3-065b537c7d28',
-        'TI'  => '019d1967-c957-735a-b031-c4c1458cc463',
+        'TI' => '019d1967-c957-735a-b031-c4c1458cc463',
     ];
 
     private const CONTRACT_TYPES = [
-        'CPS'                    => '019d1967-c999-7062-8014-113fe459c85e',
-        'OPS'                    => '019d1967-c993-72f4-862e-c28df0cee618',
+        'CPS' => '019d1967-c999-7062-8014-113fe459c85e',
+        'OPS' => '019d1967-c993-72f4-862e-c28df0cee618',
         'Arrendamiento De Depósito' => '019d1967-c9b2-7156-a17d-f62d8082a629',
-        'COMPR'                  => '019d1967-c9b9-7190-99da-5e905037a271',
+        'COMPR' => '019d1967-c9b9-7190-99da-5e905037a271',
     ];
 
     // ── Estado interno ───────────────────────────────────────────────────────
     private bool $dryRun = false;
 
     private array $stats = [
-        'colaboradores_creados'    => 0,
+        'colaboradores_creados' => 0,
         'colaboradores_existentes' => 0,
-        'contratos_creados'        => 0,
-        'contratos_actualizados'   => 0,
-        'contratos_saltados'       => 0,
-        'comprometidos_creados'    => 0,
-        'comprometidos_saltados'   => 0,
+        'contratos_creados' => 0,
+        'contratos_actualizados' => 0,
+        'contratos_saltados' => 0,
+        'comprometidos_creados' => 0,
+        'comprometidos_saltados' => 0,
     ];
 
     /** @var array<string, string>  codigoLegacy → contract UUID */
@@ -59,18 +60,20 @@ class MigrarContratistasLegacyCommand extends Command
     {
         $this->dryRun = (bool) $this->option('dry-run');
 
-        $csvContratos     = $this->option('contratos')
+        $csvContratos = $this->option('contratos')
             ?? base_path('../../migate_db/contratistas.csv');
         $csvComprometidos = $this->option('comprometidos')
             ?? base_path('../../migate_db/comprometidos_contratistas_limpio.csv');
 
         if (! file_exists($csvContratos)) {
             $this->error("No se encontró el archivo: {$csvContratos}");
+
             return self::FAILURE;
         }
 
         if (! file_exists($csvComprometidos)) {
             $this->error("No se encontró el archivo: {$csvComprometidos}");
+
             return self::FAILURE;
         }
 
@@ -91,7 +94,7 @@ class MigrarContratistasLegacyCommand extends Command
             ->whereNotNull('contract_code')
             ->pluck('id', 'contract_code')
             ->toArray();
-        $this->info("  Contratos pre-existentes en BD: " . count($this->codigoMap));
+        $this->info('  Contratos pre-existentes en BD: '.count($this->codigoMap));
 
         // Paso 2: Migrar contratos y colaboradores
         $this->info('');
@@ -137,26 +140,27 @@ class MigrarContratistasLegacyCommand extends Command
 
     private function procesarFila(array $data): void
     {
-        $numdoc   = trim($data['numdoc'] ?? '');
-        $tipodoc  = trim($data['tipodoc'] ?? 'CC');
-        $nombres  = trim($data['nombres'] ?? '');
+        $numdoc = trim($data['numdoc'] ?? '');
+        $tipodoc = trim($data['tipodoc'] ?? 'CC');
+        $nombres = trim($data['nombres'] ?? '');
         $apellidos = trim($data['apellidos'] ?? '');
-        $email    = trim($data['email'] ?? '');
-        $codigo   = trim($data['codigocontrato'] ?? '');
-        $tipo     = trim($data['tipocontrato'] ?? 'CPS');
-        $inicio   = $this->parseDate($data['fechaincio'] ?? '');
-        $fin      = $this->parseDate($data['fechafin'] ?? '');
-        $objeto   = trim($data['objeto'] ?? '');
-        $obligs   = trim($data['obligaciones'] ?? '');
+        $email = trim($data['email'] ?? '');
+        $codigo = trim($data['codigocontrato'] ?? '');
+        $tipo = trim($data['tipocontrato'] ?? 'CPS');
+        $inicio = $this->parseDate($data['fechaincio'] ?? '');
+        $fin = $this->parseDate($data['fechafin'] ?? '');
+        $objeto = trim($data['objeto'] ?? '');
+        $obligs = trim($data['obligaciones'] ?? '');
         $honorarios = (float) ($data['honorarios'] ?? 0);
-        $estado   = $this->mapEstado(trim($data['estado'] ?? 'Terminado'));
+        $estado = $this->mapEstado(trim($data['estado'] ?? 'Terminado'));
 
         if (! $numdoc || ! $inicio) {
             $this->stats['contratos_saltados']++;
+
             return;
         }
 
-        $docTypeId      = self::DOC_TYPES[$tipodoc] ?? self::DOC_TYPES['CC'];
+        $docTypeId = self::DOC_TYPES[$tipodoc] ?? self::DOC_TYPES['CC'];
         $contractTypeId = self::CONTRACT_TYPES[$tipo] ?? self::CONTRACT_TYPES['CPS'];
 
         DB::transaction(function () use (
@@ -171,6 +175,7 @@ class MigrarContratistasLegacyCommand extends Command
 
             if (! $collaborator) {
                 $this->stats['contratos_saltados']++;
+
                 return;
             }
 
@@ -182,17 +187,17 @@ class MigrarContratistasLegacyCommand extends Command
                 ->first();
 
             $contractData = [
-                'institution_id'   => self::INSTITUTION_ID,
-                'collaborator_id'  => $collaborator->id,
+                'institution_id' => self::INSTITUTION_ID,
+                'collaborator_id' => $collaborator->id,
                 'contract_type_id' => $contractTypeId,
-                'contract_code'    => $codigo ?: null,
-                'start_date'       => $inicio,
-                'end_date'         => $fin ?: null,
-                'object'           => $objeto ?: null,
-                'obligations'      => $obligs ?: null,
-                'fees'             => $honorarios,
-                'salary'           => 0,
-                'status'           => $estado,
+                'contract_code' => $codigo ?: null,
+                'start_date' => $inicio,
+                'end_date' => $fin ?: null,
+                'object' => $objeto ?: null,
+                'obligations' => $obligs ?: null,
+                'fees' => $honorarios,
+                'salary' => 0,
+                'status' => $estado,
             ];
 
             if ($existing) {
@@ -230,36 +235,39 @@ class MigrarContratistasLegacyCommand extends Command
 
         if ($existing) {
             $this->stats['colaboradores_existentes']++;
+
             return $existing;
         }
 
         // Crear colaborador nuevo
-        $isCompany   = ($tipodoc === 'NIT');
-        $partes      = $isCompany ? [] : $this->partirNombreApellido($nombres, $apellidos);
+        $isCompany = ($tipodoc === 'NIT');
+        $partes = $isCompany ? [] : $this->partirNombreApellido($nombres, $apellidos);
 
         $collaboratorData = [
-            'institution_id'   => self::INSTITUTION_ID,
+            'institution_id' => self::INSTITUTION_ID,
             'document_type_id' => $docTypeId,
-            'document_number'  => $numdoc,
-            'is_company'       => $isCompany,
-            'company_name'     => $isCompany ? $nombres : null,
-            'first_name'       => $partes['first_name'] ?? null,
-            'second_name'      => $partes['second_name'] ?? null,
-            'first_surname'    => $partes['first_surname'] ?? null,
-            'second_surname'   => $partes['second_surname'] ?? null,
-            'email'            => $email ?: null,
-            'type'             => 'Contratista',
-            'status_id'        => self::STATUS_ACTIVO,
+            'document_number' => $numdoc,
+            'is_company' => $isCompany,
+            'company_name' => $isCompany ? $nombres : null,
+            'first_name' => $partes['first_name'] ?? null,
+            'second_name' => $partes['second_name'] ?? null,
+            'first_surname' => $partes['first_surname'] ?? null,
+            'second_surname' => $partes['second_surname'] ?? null,
+            'email' => $email ?: null,
+            'type' => 'Contratista',
+            'status_id' => self::STATUS_ACTIVO,
         ];
 
         if ($this->dryRun) {
             $this->stats['colaboradores_creados']++;
+
             // Retornar instancia sin persistir para continuar el flujo
             return new Collaborator(array_merge(['id' => (string) Str::uuid()], $collaboratorData));
         }
 
         $collaborator = Collaborator::create($collaboratorData);
         $this->stats['colaboradores_creados']++;
+
         return $collaborator;
     }
 
@@ -279,11 +287,11 @@ class MigrarContratistasLegacyCommand extends Command
                 continue;
             }
 
-            $data    = array_combine($headers, array_map('trim', $row));
-            $codigo  = trim($data['codigocontrato'] ?? '');
-            $cuenta  = trim($data['cuenta_contable'] ?? '');
-            $centro  = trim($data['centro_decosto'] ?? '');
-            $valor   = (float) ($data['valor_contrato'] ?? 0);
+            $data = array_combine($headers, array_map('trim', $row));
+            $codigo = trim($data['codigocontrato'] ?? '');
+            $cuenta = trim($data['cuenta_contable'] ?? '');
+            $centro = trim($data['centro_decosto'] ?? '');
+            $valor = (float) ($data['valor_contrato'] ?? 0);
 
             // Buscar en mapa en memoria; si no existe o el UUID no está en BD,
             // hacer fallback con lookup directo por contract_code
@@ -306,6 +314,7 @@ class MigrarContratistasLegacyCommand extends Command
             if (! $contractId) {
                 $this->stats['comprometidos_saltados']++;
                 $bar->advance();
+
                 continue;
             }
 
@@ -318,11 +327,11 @@ class MigrarContratistasLegacyCommand extends Command
 
             if (! $yaExiste && ! $this->dryRun) {
                 CommittedValue::create([
-                    'institution_id'     => self::INSTITUTION_ID,
-                    'contract_id'        => $contractId,
+                    'institution_id' => self::INSTITUTION_ID,
+                    'contract_id' => $contractId,
                     'accounting_account' => $cuenta,
-                    'cost_center'        => $centro,
-                    'amount'             => $valor,
+                    'cost_center' => $centro,
+                    'amount' => $valor,
                 ]);
             }
 
@@ -365,11 +374,11 @@ class MigrarContratistasLegacyCommand extends Command
     private function mapEstado(string $estado): string
     {
         return match (strtolower(trim($estado))) {
-            'vigente'    => 'Vigente',
-            'liquidado'  => 'Liquidado',
+            'vigente' => 'Vigente',
+            'liquidado' => 'Liquidado',
             'finalizado',
-            'terminado'  => 'Terminado',
-            default      => 'Terminado',
+            'terminado' => 'Terminado',
+            default => 'Terminado',
         };
     }
 
@@ -380,8 +389,8 @@ class MigrarContratistasLegacyCommand extends Command
         $as = preg_split('/\s+/', trim($apellidos), 2);
 
         return [
-            'first_name'    => $ns[0] ?? null,
-            'second_name'   => $ns[1] ?? null,
+            'first_name' => $ns[0] ?? null,
+            'second_name' => $ns[1] ?? null,
             'first_surname' => $as[0] ?? null,
             'second_surname' => $as[1] ?? null,
         ];

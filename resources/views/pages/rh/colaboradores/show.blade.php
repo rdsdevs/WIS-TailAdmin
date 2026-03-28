@@ -394,6 +394,14 @@
                                class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                 Editar contrato
                             </a>
+                            <button type="button" 
+                                    onclick="Livewire.dispatch('open-position-change-modal', { contractId: '{{ $activeContract->id }}' })"
+                                    class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 3M21 7.5H7.5" />
+                                </svg>
+                                Cambio de cargo
+                            </button>
                         @endcan
                         @canany(['generateEmployee', 'generateContractor'], \App\Models\Certificados\Certificate::class)
                             <button onclick="Livewire.dispatch('open-for-collaborator', { collaboratorId: '{{ $collaborator->id }}' })"
@@ -433,4 +441,9 @@
     @canany(['generateEmployee', 'generateContractor'], \App\Models\Certificados\Certificate::class)
         <livewire:certificados.generate-certificate-modal />
     @endcanany
+
+    {{-- Modal cambio de cargo --}}
+    @can('create', \App\Models\RH\Contract::class)
+        <livewire:rh.position-change-modal />
+    @endcan
 @endsection

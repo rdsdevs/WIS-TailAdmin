@@ -7,7 +7,6 @@ use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
 use App\Models\RH\CommittedValue;
 use App\Models\RH\Contract;
-use App\Models\RH\ContractExtension;
 use App\Models\RH\ContractType;
 use App\Models\RH\DocumentType;
 use App\Models\User;
@@ -101,8 +100,8 @@ function crearContratista(Institution $institution): Collaborator
  * de tipo "honorarios" (fees > 0) iniciado en 2025 con end_date conocida.
  *
  * @param  string  $startDate  Fecha de inicio del contrato (Y-m-d)
- * @param  float   $fees       Honorarios del contrato
- * @param  float   $salary     Salario del contrato (cuando fees = 0)
+ * @param  float  $fees  Honorarios del contrato
+ * @param  float  $salary  Salario del contrato (cuando fees = 0)
  */
 function contextoContratoProroga(string $startDate = '2025-01-15', float $fees = 5000000, float $salary = 0): array
 {
@@ -112,14 +111,14 @@ function contextoContratoProroga(string $startDate = '2025-01-15', float $fees =
     $tipoContrato = crearTipoContrato($institution);
 
     $contrato = Contract::factory()->create([
-        'institution_id'   => $institution->id,
-        'collaborator_id'  => $colaborador->id,
+        'institution_id' => $institution->id,
+        'collaborator_id' => $colaborador->id,
         'contract_type_id' => $tipoContrato->id,
-        'start_date'       => $startDate,
-        'end_date'         => Carbon::parse($startDate)->addMonths(6)->toDateString(),
-        'fees'             => $fees,
-        'salary'           => $salary,
-        'status'           => 'Vigente',
+        'start_date' => $startDate,
+        'end_date' => Carbon::parse($startDate)->addMonths(6)->toDateString(),
+        'fees' => $fees,
+        'salary' => $salary,
+        'status' => 'Vigente',
     ]);
 
     return [$user, $institution, $contrato];
@@ -339,14 +338,14 @@ describe('Gestión de Contratos', function (): void {
     it('employee-manager puede listar contratos', function (): void {
         [$user, $institution] = crearUsuarioRH('employee-manager');
 
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         $response = $this->actingAs($user)
@@ -359,14 +358,14 @@ describe('Gestión de Contratos', function (): void {
     it('contractor-manager puede listar contratos', function (): void {
         [$user, $institution] = crearUsuarioRH('contractor-manager');
 
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         $response = $this->actingAs($user)
@@ -379,17 +378,17 @@ describe('Gestión de Contratos', function (): void {
     it('employee-manager puede ver un contrato de su institución', function (): void {
         [$user, $institution] = crearUsuarioRH('employee-manager');
 
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->view($user, $contrato))->toBeTrue();
     });
@@ -397,35 +396,35 @@ describe('Gestión de Contratos', function (): void {
     it('contractor-manager puede ver un contrato de su institución', function (): void {
         [$user, $institution] = crearUsuarioRH('contractor-manager');
 
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->view($user, $contrato))->toBeTrue();
     });
 
     it('employee-manager puede crear un contrato', function (): void {
         [$user, $institution] = crearUsuarioRH('employee-manager');
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $datos = [
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'start_date'       => now()->toDateString(),
-            'end_date'         => null,
-            'salary'           => 4500000,
-            'fees'             => 0,
-            'status'           => 'Vigente',
+            'start_date' => now()->toDateString(),
+            'end_date' => null,
+            'salary' => 4500000,
+            'fees' => 0,
+            'status' => 'Vigente',
         ];
 
         $this->actingAs($user)
@@ -433,26 +432,26 @@ describe('Gestión de Contratos', function (): void {
             ->assertRedirect();
 
         $this->assertDatabaseHas('contracts', [
-            'collaborator_id'  => $colaborador->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
     });
 
     it('contractor-manager puede crear un contrato', function (): void {
         [$user, $institution] = crearUsuarioRH('contractor-manager');
-        $contratista  = crearContratista($institution);
+        $contratista = crearContratista($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $datos = [
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $contratista->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $contratista->id,
             'contract_type_id' => $tipoContrato->id,
-            'start_date'       => now()->toDateString(),
-            'end_date'         => null,
-            'salary'           => 0,
-            'fees'             => 3000000,
-            'status'           => 'Vigente',
+            'start_date' => now()->toDateString(),
+            'end_date' => null,
+            'salary' => 0,
+            'fees' => 3000000,
+            'status' => 'Vigente',
         ];
 
         $this->actingAs($user)
@@ -460,46 +459,46 @@ describe('Gestión de Contratos', function (): void {
             ->assertRedirect();
 
         $this->assertDatabaseHas('contracts', [
-            'collaborator_id'  => $contratista->id,
+            'collaborator_id' => $contratista->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
     });
 
     it('employee-manager puede actualizar un contrato de su institución', function (): void {
         [$user, $institution] = crearUsuarioRH('employee-manager');
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
-            'salary'           => 2000000,
-            'fees'             => 0,
+            'status' => 'Vigente',
+            'salary' => 2000000,
+            'fees' => 0,
         ]);
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->update($user, $contrato))->toBeTrue();
     });
 
     it('contractor-manager puede actualizar un contrato de su institución', function (): void {
         [$user, $institution] = crearUsuarioRH('contractor-manager');
-        $colaborador  = crearColaboradorRH($institution);
+        $colaborador = crearColaboradorRH($institution);
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
-            'salary'           => 0,
-            'fees'             => 5000000,
+            'status' => 'Vigente',
+            'salary' => 0,
+            'fees' => 5000000,
         ]);
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->update($user, $contrato))->toBeTrue();
     });
@@ -507,7 +506,7 @@ describe('Gestión de Contratos', function (): void {
     it('employee-manager puede importar contratos', function (): void {
         [$user] = crearUsuarioRH('employee-manager');
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->import($user))->toBeTrue();
     });
@@ -515,7 +514,7 @@ describe('Gestión de Contratos', function (): void {
     it('contractor-manager puede importar contratos', function (): void {
         [$user] = crearUsuarioRH('contractor-manager');
 
-        $policy = new \App\Policies\RH\ContractPolicy();
+        $policy = new \App\Policies\RH\ContractPolicy;
 
         expect($policy->import($user))->toBeTrue();
     });
@@ -551,28 +550,28 @@ describe('Prórroga de contratos', function (): void {
     it('rh-manager puede aplicar prórroga de tiempo a contrato vigente', function (): void {
         [$user, $institution, $contrato] = contextoContratoProroga('2025-01-15');
 
-        $fechaFinOriginal  = Carbon::parse($contrato->end_date);
-        $fechaFinEsperada  = $fechaFinOriginal->copy()->addMonths(3)->toDateString();
+        $fechaFinOriginal = Carbon::parse($contrato->end_date);
+        $fechaFinEsperada = $fechaFinOriginal->copy()->addMonths(3)->toDateString();
 
         $servicio = app(ContractProrogaService::class);
 
         $this->actingAs($user);
 
         $servicio->apply($contrato, [
-            'extension_type'     => 'tiempo',
-            'extension_months'   => 3,
-            'extension_days'     => 0,
-            'extension_value'    => null,
+            'extension_type' => 'tiempo',
+            'extension_months' => 3,
+            'extension_days' => 0,
+            'extension_value' => null,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => 'Extensión del plazo de entrega',
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => 'Extensión del plazo de entrega',
+            'institution_id' => $institution->id,
         ]);
 
         expect($contrato->fresh()->end_date->toDateString())->toBe($fechaFinEsperada);
 
         $this->assertDatabaseHas('contract_extensions', [
-            'contract_id'    => $contrato->id,
+            'contract_id' => $contrato->id,
             'extension_type' => 'tiempo',
         ]);
     });
@@ -584,14 +583,14 @@ describe('Prórroga de contratos', function (): void {
 
         $servicio = app(ContractProrogaService::class);
         $servicio->apply($contrato, [
-            'extension_type'     => 'valor',
-            'extension_months'   => null,
-            'extension_days'     => null,
-            'extension_value'    => 2000000,
+            'extension_type' => 'valor',
+            'extension_months' => null,
+            'extension_days' => null,
+            'extension_value' => 2000000,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // fees debe ser 5000000 + 2000000 = 7000000
@@ -605,14 +604,14 @@ describe('Prórroga de contratos', function (): void {
 
         $servicio = app(ContractProrogaService::class);
         $servicio->apply($contrato, [
-            'extension_type'     => 'valor',
-            'extension_months'   => null,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'valor',
+            'extension_months' => null,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // salary debe ser 3000000 + 1000000 = 4000000
@@ -629,14 +628,14 @@ describe('Prórroga de contratos', function (): void {
 
         $servicio = app(ContractProrogaService::class);
         $servicio->apply($contrato, [
-            'extension_type'     => 'tiempo_y_valor',
-            'extension_months'   => 2,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'tiempo_y_valor',
+            'extension_months' => 2,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => 'Ampliación por nuevas actividades',
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => 'Ampliación por nuevas actividades',
+            'institution_id' => $institution->id,
         ]);
 
         $contratoActualizado = $contrato->fresh();
@@ -649,25 +648,25 @@ describe('Prórroga de contratos', function (): void {
         [$user, $institution, $contrato] = contextoContratoProroga('2025-01-01', fees: 5000000);
 
         $cv = CommittedValue::factory()->create([
-            'contract_id'      => $contrato->id,
-            'institution_id'   => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-01',
-            'cost_center'      => 'CC-100',
-            'amount'           => 5000000,
+            'cost_center' => 'CC-100',
+            'amount' => 5000000,
         ]);
 
         $this->actingAs($user);
 
         $servicio = app(ContractProrogaService::class);
         $servicio->apply($contrato, [
-            'extension_type'     => 'valor',
-            'extension_months'   => null,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'valor',
+            'extension_months' => null,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // El único CommittedValue debe haber sido incrementado a 6000000
@@ -678,19 +677,19 @@ describe('Prórroga de contratos', function (): void {
         [$user, $institution, $contrato] = contextoContratoProroga('2025-01-01', fees: 5000000);
 
         $cv1 = CommittedValue::factory()->create([
-            'contract_id'        => $contrato->id,
-            'institution_id'     => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-01',
-            'cost_center'        => 'CC-100',
-            'amount'             => 2500000,
+            'cost_center' => 'CC-100',
+            'amount' => 2500000,
         ]);
 
         $cv2 = CommittedValue::factory()->create([
-            'contract_id'        => $contrato->id,
-            'institution_id'     => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-02',
-            'cost_center'        => 'CC-200',
-            'amount'             => 2500000,
+            'cost_center' => 'CC-200',
+            'amount' => 2500000,
         ]);
 
         $servicio = app(ContractProrogaService::class);
@@ -702,14 +701,14 @@ describe('Prórroga de contratos', function (): void {
 
         // Aplicar prórroga apuntando solo a cv2
         $servicio->apply($contrato, [
-            'extension_type'     => 'valor',
-            'extension_months'   => null,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'valor',
+            'extension_months' => null,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => $cv2->id,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // Solo cv2 debe incrementarse; cv1 no cambia
@@ -721,25 +720,25 @@ describe('Prórroga de contratos', function (): void {
         [$user, $institution, $contrato] = contextoContratoProroga('2024-01-01', fees: 5000000);
 
         $cv = CommittedValue::factory()->create([
-            'contract_id'        => $contrato->id,
-            'institution_id'     => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-01',
-            'cost_center'        => 'CC-100',
-            'amount'             => 3000000,
+            'cost_center' => 'CC-100',
+            'amount' => 3000000,
         ]);
 
         $this->actingAs($user);
 
         $servicio = app(ContractProrogaService::class);
         $servicio->apply($contrato, [
-            'extension_type'     => 'valor',
-            'extension_months'   => null,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'valor',
+            'extension_months' => null,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // El monto del CommittedValue no debe cambiar (contrato pre-2025)
@@ -753,10 +752,10 @@ describe('Prórroga de contratos', function (): void {
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $contratista->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $contratista->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         $contrato->load('collaborator');
@@ -771,10 +770,10 @@ describe('Prórroga de contratos', function (): void {
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $empleado->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $empleado->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         $contrato->load('collaborator');
@@ -789,10 +788,10 @@ describe('Prórroga de contratos', function (): void {
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         expect($viewer->can('applyProroga', $contrato))->toBeFalse();
@@ -806,14 +805,14 @@ describe('Prórroga de contratos', function (): void {
         $servicio = app(ContractProrogaService::class);
 
         $datosBase = [
-            'extension_type'     => 'tiempo',
-            'extension_months'   => 1,
-            'extension_days'     => null,
-            'extension_value'    => null,
+            'extension_type' => 'tiempo',
+            'extension_months' => 1,
+            'extension_days' => null,
+            'extension_value' => null,
             'committed_value_id' => null,
-            'approval_date'      => today()->toDateString(),
-            'reason'             => 'Prórroga histórica',
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => 'Prórroga histórica',
+            'institution_id' => $institution->id,
         ];
 
         $servicio->apply($contrato, $datosBase);
@@ -829,19 +828,19 @@ describe('Prórroga de contratos', function (): void {
         [$user, $institution, $contrato] = contextoContratoProroga('2025-01-01', fees: 6000000);
 
         $cv1 = CommittedValue::factory()->create([
-            'contract_id'        => $contrato->id,
-            'institution_id'     => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-01',
-            'cost_center'        => 'CC-100',
-            'amount'             => 3000000,
+            'cost_center' => 'CC-100',
+            'amount' => 3000000,
         ]);
 
         $cv2 = CommittedValue::factory()->create([
-            'contract_id'        => $contrato->id,
-            'institution_id'     => $institution->id,
+            'contract_id' => $contrato->id,
+            'institution_id' => $institution->id,
             'accounting_account' => '2-1-1-02',
-            'cost_center'        => 'CC-200',
-            'amount'             => 3000000,
+            'cost_center' => 'CC-200',
+            'amount' => 3000000,
         ]);
 
         $servicio = app(ContractProrogaService::class);
@@ -853,14 +852,14 @@ describe('Prórroga de contratos', function (): void {
 
         // Aplicar sin seleccionar CV explícito: el servicio usará ->first()
         $servicio->apply($contrato, [
-            'extension_type'     => 'tiempo_y_valor',
-            'extension_months'   => 1,
-            'extension_days'     => null,
-            'extension_value'    => 1000000,
+            'extension_type' => 'tiempo_y_valor',
+            'extension_months' => 1,
+            'extension_days' => null,
+            'extension_value' => 1000000,
             'committed_value_id' => null, // sin selección explícita
-            'approval_date'      => today()->toDateString(),
-            'reason'             => null,
-            'institution_id'     => $institution->id,
+            'approval_date' => today()->toDateString(),
+            'reason' => null,
+            'institution_id' => $institution->id,
         ]);
 
         // cv1 fue incrementado (es el primero de la colección)
@@ -879,7 +878,7 @@ describe('Terminación anticipada de contratos', function (): void {
 
         $servicio = app(ContractService::class);
         $servicio->earlyTerminate($contrato, [
-            'early_termination_date'   => today()->toDateString(),
+            'early_termination_date' => today()->toDateString(),
             'early_termination_reason' => 'Mutuo acuerdo entre las partes',
         ]);
 
@@ -898,19 +897,19 @@ describe('Terminación anticipada de contratos', function (): void {
 
         // CRÍTICO: end_date es la fecha pactada en contrato — no debe cambiar jamás
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'start_date'       => '2025-01-01',
-            'end_date'         => '2025-12-31',
-            'status'           => 'Vigente',
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => 'Vigente',
         ]);
 
         $this->actingAs($user);
 
         $servicio = app(ContractService::class);
         $servicio->earlyTerminate($contrato, [
-            'early_termination_date'   => today()->toDateString(),
+            'early_termination_date' => today()->toDateString(),
             'early_termination_reason' => 'Renuncia del contratista',
         ]);
 
@@ -924,7 +923,7 @@ describe('Terminación anticipada de contratos', function (): void {
 
         $servicio = app(ContractService::class);
         $servicio->earlyTerminate($contrato, [
-            'early_termination_date'   => today()->toDateString(),
+            'early_termination_date' => today()->toDateString(),
             'early_termination_reason' => 'Incumplimiento de obligaciones',
         ]);
 
@@ -941,7 +940,7 @@ describe('Terminación anticipada de contratos', function (): void {
 
         $servicio = app(ContractService::class);
         $servicio->earlyTerminate($contrato, [
-            'early_termination_date'   => today()->toDateString(),
+            'early_termination_date' => today()->toDateString(),
             'early_termination_reason' => 'Decisión institucional',
         ]);
 
@@ -968,10 +967,10 @@ describe('Terminación anticipada de contratos', function (): void {
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         expect($viewer->can('earlyTerminate', $contrato))->toBeFalse();
@@ -984,10 +983,10 @@ describe('Terminación anticipada de contratos', function (): void {
         $tipoContrato = crearTipoContrato($institution);
 
         $contrato = Contract::factory()->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $contratista->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $contratista->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         expect($user->can('earlyTerminate', $contrato))->toBeFalse();
@@ -1001,10 +1000,10 @@ describe('Terminación anticipada de contratos', function (): void {
         $tipoContratoB = crearTipoContrato($institucionB);
 
         $contratoB = Contract::factory()->create([
-            'institution_id'   => $institucionB->id,
-            'collaborator_id'  => $colaboradorB->id,
+            'institution_id' => $institucionB->id,
+            'collaborator_id' => $colaboradorB->id,
             'contract_type_id' => $tipoContratoB->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         // userA es de institucionA, no puede terminar contratos de institucionB
@@ -1019,19 +1018,19 @@ describe('Terminación anticipada de contratos', function (): void {
 
         // Contrato con terminación anticipada
         Contract::factory()->create([
-            'institution_id'         => $institution->id,
-            'collaborator_id'        => $colaborador->id,
-            'contract_type_id'       => $tipoContrato->id,
-            'status'                 => 'Terminado',
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
+            'contract_type_id' => $tipoContrato->id,
+            'status' => 'Terminado',
             'early_termination_date' => today()->toDateString(),
         ]);
 
         // Dos contratos sin terminación anticipada
         Contract::factory()->count(2)->create([
-            'institution_id'   => $institution->id,
-            'collaborator_id'  => $colaborador->id,
+            'institution_id' => $institution->id,
+            'collaborator_id' => $colaborador->id,
             'contract_type_id' => $tipoContrato->id,
-            'status'           => 'Vigente',
+            'status' => 'Vigente',
         ]);
 
         $terminadosAnticipadamente = Contract::query()

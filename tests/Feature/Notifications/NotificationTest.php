@@ -17,7 +17,6 @@ use App\Notifications\RH\CollaboratorImportCompletedNotification;
 use App\Notifications\RH\CollaboratorTypeChangedNotification;
 use App\Notifications\RH\CollaboratorUpdatedNotification;
 use App\Notifications\RH\ContractCreatedNotification;
-use App\Notifications\RH\ContractDeletedNotification;
 use App\Notifications\RH\ContractImportCompletedNotification;
 use App\Notifications\RH\ContractTerminatedNotification;
 use App\Notifications\RH\ContractUpdatedNotification;
@@ -43,13 +42,13 @@ beforeEach(function (): void {
 function contextoNotificaciones(string $rol): array
 {
     $institution = Institution::factory()->create();
-    $user        = User::factory()->create(['institution_id' => $institution->id]);
+    $user = User::factory()->create(['institution_id' => $institution->id]);
     $user->assignRole($rol);
 
     $documentType = DocumentType::factory()->create([
         'institution_id' => $institution->id,
-        'code'           => 'CC',
-        'name'           => 'Cédula de Ciudadanía',
+        'code' => 'CC',
+        'name' => 'Cédula de Ciudadanía',
     ]);
 
     $status = CollaboratorStatus::factory()->activo()->create([
@@ -65,10 +64,10 @@ function contextoNotificaciones(string $rol): array
 function colaboradorParaTest(User $user, Institution $institution, DocumentType $documentType, CollaboratorStatus $status, array $overrides = []): Collaborator
 {
     return Collaborator::factory()->create(array_merge([
-        'institution_id'   => $institution->id,
+        'institution_id' => $institution->id,
         'document_type_id' => $documentType->id,
-        'status_id'        => $status->id,
-        'type'             => 'Empleado',
+        'status_id' => $status->id,
+        'type' => 'Empleado',
     ], $overrides));
 }
 
@@ -82,10 +81,10 @@ function contratoParaTest(User $user, Institution $institution, Collaborator $co
     ]);
 
     return Contract::factory()->create([
-        'institution_id'   => $institution->id,
-        'collaborator_id'  => $collaborator->id,
+        'institution_id' => $institution->id,
+        'collaborator_id' => $collaborator->id,
         'contract_type_id' => $contractType->id,
-        'status'           => 'Vigente',
+        'status' => 'Vigente',
     ]);
 }
 
@@ -112,16 +111,16 @@ describe('Notificaciones de colaboradores', function (): void {
         $this->actingAs($user);
 
         $datos = [
-            'institution_id'   => $institution->id,
+            'institution_id' => $institution->id,
             'document_type_id' => $documentType->id,
-            'document_number'  => '99887766',
+            'document_number' => '99887766',
             'document_issued_at' => '1995-06-15',
-            'first_name'       => 'CARLOS',
-            'first_surname'    => 'RAMIREZ',
-            'gender'           => 'M',
-            'is_company'       => false,
-            'type'             => 'Empleado',
-            'status_id'        => $status->id,
+            'first_name' => 'CARLOS',
+            'first_surname' => 'RAMIREZ',
+            'gender' => 'M',
+            'is_company' => false,
+            'type' => 'Empleado',
+            'status_id' => $status->id,
         ];
 
         $this->post(route('rh.colaboradores.store'), $datos)
@@ -181,7 +180,7 @@ describe('Notificaciones de colaboradores', function (): void {
 
         // Colaborador sin contratos vigentes para poder cambiar de tipo
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status, [
-            'type'       => 'Empleado',
+            'type' => 'Empleado',
             'is_company' => false,
         ]);
 
@@ -241,7 +240,7 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
         $user->notify(new ContractCreatedNotification(
             $contrato->contract_code ?? '',
@@ -260,9 +259,9 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
-        $user->notify(new ContractUpdatedNotification($contrato->contract_code ?? '', $contrato->id));
+        $user->notify(new ContractUpdatedNotification($contrato->contract_code ?? '', $contrato->id, $colaborador->full_name));
 
         $notificacion = $user->fresh()->notifications->first();
         expect($user->fresh()->notifications)->toHaveCount(1);
@@ -275,7 +274,7 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
         app(ContractService::class)->terminate($contrato);
 
@@ -290,7 +289,7 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
         $this->delete(route('rh.contratos.destroy', $contrato))
             ->assertRedirect(route('rh.contratos.index'));
@@ -306,7 +305,7 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
         $codigo = 'CONT-2025';
         $user->notify(new ContractCreatedNotification($codigo, $contrato->id, $colaborador->full_name));
@@ -321,7 +320,7 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
         $user->notify(new ContractCreatedNotification('', $contrato->id, $colaborador->full_name));
 
@@ -334,9 +333,9 @@ describe('Notificaciones de contratos', function (): void {
         $this->actingAs($user);
 
         $colaborador = colaboradorParaTest($user, $institution, $documentType, $status);
-        $contrato    = contratoParaTest($user, $institution, $colaborador);
+        $contrato = contratoParaTest($user, $institution, $colaborador);
 
-        $user->notify(new ContractTerminatedNotification($contrato->contract_code ?? 'COD-001', $contrato->id));
+        $user->notify(new ContractTerminatedNotification($contrato->contract_code ?? 'COD-001', $contrato->id, $colaborador->full_name));
 
         $data = $user->fresh()->notifications->first()->data;
         expect($data['title'])->toBe('Contrato terminado');
@@ -355,8 +354,8 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution, $documentType, $status] = contextoNotificaciones('rh-manager');
 
         // Crear un Excel mínimo válido con la estructura esperada (sin filas de datos)
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet       = $spreadsheet->getActiveSheet();
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
 
         $headers = [
             'tipo_documento', 'numero_documento', 'fecha_expedicion',
@@ -366,7 +365,7 @@ describe('Notificaciones de importaciones', function (): void {
         $sheet->fromArray($headers, null, 'A1');
 
         // El Job usa storage_path('app/private/' . $filePath), escribir ahí directamente
-        $relPath  = 'test_job_colab_'.uniqid().'.xlsx';
+        $relPath = 'test_job_colab_'.uniqid().'.xlsx';
         $destPath = storage_path('app/private/'.$relPath);
         @mkdir(dirname($destPath), 0755, true);
 
@@ -374,11 +373,11 @@ describe('Notificaciones de importaciones', function (): void {
         $writer->save($destPath);
 
         $job = new ImportCollaboratorsJob(
-            filePath:      $relPath,
+            filePath: $relPath,
             institutionId: $institution->id,
-            type:          'Empleado',
-            overwrite:     false,
-            userId:        $user->id,
+            type: 'Empleado',
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->handle();
@@ -393,11 +392,11 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $job = new ImportCollaboratorsJob(
-            filePath:      'ruta/inexistente.xlsx',
+            filePath: 'ruta/inexistente.xlsx',
             institutionId: $institution->id,
-            type:          'Empleado',
-            overwrite:     false,
-            userId:        $user->id,
+            type: 'Empleado',
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->failed(new \Exception('Error de prueba controlado'));
@@ -415,11 +414,11 @@ describe('Notificaciones de importaciones', function (): void {
         $mensajeError = 'Disco lleno al procesar el archivo';
 
         $job = new ImportCollaboratorsJob(
-            filePath:      'ruta/inexistente.xlsx',
+            filePath: 'ruta/inexistente.xlsx',
             institutionId: $institution->id,
-            type:          'Empleado',
-            overwrite:     false,
-            userId:        $user->id,
+            type: 'Empleado',
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->failed(new \Exception($mensajeError));
@@ -432,7 +431,7 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         // Excel con hojas "Contratos" y "Valores_comprometidos" sin filas de datos
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
 
         // Hoja 1 — Contratos
         $sheetContratos = $spreadsheet->getActiveSheet();
@@ -452,7 +451,7 @@ describe('Notificaciones de importaciones', function (): void {
         $sheetComprometidos->fromArray(['codigo_contrato', 'cuenta_contable', 'centro_costo', 'valor'], null, 'A1');
 
         // El Job usa storage_path('app/private/' . $filePath), escribir ahí directamente
-        $relPath  = 'test_job_contratos_'.uniqid().'.xlsx';
+        $relPath = 'test_job_contratos_'.uniqid().'.xlsx';
         $destPath = storage_path('app/private/'.$relPath);
         @mkdir(dirname($destPath), 0755, true);
 
@@ -460,10 +459,10 @@ describe('Notificaciones de importaciones', function (): void {
         $writer->save($destPath);
 
         $job = new ImportContractsJob(
-            filePath:      $relPath,
+            filePath: $relPath,
             institutionId: $institution->id,
-            overwrite:     false,
-            userId:        $user->id,
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->handle();
@@ -478,10 +477,10 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $job = new ImportContractsJob(
-            filePath:      'ruta/inexistente.xlsx',
+            filePath: 'ruta/inexistente.xlsx',
             institutionId: $institution->id,
-            overwrite:     false,
-            userId:        $user->id,
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->failed(new \Exception('Error interno de prueba'));
@@ -499,10 +498,10 @@ describe('Notificaciones de importaciones', function (): void {
         $mensajeError = 'Timeout al conectar con la base de datos';
 
         $job = new ImportContractsJob(
-            filePath:      'ruta/inexistente.xlsx',
+            filePath: 'ruta/inexistente.xlsx',
             institutionId: $institution->id,
-            overwrite:     false,
-            userId:        $user->id,
+            overwrite: false,
+            userId: $user->id,
         );
 
         $job->failed(new \Exception($mensajeError));
@@ -515,11 +514,11 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $user->notify(new CollaboratorImportCompletedNotification([
-            'imported'      => 10,
-            'updated'       => 2,
-            'skipped'       => 1,
-            'failures'      => [],
-            'tipo'          => 'Empleado',
+            'imported' => 10,
+            'updated' => 2,
+            'skipped' => 1,
+            'failures' => [],
+            'tipo' => 'Empleado',
             'completado_at' => now()->format('d/m/Y H:i'),
         ]));
 
@@ -533,13 +532,13 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $user->notify(new CollaboratorImportCompletedNotification([
-            'imported'      => 5,
-            'updated'       => 0,
-            'skipped'       => 3,
-            'failures'      => [
+            'imported' => 5,
+            'updated' => 0,
+            'skipped' => 3,
+            'failures' => [
                 ['fila' => 2, 'campo' => 'numero_documento', 'errores' => ['El campo es obligatorio.']],
             ],
-            'tipo'          => 'Empleado',
+            'tipo' => 'Empleado',
             'completado_at' => now()->format('d/m/Y H:i'),
         ]));
 
@@ -552,15 +551,15 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $user->notify(new ContractImportCompletedNotification([
-            'imported'                  => 8,
-            'updated'                   => 1,
-            'skipped'                   => 0,
-            'row_errors'                => [],
-            'category_counts'           => [],
+            'imported' => 8,
+            'updated' => 1,
+            'skipped' => 0,
+            'row_errors' => [],
+            'category_counts' => [],
             'committed_values_imported' => 4,
-            'committed_values_skipped'  => 0,
-            'committed_values_errors'   => [],
-            'completado_at'             => now()->format('d/m/Y H:i'),
+            'committed_values_skipped' => 0,
+            'committed_values_errors' => [],
+            'completado_at' => now()->format('d/m/Y H:i'),
         ]));
 
         $data = $user->fresh()->notifications->first()->data;
@@ -573,7 +572,7 @@ describe('Notificaciones de importaciones', function (): void {
         [$user, $institution] = contextoNotificaciones('rh-manager');
 
         $user->notify(new ContractImportCompletedNotification([
-            'error'         => 'El archivo no pudo ser procesado.',
+            'error' => 'El archivo no pudo ser procesado.',
             'completado_at' => now()->format('d/m/Y H:i'),
         ]));
 

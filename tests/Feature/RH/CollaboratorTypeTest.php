@@ -153,6 +153,52 @@ describe('Visibilidad de colaboradores por rol especializado', function (): void
 
 });
 
+// ─── Edición y eliminación por tipo ──────────────────────────────────────────
+
+describe('Edición y eliminación restringida por tipo de colaborador', function (): void {
+
+    it('contractor-manager no puede editar un colaborador empleado', function (): void {
+        [$user, $institution] = crearContextoTipo('contractor-manager');
+        $empleado = crearColaboradorDeTipo($institution, 'Empleado');
+
+        $this->actingAs($user)
+            ->put(route('rh.colaboradores.update', $empleado), [])
+            ->assertForbidden();
+    });
+
+    it('employee-manager no puede editar un colaborador contratista', function (): void {
+        [$user, $institution] = crearContextoTipo('employee-manager');
+        $contratista = crearColaboradorDeTipo($institution, 'Contratista');
+
+        $this->actingAs($user)
+            ->put(route('rh.colaboradores.update', $contratista), [])
+            ->assertForbidden();
+    });
+
+    it('contractor-manager no puede eliminar un colaborador empleado', function (): void {
+        [$user, $institution] = crearContextoTipo('contractor-manager');
+        $empleado = crearColaboradorDeTipo($institution, 'Empleado');
+
+        $this->actingAs($user)
+            ->delete(route('rh.colaboradores.destroy', $empleado))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('collaborators', ['id' => $empleado->id]);
+    });
+
+    it('employee-manager no puede eliminar un colaborador contratista', function (): void {
+        [$user, $institution] = crearContextoTipo('employee-manager');
+        $contratista = crearColaboradorDeTipo($institution, 'Contratista');
+
+        $this->actingAs($user)
+            ->delete(route('rh.colaboradores.destroy', $contratista))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('collaborators', ['id' => $contratista->id]);
+    });
+
+});
+
 // ─── Cambio de tipo ───────────────────────────────────────────────────────────
 
 describe('Cambio de tipo de colaborador', function (): void {

@@ -11,7 +11,6 @@ use App\Models\RH\DocumentType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -29,19 +28,19 @@ beforeEach(function (): void {
 function contextoImportacion(string $rol): array
 {
     $institution = Institution::factory()->create();
-    $user        = User::factory()->create(['institution_id' => $institution->id]);
+    $user = User::factory()->create(['institution_id' => $institution->id]);
     $user->assignRole($rol);
 
     $documentTypeCC = DocumentType::factory()->create([
         'institution_id' => $institution->id,
-        'code'           => 'CC',
-        'name'           => 'Cédula de Ciudadanía',
+        'code' => 'CC',
+        'name' => 'Cédula de Ciudadanía',
     ]);
 
     $documentTypeNIT = DocumentType::factory()->create([
         'institution_id' => $institution->id,
-        'code'           => 'NIT',
-        'name'           => 'Número de Identificación Tributaria',
+        'code' => 'NIT',
+        'name' => 'Número de Identificación Tributaria',
     ]);
 
     $status = CollaboratorStatus::factory()->activo()->create([
@@ -56,8 +55,8 @@ function contextoImportacion(string $rol): array
  */
 function crearExcelEmpleado(array $campos = []): \Illuminate\Http\UploadedFile
 {
-    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-    $sheet       = $spreadsheet->getActiveSheet();
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+    $sheet = $spreadsheet->getActiveSheet();
 
     $headers = [
         'tipo_documento', 'numero_documento', 'fecha_expedicion',
@@ -84,7 +83,7 @@ function crearExcelEmpleado(array $campos = []): \Illuminate\Http\UploadedFile
     $sheet->fromArray($fila, null, 'A2');
 
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-    $path   = sys_get_temp_dir().'/test_import_'.uniqid().'.xlsx';
+    $path = sys_get_temp_dir().'/test_import_'.uniqid().'.xlsx';
     $writer->save($path);
 
     return new \Illuminate\Http\UploadedFile(
@@ -101,8 +100,8 @@ function crearExcelEmpleado(array $campos = []): \Illuminate\Http\UploadedFile
  */
 function crearExcelEmpresa(): \Illuminate\Http\UploadedFile
 {
-    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-    $sheet       = $spreadsheet->getActiveSheet();
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+    $sheet = $spreadsheet->getActiveSheet();
 
     $headers = [
         'tipo_documento', 'numero_documento', 'fecha_expedicion',
@@ -121,7 +120,7 @@ function crearExcelEmpresa(): \Illuminate\Http\UploadedFile
     $sheet->fromArray($fila, null, 'A2');
 
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-    $path   = sys_get_temp_dir().'/test_empresa_'.uniqid().'.xlsx';
+    $path = sys_get_temp_dir().'/test_empresa_'.uniqid().'.xlsx';
     $writer->save($path);
 
     return new \Illuminate\Http\UploadedFile(
@@ -204,7 +203,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivo,
-                'tipo'    => 'Empleado',
+                'tipo' => 'Empleado',
             ])
             ->assertForbidden();
     });
@@ -217,7 +216,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivo,
-                'tipo'    => 'Contratista',
+                'tipo' => 'Contratista',
             ])
             ->assertForbidden();
     });
@@ -235,7 +234,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivo,
-                'tipo'    => 'Empleado',
+                'tipo' => 'Empleado',
             ])
             ->assertRedirect(route('rh.colaboradores.importar'));
 
@@ -251,7 +250,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivo,
-                'tipo'    => 'Contratista',
+                'tipo' => 'Contratista',
             ])
             ->assertRedirect(route('rh.colaboradores.importar'));
 
@@ -273,7 +272,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivoInvalido,
-                'tipo'    => 'Empleado',
+                'tipo' => 'Empleado',
             ])
             ->assertSessionHasErrors('archivo');
     });
@@ -285,7 +284,7 @@ describe('Importación masiva de colaboradores', function (): void {
         $this->actingAs($user)
             ->post(route('rh.colaboradores.importar.store'), [
                 'archivo' => $archivo,
-                'tipo'    => 'Otro',
+                'tipo' => 'Otro',
             ])
             ->assertSessionHasErrors('tipo');
     });
@@ -320,8 +319,8 @@ describe('Importación masiva de colaboradores', function (): void {
 
         DocumentType::factory()->create([
             'institution_id' => $institution->id,
-            'code'           => 'CC',
-            'name'           => 'Cédula de Ciudadanía',
+            'code' => 'CC',
+            'name' => 'Cédula de Ciudadanía',
         ]);
 
         CollaboratorStatus::factory()->activo()->create([
@@ -336,20 +335,20 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $collection = collect([
             collect([
-                'tipo_documento'   => 'CC',
+                'tipo_documento' => 'CC',
                 'numero_documento' => '99887766',
                 'fecha_expedicion' => '15/03/2005',
-                'primer_nombre'    => 'CARLOS',
-                'segundo_nombre'   => '',
-                'primer_apellido'  => 'RAMIREZ',
+                'primer_nombre' => 'CARLOS',
+                'segundo_nombre' => '',
+                'primer_apellido' => 'RAMIREZ',
                 'segundo_apellido' => '',
                 'fecha_nacimiento' => '01/01/1990',
-                'genero'           => 'M',
-                'correo'           => 'carlos@test.co',
-                'telefono'         => '3001234567',
-                'direccion'        => 'Calle 10',
-                'estado'           => 'Activo',
-                'es_empresa'       => 'NO',
+                'genero' => 'M',
+                'correo' => 'carlos@test.co',
+                'telefono' => '3001234567',
+                'direccion' => 'Calle 10',
+                'estado' => 'Activo',
+                'es_empresa' => 'NO',
             ]),
         ]);
 
@@ -374,8 +373,8 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $documentType = DocumentType::factory()->create([
             'institution_id' => $institution->id,
-            'code'           => 'CC',
-            'name'           => 'Cédula de Ciudadanía',
+            'code' => 'CC',
+            'name' => 'Cédula de Ciudadanía',
         ]);
 
         $status = CollaboratorStatus::factory()->activo()->create([
@@ -384,11 +383,11 @@ describe('Importación masiva de colaboradores', function (): void {
 
         // Colaborador ya existente en la base de datos
         Collaborator::factory()->create([
-            'institution_id'   => $institution->id,
+            'institution_id' => $institution->id,
             'document_type_id' => $documentType->id,
-            'document_number'  => '55443322',
-            'status_id'        => $status->id,
-            'type'             => 'Empleado',
+            'document_number' => '55443322',
+            'status_id' => $status->id,
+            'type' => 'Empleado',
         ]);
 
         $import = new CollaboratorImport(
@@ -399,20 +398,20 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $collection = collect([
             collect([
-                'tipo_documento'   => 'CC',
+                'tipo_documento' => 'CC',
                 'numero_documento' => '55443322',
                 'fecha_expedicion' => '10/05/2000',
-                'primer_nombre'    => 'LUCIA',
-                'segundo_nombre'   => '',
-                'primer_apellido'  => 'VARGAS',
+                'primer_nombre' => 'LUCIA',
+                'segundo_nombre' => '',
+                'primer_apellido' => 'VARGAS',
                 'segundo_apellido' => '',
                 'fecha_nacimiento' => '15/07/1985',
-                'genero'           => 'F',
-                'correo'           => 'nuevo@test.co',
-                'telefono'         => '3109876543',
-                'direccion'        => 'Carrera 5',
-                'estado'           => 'Activo',
-                'es_empresa'       => 'NO',
+                'genero' => 'F',
+                'correo' => 'nuevo@test.co',
+                'telefono' => '3109876543',
+                'direccion' => 'Carrera 5',
+                'estado' => 'Activo',
+                'es_empresa' => 'NO',
             ]),
         ]);
 
@@ -434,8 +433,8 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $documentType = DocumentType::factory()->create([
             'institution_id' => $institution->id,
-            'code'           => 'CC',
-            'name'           => 'Cédula de Ciudadanía',
+            'code' => 'CC',
+            'name' => 'Cédula de Ciudadanía',
         ]);
 
         $status = CollaboratorStatus::factory()->activo()->create([
@@ -443,12 +442,12 @@ describe('Importación masiva de colaboradores', function (): void {
         ]);
 
         $colaborador = Collaborator::factory()->create([
-            'institution_id'   => $institution->id,
+            'institution_id' => $institution->id,
             'document_type_id' => $documentType->id,
-            'document_number'  => '77665544',
-            'status_id'        => $status->id,
-            'type'             => 'Empleado',
-            'email'            => 'original@test.co',
+            'document_number' => '77665544',
+            'status_id' => $status->id,
+            'type' => 'Empleado',
+            'email' => 'original@test.co',
         ]);
 
         $import = new CollaboratorImport(
@@ -459,27 +458,27 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $collection = collect([
             collect([
-                'tipo_documento'   => 'CC',
+                'tipo_documento' => 'CC',
                 'numero_documento' => '77665544',
                 'fecha_expedicion' => '20/06/2001',
-                'primer_nombre'    => $colaborador->first_name,
-                'segundo_nombre'   => '',
-                'primer_apellido'  => $colaborador->first_surname,
+                'primer_nombre' => $colaborador->first_name,
+                'segundo_nombre' => '',
+                'primer_apellido' => $colaborador->first_surname,
                 'segundo_apellido' => '',
                 'fecha_nacimiento' => '22/03/1988',
-                'genero'           => 'M',
-                'correo'           => 'actualizado@test.co',
-                'telefono'         => '3201234567',
-                'direccion'        => 'Avenida 15',
-                'estado'           => 'Activo',
-                'es_empresa'       => 'NO',
+                'genero' => 'M',
+                'correo' => 'actualizado@test.co',
+                'telefono' => '3201234567',
+                'direccion' => 'Avenida 15',
+                'estado' => 'Activo',
+                'es_empresa' => 'NO',
             ]),
         ]);
 
         $import->collection($collection);
 
         $this->assertDatabaseHas('collaborators', [
-            'id'    => $colaborador->id,
+            'id' => $colaborador->id,
             'email' => 'actualizado@test.co',
         ]);
 
@@ -492,8 +491,8 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $documentTypeNIT = DocumentType::factory()->create([
             'institution_id' => $institution->id,
-            'code'           => 'NIT',
-            'name'           => 'Número de Identificación Tributaria',
+            'code' => 'NIT',
+            'name' => 'Número de Identificación Tributaria',
         ]);
 
         CollaboratorStatus::factory()->activo()->create([
@@ -508,22 +507,22 @@ describe('Importación masiva de colaboradores', function (): void {
 
         $collection = collect([
             collect([
-                'tipo_documento'      => '',
-                'numero_documento'    => '',
-                'fecha_expedicion'    => '',
-                'primer_nombre'       => '',
-                'segundo_nombre'      => '',
-                'primer_apellido'     => '',
-                'segundo_apellido'    => '',
-                'fecha_nacimiento'    => '',
-                'genero'              => '',
-                'correo'              => 'empresa@test.co',
-                'telefono'            => '3001234567',
-                'direccion'           => 'Calle 1',
-                'estado'              => 'Activo',
-                'es_empresa'          => 'SI',
-                'razon_social'        => 'CONSULTORES LTDA',
-                'nit'                 => '900123456-1',
+                'tipo_documento' => '',
+                'numero_documento' => '',
+                'fecha_expedicion' => '',
+                'primer_nombre' => '',
+                'segundo_nombre' => '',
+                'primer_apellido' => '',
+                'segundo_apellido' => '',
+                'fecha_nacimiento' => '',
+                'genero' => '',
+                'correo' => 'empresa@test.co',
+                'telefono' => '3001234567',
+                'direccion' => 'Calle 1',
+                'estado' => 'Activo',
+                'es_empresa' => 'SI',
+                'razon_social' => 'CONSULTORES LTDA',
+                'nit' => '900123456-1',
                 'representante_legal' => 'JUAN PEREZ',
             ]),
         ]);

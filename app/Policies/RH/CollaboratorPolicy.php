@@ -41,7 +41,21 @@ class CollaboratorPolicy
             return false;
         }
 
-        return $user->hasAnyRole(self::VIEWERS);
+        if (! $user->hasAnyRole(self::VIEWERS)) {
+            return false;
+        }
+
+        // contractor-manager solo puede ver contratistas
+        if ($user->hasRole('contractor-manager') && $collaborator->type !== 'Contratista') {
+            return false;
+        }
+
+        // employee-manager solo puede ver empleados
+        if ($user->hasRole('employee-manager') && $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
+        return true;
     }
 
     public function create(User $user): bool
@@ -55,11 +69,25 @@ class CollaboratorPolicy
             return $user->hasAnyRole(self::MANAGERS);
         }
 
-        if (! ($user->institution_id === $collaborator->institution_id)) {
+        if ($user->institution_id !== $collaborator->institution_id) {
             return false;
         }
 
-        return $user->hasAnyRole(self::MANAGERS);
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
+        }
+
+        // contractor-manager solo puede editar contratistas
+        if ($user->hasRole('contractor-manager') && $collaborator->type !== 'Contratista') {
+            return false;
+        }
+
+        // employee-manager solo puede editar empleados
+        if ($user->hasRole('employee-manager') && $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
+        return true;
     }
 
     public function delete(User $user, ?Collaborator $collaborator = null): bool
@@ -68,8 +96,25 @@ class CollaboratorPolicy
             return $user->hasAnyRole(self::MANAGERS);
         }
 
-        return $user->hasAnyRole(self::MANAGERS)
-            && $user->institution_id === $collaborator->institution_id;
+        if ($user->institution_id !== $collaborator->institution_id) {
+            return false;
+        }
+
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
+        }
+
+        // contractor-manager solo puede eliminar contratistas
+        if ($user->hasRole('contractor-manager') && $collaborator->type !== 'Contratista') {
+            return false;
+        }
+
+        // employee-manager solo puede eliminar empleados
+        if ($user->hasRole('employee-manager') && $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
+        return true;
     }
 
     public function export(User $user): bool
@@ -79,7 +124,21 @@ class CollaboratorPolicy
 
     public function import(User $user, ?string $type = null): bool
     {
-        return $user->hasAnyRole(self::MANAGERS);
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
+        }
+
+        // contractor-manager solo puede importar contratistas
+        if ($user->hasRole('contractor-manager') && $type === 'Empleado') {
+            return false;
+        }
+
+        // employee-manager solo puede importar empleados
+        if ($user->hasRole('employee-manager') && $type === 'Contratista') {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -97,10 +156,20 @@ class CollaboratorPolicy
             return false;
         }
 
-        if ($user->hasAnyRole(self::MANAGERS)) {
-            return ! $collaborator->contracts()->where('status', 'Vigente')->exists();
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
         }
 
-        return false;
+        // contractor-manager solo puede cambiar tipo de contratistas
+        if ($user->hasRole('contractor-manager') && $collaborator->type !== 'Contratista') {
+            return false;
+        }
+
+        // employee-manager solo puede cambiar tipo de empleados
+        if ($user->hasRole('employee-manager') && $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
+        return ! $collaborator->contracts()->where('status', 'Vigente')->exists();
     }
 }

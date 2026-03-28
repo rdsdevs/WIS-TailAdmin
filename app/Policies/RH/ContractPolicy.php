@@ -96,13 +96,9 @@ class ContractPolicy
             return false;
         }
 
-        // contractor-manager solo puede terminar anticipadamente contratos de contratistas
+        // contractor-manager no tiene permiso de terminación anticipada
         if ($user->hasAnyRole(self::CONTRACTOR_ONLY)) {
-            $collaborator = $contract->relationLoaded('collaborator')
-                ? $contract->collaborator
-                : $contract->collaborator()->first();
-
-            return $collaborator !== null && $collaborator->type === 'Contratista';
+            return false;
         }
 
         return true;

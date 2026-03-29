@@ -300,7 +300,7 @@
     x-transition:leave="transition ease-in duration-300"
     x-transition:leave-start="opacity-100 translate-y-0"
     x-transition:leave-end="opacity-0 translate-y-4"
-    class="fixed bottom-5 right-5 z-50 w-full max-w-sm px-0"
+    class="fixed bottom-5 right-5 z-50 w-full max-w-lg"
 >
     <div class="relative flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-5 shadow-2xl sm:flex-row sm:items-start sm:gap-5"
          style="box-shadow: 0 20px 60px -10px rgba(13,27,94,0.25), 0 4px 16px -4px rgba(13,27,94,0.12);">

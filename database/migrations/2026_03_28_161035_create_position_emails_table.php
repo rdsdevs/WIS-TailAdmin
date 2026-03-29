@@ -18,7 +18,6 @@ return new class extends Migration
             $table->foreignUuid('position_id')->constrained()->cascadeOnDelete();
             $table->string('email', 150);
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

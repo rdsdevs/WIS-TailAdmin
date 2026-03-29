@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
@@ -155,6 +157,7 @@ new class extends Component {
     public function updatedType(): void
     {
         if ($this->type === 'Contratista') {
+            $this->step                      = 1;
             $this->employeeProfileEnabled    = false;
             $this->eps                       = '';
             $this->pensionFund               = '';

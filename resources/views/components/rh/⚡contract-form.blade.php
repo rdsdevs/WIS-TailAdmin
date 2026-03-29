@@ -491,6 +491,12 @@ new class extends Component {
             'status'           => $this->status,
         ];
 
+        if (empty($this->collaboratorType)) {
+            $this->addError('collaboratorId', 'No se pudo determinar el tipo de colaborador. Selecciónelo nuevamente.');
+            $this->step = 1;
+            return;
+        }
+
         $shouldSavePayroll = $this->collaboratorType === 'Empleado' && $this->payrollDetailEnabled;
 
         $payrollDetailData = [
@@ -514,6 +520,8 @@ new class extends Component {
                         ['contract_id' => $contract->id],
                         $payrollDetailData
                     );
+                } else {
+                    $contract->payrollDetail()->delete();
                 }
 
                 // Reemplazar comprometidos si el contrato requiere
@@ -2064,7 +2072,7 @@ new class extends Component {
                 </svg>
             </button>
 
-        @elseif($step === 3)
+        @elseif($step === 3 && $collaboratorType === 'Empleado')
             {{-- Paso 3 (Nómina, solo Empleados): siempre guarda --}}
             <button
                 type="button"

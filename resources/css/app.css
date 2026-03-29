@@ -166,6 +166,11 @@
   --z-index-9999: 9999;
   --z-index-99999: 99999;
   --z-index-999999: 999999;
+
+  --color-wis-primary:   #2a31d8;
+  --color-wis-secondary: #3641f5;
+  --color-wis-dark:      #161950;
+  --color-wis-field:     #EEF2FF;
 }
 
 /*
@@ -195,6 +200,33 @@
 
 @utility menu-item {
   @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;
+}
+
+@layer components {
+    .branding-gradient {
+        background: linear-gradient(160deg, #0d1b5e 0%, #112270 40%, #1a3a8a 75%, #1e44a0 100%);
+    }
+    .card-shadow {
+        box-shadow:
+            0 4px 6px -1px rgba(26, 32, 128, 0.08),
+            0 20px 50px -10px rgba(26, 32, 128, 0.20);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #0d1b5e 0%, #112270 40%, #1a3a8a 75%, #1e44a0 100%);
+        transition: all 0.25s ease;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #091448 0%, #0d1b5e 60%, #112270 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 25px -5px rgba(13, 27, 94, 0.55);
+    }
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    .wis-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(54, 65, 245, 0.25);
+    }
 }
 
 @utility menu-item-active {

@@ -67,7 +67,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '1999-04-19',
                 'name' => 'ANA ISABEL REYES TORRES',
                 'email' => 'gestiondocumental@ascun.org.co',
-                'role' => 'rh-manager',
+                'role' => 'contractor-manager',
             ],
             [
                 'document_number' => '53135875',
@@ -88,7 +88,7 @@ class UserSeeder extends Seeder
                 'document_issued_at' => '2011-04-01',
                 'name' => 'YESENIA KATERIN ROJAS MORENO',
                 'email' => 'profesional.admin@ascun.org.co',
-                'role' => 'rh-manager',
+                'role' => 'employee-manager',
             ],
             [
                 'document_number' => '1033815362',
@@ -132,10 +132,8 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            // Asignar rol solo si aún no lo tiene (idempotente)
-            if (! $user->hasRole($datos['role'])) {
-                $user->assignRole($datos['role']);
-            }
+            // Sincronizar rol (idempotente: reemplaza si cambió)
+            $user->syncRoles([$datos['role']]);
 
             $this->command->info(
                 sprintf(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 class MenuHelper
@@ -14,21 +16,25 @@ class MenuHelper
     public static function getRhNavItems(): array
     {
         $user = auth()->user();
+        $rolesConAcceso = ['super-admin', 'admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager'];
+        if (! $user || ! $user->hasAnyRole($rolesConAcceso)) {
+            return [];
+        }
 
         $subItems = [
             ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
             ['name' => 'Contratos',     'path' => '/rh/contratos'],
         ];
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
             $subItems[] = ['name' => 'Importar contratos', 'path' => '/rh/contratos/importar'];
         }
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
         }
 
-        if ($user && $user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Departamentos', 'path' => '/rh/departamentos'];
         }
 
@@ -56,6 +62,11 @@ class MenuHelper
 
     public static function getAdminNavItems(): array
     {
+        $user = auth()->user();
+        if (! $user || ! $user->hasAnyRole(['super-admin', 'admin'])) {
+            return [];
+        }
+
         return [
             [
                 'icon' => 'users',
@@ -98,12 +109,14 @@ class MenuHelper
 
     public static function getMenuGroups(): array
     {
-        return [
-            ['title' => 'Menú', 'items' => self::getMainNavItems()],
+        $groups = [
+            ['title' => 'Menú',             'items' => self::getMainNavItems()],
             ['title' => 'Recursos Humanos', 'items' => self::getRhNavItems()],
-            ['title' => 'Certificados', 'items' => self::getCertificadosNavItems()],
-            ['title' => 'Administración', 'items' => self::getAdminNavItems()],
+            ['title' => 'Certificados',     'items' => self::getCertificadosNavItems()],
+            ['title' => 'Administración',   'items' => self::getAdminNavItems()],
         ];
+
+        return array_values(array_filter($groups, fn ($g) => ! empty($g['items'])));
     }
 
     public static function isActive($path)

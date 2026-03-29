@@ -189,19 +189,35 @@ $roleConfig = match($role) {
                 </div>
             </div>
 
-            {{-- Card: Por vencer --}}
-            <div class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['por_vencer']) }}</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        Por vencer
-                        <span class="rounded px-1.5 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">30 días</span>
+            {{-- Card: Certificaciones --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF]">
+                        <svg class="h-6 w-6 text-[#2a31d8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                        </svg>
                     </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                            {{ number_format($metrics['certificaciones_total'] ?? 0) }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Certificaciones</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 border-t border-gray-100 pt-3 dark:border-gray-700">
+                    <span class="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ $metrics['certificaciones_verificadas'] ?? 0 }} Verificadas
+                    </span>
+                    <span class="text-gray-200 dark:text-gray-700 select-none">|</span>
+                    <span class="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ $metrics['certificaciones_por_verificar'] ?? 0 }} Por verificar
+                    </span>
                 </div>
             </div>
 
@@ -216,6 +232,81 @@ $roleConfig = match($role) {
                     <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ number_format($metrics['terminados']) }}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Contratos terminados</p>
                 </div>
+            </div>
+
+        </div>
+
+        {{-- ── Actividad reciente — contractor-manager ── --}}
+        <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+            {{-- Últimos contratistas registrados --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h4 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Últimos contratistas registrados
+                    <span class="ml-1 text-xs font-normal text-gray-400">(últimos 30 días)</span>
+                </h4>
+                @forelse($metrics['recientes_contratistas'] ?? [] as $colaborador)
+                    <div class="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0 dark:border-gray-700">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-bold dark:bg-amber-900/30 dark:text-amber-300">
+                            @if($colaborador->is_company)
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
+                            @else
+                                {{ strtoupper(substr($colaborador->first_name ?? '?', 0, 1)) }}
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium text-gray-800 dark:text-white">
+                                @if($colaborador->is_company)
+                                    {{ $colaborador->company_name ?? '—' }}
+                                @else
+                                    {{ trim(($colaborador->first_name ?? '') . ' ' . ($colaborador->first_surname ?? '')) ?: '—' }}
+                                @endif
+                            </p>
+                            <p class="text-xs text-gray-400">{{ $colaborador->created_at->format('d M Y') }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-400 italic">Sin registros en los últimos 30 días.</p>
+                @endforelse
+            </div>
+
+            {{-- Últimos contratos registrados --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h4 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Últimos contratos registrados
+                    <span class="ml-1 text-xs font-normal text-gray-400">(últimos 30 días)</span>
+                </h4>
+                @forelse($metrics['recientes_contratos'] ?? [] as $contrato)
+                    <div class="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0 dark:border-gray-700">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold dark:bg-blue-900/30 dark:text-blue-300">
+                            {{ strtoupper(substr($contrato->collaborator->first_name ?? 'C', 0, 1)) }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium text-gray-800 dark:text-white">
+                                {{ $contrato->contract_number ?? '—' }}
+                            </p>
+                            <p class="truncate text-xs text-gray-400">
+                                @if($contrato->collaborator)
+                                    @if($contrato->collaborator->is_company)
+                                        {{ $contrato->collaborator->company_name ?? '—' }}
+                                    @else
+                                        {{ trim(($contrato->collaborator->first_name ?? '') . ' ' . ($contrato->collaborator->first_surname ?? '')) ?: '—' }}
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </p>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium
+                            @if(($contrato->status ?? '') === 'Vigente') bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                            @elseif(($contrato->status ?? '') === 'Por vencer') bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                            @else bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 @endif">
+                            {{ $contrato->status ?? '—' }}
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-400 italic">Sin registros en los últimos 30 días.</p>
+                @endforelse
             </div>
 
         </div>
@@ -254,7 +345,7 @@ $roleConfig = match($role) {
                 </svg>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ $metrics['por_vencer'] }}</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ $metrics['por_vencer'] ?? 0 }}</p>
                 <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     Por vencer
                     <span class="rounded px-1.5 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">30 días</span>
@@ -282,7 +373,8 @@ $roleConfig = match($role) {
     @php
         $modulosProximos = match($role) {
             'super-admin', 'admin' => ['Contabilidad', 'Inventario', 'Certificados'],
-            'contractor-manager', 'employee-manager' => ['Certificados'],
+            'contractor-manager' => [],
+            'employee-manager' => ['Certificados'],
             default => ['Contabilidad', 'Inventario', 'Certificados'],
         };
     @endphp
@@ -358,6 +450,23 @@ $roleConfig = match($role) {
                 @endif
 
             </div>
+            @endif
+
+            {{-- Acceso rápido: Certificados (solo contractor-manager) --}}
+            @if($role === 'contractor-manager')
+            {{-- TODO: ruta certificados --}}
+            <a href="#"
+               class="btn-primary flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90">
+                <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                    </svg>
+                    Certificados
+                </span>
+                <svg class="h-4 w-4 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+            </a>
             @endif
 
             {{-- Grupo de módulos próximos (dashed, deshabilitados) --}}

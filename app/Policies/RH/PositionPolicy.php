@@ -48,4 +48,9 @@ class PositionPolicy
         return $user->hasRole(['admin', 'rh-manager'])
             && $user->institution_id === $position->institution_id;
     }
+
+    public function import(User $user): bool
+    {
+        return $user->hasRole(['admin', 'rh-manager']);
+    }
 }

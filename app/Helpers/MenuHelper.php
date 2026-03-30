@@ -32,6 +32,7 @@ class MenuHelper
 
         if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
+            $subItems[] = ['name' => 'Importar cargos', 'path' => '/rh/cargos/importar'];
         }
 
         if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {

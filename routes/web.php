@@ -28,6 +28,16 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     // Dependencias (departamentos)
     Route::resource('departamentos', RH\DepartmentController::class);
 
+    // Importación masiva de cargos, funciones y correos
+    // DEBEN ir antes del resource para evitar conflicto con {cargos}
+    Route::get('cargos/importar', [\App\Http\Controllers\RH\PositionImportController::class, 'create'])
+        ->name('cargos.importar');
+    Route::post('cargos/importar', [\App\Http\Controllers\RH\PositionImportController::class, 'store'])
+        ->name('cargos.importar.store');
+    Route::get('cargos/plantilla/{tipo}', [\App\Http\Controllers\RH\PositionImportController::class, 'template'])
+        ->name('cargos.plantilla')
+        ->where('tipo', 'cargos|funciones|correos');
+
     // Cargos (positions)
     Route::resource('cargos', RH\PositionController::class);
 

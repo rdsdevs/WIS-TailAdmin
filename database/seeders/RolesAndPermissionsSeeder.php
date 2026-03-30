@@ -17,11 +17,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Crear permisos por módulo
         $permisos = [
-            // Empleados
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'employees.delete',
+            // Colaboradores
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
 
             // Contratos
             'contracts.create',
@@ -63,6 +63,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'admin',
             'rh-manager',
             'rh-viewer',
+            'employee-manager',
+            'contractor-manager',
             'accounting-manager',
             'accounting-viewer',
             'inventory-manager',
@@ -86,10 +88,10 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // rh-manager: gestión completa de RH
         Role::findByName('rh-manager')->givePermissionTo([
-            'employees.create',
-            'employees.read',
-            'employees.update',
-            'employees.delete',
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
             'contracts.create',
             'contracts.read',
             'contracts.update',
@@ -101,8 +103,38 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // rh-viewer: solo consulta RH
         Role::findByName('rh-viewer')->givePermissionTo([
-            'employees.read',
+            'collaborators.read',
             'contracts.read',
+            'certificates.read',
+            'reports.hr',
+        ]);
+
+        // employee-manager: gestión completa de RH (equivalente a rh-manager)
+        Role::findByName('employee-manager')->givePermissionTo([
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
+            'contracts.create',
+            'contracts.read',
+            'contracts.update',
+            'contracts.delete',
+            'certificates.generate',
+            'certificates.read',
+            'reports.hr',
+        ]);
+
+        // contractor-manager: gestión completa de RH (equivalente a rh-manager)
+        Role::findByName('contractor-manager')->givePermissionTo([
+            'collaborators.create',
+            'collaborators.read',
+            'collaborators.update',
+            'collaborators.delete',
+            'contracts.create',
+            'contracts.read',
+            'contracts.update',
+            'contracts.delete',
+            'certificates.generate',
             'certificates.read',
             'reports.hr',
         ]);

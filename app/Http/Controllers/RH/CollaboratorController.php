@@ -140,4 +140,18 @@ class CollaboratorController extends Controller
 
         return Excel::download($this->service->export($institutionId, $tipo), $nombreArchivo);
     }
+
+    /**
+     * Cambia el tipo del colaborador entre Empleado y Contratista.
+     */
+    public function changeType(Collaborator $collaborator): RedirectResponse
+    {
+        $this->authorize('changeType', $collaborator);
+
+        $this->service->changeType($collaborator);
+
+        return redirect()
+            ->route('rh.colaboradores.show', $collaborator)
+            ->with('exito', 'Tipo de colaborador actualizado exitosamente.');
+    }
 }

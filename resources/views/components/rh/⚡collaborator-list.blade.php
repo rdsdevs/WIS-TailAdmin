@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 new class extends Component {
     use WithPagination;
@@ -43,9 +47,11 @@ new class extends Component {
 
     public function delete(): void
     {
-        $this->authorize('delete', Collaborator::class);
+        $collaborator = Collaborator::where('id', $this->deletingId)
+            ->where('institution_id', auth()->user()?->institution_id)
+            ->firstOrFail();
 
-        $collaborator = Collaborator::findOrFail($this->deletingId);
+        $this->authorize('delete', $collaborator);
         $collaborator->delete();
 
         $this->deletingId   = null;
@@ -54,26 +60,34 @@ new class extends Component {
         session()->flash('success', 'Colaborador eliminado correctamente.');
     }
 
-    public function getCollaboratorsProperty()
+    public function getCollaboratorsProperty(): LengthAwarePaginator
     {
+        $institutionId = auth()->user()?->institution_id;
+
         return Collaborator::query()
+            ->where('institution_id', $institutionId)
             ->with(['documentType', 'status', 'activeContract.position'])
-            ->when($this->search, fn ($q) => $q->where(
-                fn ($q2) => $q2
-                    ->where('first_name', 'like', "%{$this->search}%")
-                    ->orWhere('first_surname', 'like', "%{$this->search}%")
-                    ->orWhere('second_surname', 'like', "%{$this->search}%")
-                    ->orWhere('company_name', 'like', "%{$this->search}%")
-                    ->orWhere('document_number', 'like', "%{$this->search}%")
-            ))
+            ->when($this->search, function ($q): void {
+                $words = array_filter(explode(' ', trim($this->search)));
+                foreach ($words as $word) {
+                    $q->where(fn ($q2) => $q2
+                        ->where('first_name', 'like', "%{$word}%")
+                        ->orWhere('second_name', 'like', "%{$word}%")
+                        ->orWhere('first_surname', 'like', "%{$word}%")
+                        ->orWhere('second_surname', 'like', "%{$word}%")
+                        ->orWhere('company_name', 'like', "%{$word}%")
+                        ->orWhere('document_number', 'like', "%{$word}%")
+                    );
+                }
+            })
             ->when($this->filterType, fn ($q) => $q->where('type', $this->filterType))
             ->when($this->filterStatus, fn ($q) => $q->where('status_id', $this->filterStatus))
             ->orderBy('first_surname')
             ->orderBy('first_name')
-            ->paginate(15);
+            ->paginate(10);
     }
 
-    public function getStatusesProperty()
+    public function getStatusesProperty(): Collection
     {
         return CollaboratorStatus::orderBy('name')->get();
     }
@@ -83,35 +97,49 @@ new class extends Component {
 <div>
     {{-- Barra superior: búsqueda + filtros + acciones --}}
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {{-- Búsqueda --}}
-        <div class="relative flex-1 sm:max-w-xs">
-            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500" aria-hidden="true">
+        {{-- Búsqueda expandible --}}
+        <div x-data="{ open: false }" class="relative flex items-center">
+            <button
+                type="button"
+                @click="open = !open; if(open) $nextTick(() => $refs.searchInput.focus())"
+                @keydown.escape.window="open = false"
+                class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                :class="{ 'border-brand-500 bg-brand-50 text-brand-600 dark:border-brand-600 dark:bg-brand-900/20 dark:text-brand-400': open || $wire.search.length > 0 }"
+                aria-label="Buscar">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
                 </svg>
-            </span>
-            <input
-                wire:model.live.debounce.400ms="search"
-                type="search"
-                placeholder="Buscar por nombre o cédula..."
-                aria-label="Buscar colaboradores"
-                class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500"
-            />
-            <div wire:loading wire:target="search" class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <svg class="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
+            </button>
+            <div
+                x-show="open"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95 -translate-x-2"
+                x-transition:enter-end="opacity-100 scale-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100 translate-x-0"
+                x-transition:leave-end="opacity-0 scale-95 -translate-x-2"
+                @click.outside="open = false"
+                class="absolute left-10 z-20 w-64 sm:w-72"
+                style="display:none">
+                <input
+                    x-ref="searchInput"
+                    wire:model.live.debounce.400ms="search"
+                    type="search"
+                    placeholder="Buscar por nombre o cédula..."
+                    aria-label="Buscar colaboradores"
+                    class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
+                />
             </div>
         </div>
 
-        {{-- Filtro estado --}}
-        <div class="flex items-center gap-2">
+        {{-- Filtro estado + acciones --}}
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Select estado --}}
             <label for="filtro-estado" class="sr-only">Filtrar por estado</label>
             <select
                 wire:model.live="filterStatus"
                 id="filtro-estado"
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
             >
                 <option value="">Todos los estados</option>
                 @foreach($this->statuses as $status)
@@ -119,48 +147,73 @@ new class extends Component {
                 @endforeach
             </select>
 
-            @can('create', \App\Models\RH\Collaborator::class)
-                <a href="{{ route('rh.colaboradores.create') }}"
-                   class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Nuevo colaborador
-                </a>
-            @endcan
-
-            @can('create', \App\Models\RH\Collaborator::class)
-                <a href="{{ route('rh.colaboradores.export', ['tipo' => $filterType ?: 'todos']) }}"
-                   class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                    Exportar
-                </a>
-            @endcan
+            {{-- Grupo de acciones --}}
+            <div class="flex divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                @can('create', \App\Models\RH\Collaborator::class)
+                    <a href="{{ route('rh.colaboradores.create') }}"
+                       class="flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60">
+                        <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Nuevo colaborador
+                    </a>
+                @endcan
+                @can('create', \App\Models\RH\Collaborator::class)
+                    <a href="{{ route('rh.colaboradores.export', ['tipo' => $filterType ?: 'todos']) }}"
+                       class="flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60">
+                        <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Exportar
+                    </a>
+                @endcan
+                @can('import', \App\Models\RH\Collaborator::class)
+                    <a href="{{ route('rh.colaboradores.importar') }}"
+                       class="flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60">
+                        <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3M12 3v13.5" />
+                        </svg>
+                        Importar
+                    </a>
+                @endcan
+            </div>
         </div>
     </div>
 
     {{-- Tabs tipo de colaborador --}}
-    <div class="mb-4 flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
-        <button
-            wire:click="$set('filterType', '')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === '' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
-            Todos
-        </button>
-        <button
-            wire:click="$set('filterType', 'Empleado')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === 'Empleado' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
-            Empleados
-        </button>
-        <button
-            wire:click="$set('filterType', 'Contratista')"
-            class="px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors
-                {{ $filterType === 'Contratista' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
-            Contratistas
-        </button>
+    <div class="mb-4">
+        <div class="flex divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700 w-fit">
+            <button
+                wire:click="$set('filterType', '')"
+                class="{{ $filterType === ''
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                </svg>
+                Todos
+            </button>
+            <button
+                wire:click="$set('filterType', 'Empleado')"
+                class="{{ $filterType === 'Empleado'
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+                Empleados
+            </button>
+            <button
+                wire:click="$set('filterType', 'Contratista')"
+                class="{{ $filterType === 'Contratista'
+                    ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-700 dark:text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700/60' }} flex items-center gap-2 px-4 py-2 text-sm transition-colors">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+                </svg>
+                Contratistas
+            </button>
+        </div>
     </div>
 
     {{-- Flash de éxito --}}
@@ -263,33 +316,58 @@ new class extends Component {
 
                         {{-- Acciones --}}
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1">
-                                <a href="{{ route('rh.colaboradores.show', $collaborator) }}"
-                                   class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                                   aria-label="Ver perfil de {{ $collaborator->full_name }}">
-                                    Ver
-                                </a>
+                            <div class="flex items-center justify-end gap-0.5">
+                                {{-- Ver --}}
+                                <div class="relative group inline-flex">
+                                    <a href="{{ route('rh.colaboradores.show', $collaborator) }}"
+                                       class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+                                       aria-label="Ver perfil de {{ $collaborator->full_name }}">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </a>
+                                    <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Ver</span>
+                                </div>
+                                {{-- Editar --}}
                                 @can('update', $collaborator)
-                                    <a href="{{ route('rh.colaboradores.edit', $collaborator) }}"
-                                       class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                                       aria-label="Editar {{ $collaborator->full_name }}">
-                                        Editar
-                                    </a>
+                                    <div class="relative group inline-flex">
+                                        <a href="{{ route('rh.colaboradores.edit', $collaborator) }}"
+                                           class="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 transition-colors"
+                                           aria-label="Editar {{ $collaborator->full_name }}">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                                            </svg>
+                                        </a>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Editar</span>
+                                    </div>
                                 @endcan
+                                {{-- Nuevo contrato --}}
                                 @can('create', \App\Models\RH\Contract::class)
-                                    <a href="{{ route('rh.contratos.create', ['collaborator_id' => $collaborator->id]) }}"
-                                       class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-                                       aria-label="Nuevo contrato para {{ $collaborator->full_name }}">
-                                        Contrato
-                                    </a>
+                                    <div class="relative group inline-flex">
+                                        <a href="{{ route('rh.contratos.create', ['collaborator_id' => $collaborator->id]) }}"
+                                           class="p-1.5 rounded-md text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300 transition-colors"
+                                           aria-label="Nuevo contrato para {{ $collaborator->full_name }}">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                            </svg>
+                                        </a>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Contrato</span>
+                                    </div>
                                 @endcan
+                                {{-- Eliminar --}}
                                 @can('delete', $collaborator)
-                                    <button
-                                        wire:click="confirmDelete('{{ $collaborator->id }}', '{{ addslashes($collaborator->full_name) }}')"
-                                        class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                        aria-label="Eliminar {{ $collaborator->full_name }}">
-                                        Eliminar
-                                    </button>
+                                    <div class="relative group inline-flex">
+                                        <button
+                                            wire:click="confirmDelete('{{ $collaborator->id }}', '{{ addslashes($collaborator->full_name) }}')"
+                                            class="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors"
+                                            aria-label="Eliminar {{ $collaborator->full_name }}">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                        </button>
+                                        <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity dark:bg-gray-700 z-10">Eliminar</span>
+                                    </div>
                                 @endcan
                             </div>
                         </td>

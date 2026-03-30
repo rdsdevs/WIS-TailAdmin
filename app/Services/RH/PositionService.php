@@ -30,7 +30,26 @@ final class PositionService
     public function create(CreatePositionRequest $request): Position
     {
         return DB::transaction(function () use ($request): Position {
-            return Position::create($request->validated());
+            $validated = $request->validated();
+            $emails = $validated['emails'] ?? [];
+            $functions = $validated['functions'] ?? [];
+
+            $data = collect($validated)->except(['emails', 'functions'])->all();
+            $position = Position::create($data);
+
+            if (! empty($emails)) {
+                foreach ($emails as $email) {
+                    $position->emails()->create(['email' => $email]);
+                }
+            }
+
+            if (! empty($functions)) {
+                foreach ($functions as $function) {
+                    $position->functions()->create(['description' => $function]);
+                }
+            }
+
+            return $position;
         });
     }
 
@@ -39,9 +58,30 @@ final class PositionService
      */
     public function update(Position $position, UpdatePositionRequest $request): Position
     {
-        $position->update($request->validated());
+        DB::transaction(function () use ($position, $request): void {
+            $validated = $request->validated();
+            $emails = $validated['emails'] ?? null;
+            $functions = $validated['functions'] ?? null;
 
-        return $position->fresh();
+            $data = collect($validated)->except(['emails', 'functions'])->all();
+            $position->update($data);
+
+            if ($emails !== null) {
+                $position->emails()->delete();
+                foreach ($emails as $email) {
+                    $position->emails()->create(['email' => $email]);
+                }
+            }
+
+            if ($functions !== null) {
+                $position->functions()->delete();
+                foreach ($functions as $function) {
+                    $position->functions()->create(['description' => $function]);
+                }
+            }
+        });
+
+        return $position->fresh(['emails', 'functions']);
     }
 
     /**

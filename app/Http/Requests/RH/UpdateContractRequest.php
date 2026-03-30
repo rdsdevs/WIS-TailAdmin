@@ -33,9 +33,25 @@ class UpdateContractRequest extends FormRequest
             'status' => ['required', 'in:Vigente,Liquidado,Terminado,Cambio de cargo'],
         ];
 
-        if ($this->input('end_date') === null && $this->input('require_end_date') === 'true') {
+        $contractType = \App\Models\RH\ContractType::find($this->input('contract_type_id'));
+        if ($contractType?->requires_end_date) {
             $rules['end_date'] = ['required', 'date', 'after:start_date'];
         }
+
+        // Comprometidos — nullable para permitir actualizar el contrato sin tocar las líneas
+        $rules['committed_values'] = ['nullable', 'array'];
+        $rules['committed_values.*.accounting_account'] = ['required', 'string', 'max:200'];
+        $rules['committed_values.*.cost_center'] = ['required', 'string', 'max:200'];
+        $rules['committed_values.*.amount'] = ['required', 'numeric', 'min:0'];
+
+        // Detalle de Nómina (Opcional)
+        $rules['payroll_detail.base_salary'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.transport_allowance'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.non_statutory_bonuses'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.sena_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.icbf_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.compensation_fund_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.health_check_verified_at'] = ['nullable', 'date'];
 
         return $rules;
     }
@@ -56,6 +72,14 @@ class UpdateContractRequest extends FormRequest
             'fees.min' => 'Los honorarios no pueden ser negativos.',
             'status.required' => 'El estado del contrato es obligatorio.',
             'status.in' => 'El estado del contrato no es válido.',
+            'committed_values.array' => 'Los valores comprometidos deben ser un listado.',
+            'committed_values.*.accounting_account.required' => 'La cuenta contable es obligatoria en cada línea de comprometido.',
+            'committed_values.*.accounting_account.max' => 'La cuenta contable no puede superar los 200 caracteres.',
+            'committed_values.*.cost_center.required' => 'El centro de costo es obligatorio en cada línea de comprometido.',
+            'committed_values.*.cost_center.max' => 'El centro de costo no puede superar los 200 caracteres.',
+            'committed_values.*.amount.required' => 'El valor comprometido es obligatorio en cada línea.',
+            'committed_values.*.amount.numeric' => 'El valor comprometido debe ser un número.',
+            'committed_values.*.amount.min' => 'El valor comprometido no puede ser negativo.',
         ];
     }
 }

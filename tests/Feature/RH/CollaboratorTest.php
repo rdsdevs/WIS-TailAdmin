@@ -232,4 +232,184 @@ describe('Gestión de Colaboradores', function (): void {
         $this->get(route('rh.colaboradores.index'))
             ->assertRedirect(route('login'));
     });
+
+    it('employee-manager puede listar colaboradores', function (): void {
+        [$user, $institution] = crearContextoColaborador('employee-manager');
+        crearColaboradorEnInstitucion($institution);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.colaboradores.index'));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+        $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
+    });
+
+    it('contractor-manager puede listar colaboradores', function (): void {
+        [$user, $institution] = crearContextoColaborador('contractor-manager');
+        crearColaboradorEnInstitucion($institution);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.colaboradores.index'));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+        $this->assertNotEquals(302, $response->status(), 'No debe redirigir al login');
+    });
+
+    it('employee-manager puede ver un colaborador de su institución', function (): void {
+        [$user, $institution] = crearContextoColaborador('employee-manager');
+        $colaborador = crearColaboradorEnInstitucion($institution);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.colaboradores.show', $colaborador));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+    });
+
+    it('contractor-manager puede ver un colaborador contratista de su institución', function (): void {
+        [$user, $institution] = crearContextoColaborador('contractor-manager');
+
+        $documentType = \App\Models\RH\DocumentType::firstOrCreate(
+            ['institution_id' => $institution->id, 'code' => 'CC'],
+            ['name' => 'Cédula de Ciudadanía']
+        );
+        $status = \App\Models\RH\CollaboratorStatus::firstOrCreate(
+            ['institution_id' => $institution->id, 'name' => 'Activo'],
+            ['icon_class' => 'fa-regular fa-user-check']
+        );
+        $colaborador = \App\Models\RH\Collaborator::factory()->create([
+            'institution_id' => $institution->id,
+            'document_type_id' => $documentType->id,
+            'status_id' => $status->id,
+            'type' => 'Contratista',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('rh.colaboradores.show', $colaborador));
+
+        $this->assertNotEquals(403, $response->status(), 'No debe devolver Prohibido');
+    });
+
+    it('employee-manager puede registrar un colaborador', function (): void {
+        [$user, $institution, $documentType, $status] = crearContextoColaborador('employee-manager');
+
+        $datos = [
+            'institution_id' => $institution->id,
+            'document_type_id' => $documentType->id,
+            'document_number' => '10000001',
+            'first_name' => 'Carlos',
+            'first_surname' => 'Pérez',
+            'type' => 'Empleado',
+            'status_id' => $status->id,
+            'is_company' => false,
+        ];
+
+        $this->actingAs($user)
+            ->post(route('rh.colaboradores.store'), $datos)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('collaborators', [
+            'document_number' => '10000001',
+            'institution_id' => $institution->id,
+        ]);
+    });
+
+    it('contractor-manager puede registrar un colaborador', function (): void {
+        [$user, $institution, $documentType, $status] = crearContextoColaborador('contractor-manager');
+
+        $datos = [
+            'institution_id' => $institution->id,
+            'document_type_id' => $documentType->id,
+            'document_number' => '20000002',
+            'first_name' => 'Laura',
+            'first_surname' => 'Gómez',
+            'type' => 'Contratista',
+            'status_id' => $status->id,
+            'is_company' => false,
+        ];
+
+        $this->actingAs($user)
+            ->post(route('rh.colaboradores.store'), $datos)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('collaborators', [
+            'document_number' => '20000002',
+            'institution_id' => $institution->id,
+        ]);
+    });
+
+    it('employee-manager puede actualizar un colaborador', function (): void {
+        [$user, $institution] = crearContextoColaborador('employee-manager');
+        $colaborador = crearColaboradorEnInstitucion($institution);
+
+        $this->actingAs($user)
+            ->put(route('rh.colaboradores.update', $colaborador), [
+                'institution_id' => $institution->id,
+                'document_type_id' => $colaborador->document_type_id,
+                'document_number' => $colaborador->document_number,
+                'first_name' => 'NombreEditado',
+                'first_surname' => $colaborador->first_surname,
+                'type' => $colaborador->type,
+                'status_id' => $colaborador->status_id,
+                'is_company' => false,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('collaborators', [
+            'id' => $colaborador->id,
+            'first_name' => 'NombreEditado',
+        ]);
+    });
+
+    it('contractor-manager puede actualizar un colaborador contratista', function (): void {
+        [$user, $institution] = crearContextoColaborador('contractor-manager');
+
+        $documentType = \App\Models\RH\DocumentType::firstOrCreate(
+            ['institution_id' => $institution->id, 'code' => 'CC'],
+            ['name' => 'Cédula de Ciudadanía']
+        );
+        $status = \App\Models\RH\CollaboratorStatus::firstOrCreate(
+            ['institution_id' => $institution->id, 'name' => 'Activo'],
+            ['icon_class' => 'fa-regular fa-user-check']
+        );
+        $colaborador = \App\Models\RH\Collaborator::factory()->create([
+            'institution_id' => $institution->id,
+            'document_type_id' => $documentType->id,
+            'status_id' => $status->id,
+            'type' => 'Contratista',
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('rh.colaboradores.update', $colaborador), [
+                'institution_id' => $institution->id,
+                'document_type_id' => $colaborador->document_type_id,
+                'document_number' => $colaborador->document_number,
+                'first_name' => 'NombreEditadoCM',
+                'first_surname' => $colaborador->first_surname,
+                'type' => $colaborador->type,
+                'status_id' => $colaborador->status_id,
+                'is_company' => false,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('collaborators', [
+            'id' => $colaborador->id,
+            'first_name' => 'NombreEditadoCM',
+        ]);
+    });
+
+    it('employee-manager puede importar colaboradores', function (): void {
+        [$user] = crearContextoColaborador('employee-manager');
+
+        $policy = new \App\Policies\RH\CollaboratorPolicy;
+
+        expect($policy->import($user))->toBeTrue();
+    });
+
+    it('contractor-manager puede importar colaboradores', function (): void {
+        [$user] = crearContextoColaborador('contractor-manager');
+
+        $policy = new \App\Policies\RH\CollaboratorPolicy;
+
+        expect($policy->import($user))->toBeTrue();
+    });
 });

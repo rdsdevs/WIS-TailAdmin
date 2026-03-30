@@ -1,0 +1,1 @@
+../../components/profile/⚡change-password.blade.php

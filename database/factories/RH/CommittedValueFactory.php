@@ -21,7 +21,7 @@ class CommittedValueFactory extends Factory
             'contract_id' => Contract::factory(),
             'accounting_account' => $this->faker->numerify('####-##'),
             'cost_center' => $this->faker->numerify('CC-###'),
-            'committed_value' => $this->faker->numberBetween(1_000_000, 50_000_000),
+            'amount' => $this->faker->numberBetween(1_000_000, 50_000_000),
         ];
     }
 }

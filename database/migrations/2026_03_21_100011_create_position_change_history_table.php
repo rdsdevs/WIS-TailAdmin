@@ -10,13 +10,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('position_change_history', function (Blueprint $table): void {
+        Schema::create('position_change_histories', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('contract_id')->constrained('contracts')->cascadeOnDelete();
             $table->foreignUuid('previous_position_id')->nullable()->constrained('positions')->nullOnDelete();
             $table->foreignUuid('new_position_id')->constrained('positions')->restrictOnDelete();
+            $table->decimal('old_salary', 12, 2)->nullable();
             $table->decimal('new_salary', 12, 2);
-            $table->string('new_position_email', 100)->nullable();
+            $table->date('change_date')->nullable();
             $table->text('observations')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -25,6 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('position_change_history');
+        Schema::dropIfExists('position_change_histories');
     }
 };

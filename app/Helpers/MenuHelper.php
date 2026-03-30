@@ -1,123 +1,122 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 class MenuHelper
 {
     /**
      * Retorna los ítems de navegación del módulo de Recursos Humanos.
+     * Filtra las secciones según el rol del usuario autenticado.
+     *
+     * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Departamentos, Cargos)
+     * - rh-viewer                        : Colaboradores, Contratos (solo lectura)
      */
     public static function getRhNavItems(): array
     {
+        $user = auth()->user();
+        $rolesConAcceso = ['super-admin', 'admin', 'rh-manager', 'rh-viewer', 'contractor-manager', 'employee-manager'];
+        if (! $user || ! $user->hasAnyRole($rolesConAcceso)) {
+            return [];
+        }
+
+        $subItems = [
+            ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
+            ['name' => 'Contratos',     'path' => '/rh/contratos'],
+        ];
+
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager'])) {
+            $subItems[] = ['name' => 'Importar contratos', 'path' => '/rh/contratos/importar'];
+        }
+
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+            $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
+        }
+
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+            $subItems[] = ['name' => 'Departamentos', 'path' => '/rh/departamentos'];
+        }
+
         return [
             [
                 'icon' => 'rh',
                 'name' => 'Recursos Humanos',
-                'subItems' => [
-                    ['name' => 'Colaboradores', 'path' => '/rh/colaboradores'],
-                    ['name' => 'Contratos',     'path' => '/rh/contratos'],
-                    ['name' => 'Departamentos', 'path' => '/rh/departamentos'],
-                    ['name' => 'Cargos',        'path' => '/rh/cargos'],
-                ],
+                'subItems' => $subItems,
             ],
         ];
     }
 
-    public static function getMainNavItems()
+    public static function getMainNavItems(): array
     {
         return [
+            ['icon' => 'dashboard', 'name' => 'Dashboard', 'path' => '/dashboard'],
+            ['icon' => 'user-profile', 'name' => 'Mi perfil', 'path' => '/profile'],
+        ];
+    }
+
+    public static function getOthersItems(): array
+    {
+        return [];
+    }
+
+    public static function getAdminNavItems(): array
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->hasAnyRole(['super-admin', 'admin'])) {
+            return [];
+        }
+
+        return [
             [
-                'icon' => 'dashboard',
-                'name' => 'Dashboard',
-                'subItems' => [
-                    ['name' => 'Ecommerce', 'path' => '/'],
-                ],
-            ],
-            [
-                'icon' => 'calendar',
-                'name' => 'Calendar',
-                'path' => '/calendar',
-            ],
-            [
-                'icon' => 'user-profile',
-                'name' => 'User Profile',
-                'path' => '/profile',
-            ],
-            [
-                'name' => 'Forms',
-                'icon' => 'forms',
-                'subItems' => [
-                    ['name' => 'Form Elements', 'path' => '/form-elements', 'pro' => false],
-                ],
-            ],
-            [
-                'name' => 'Tables',
-                'icon' => 'tables',
-                'subItems' => [
-                    ['name' => 'Basic Tables', 'path' => '/basic-tables', 'pro' => false],
-                ],
-            ],
-            [
-                'name' => 'Pages',
-                'icon' => 'pages',
-                'subItems' => [
-                    ['name' => 'Blank Page', 'path' => '/blank', 'pro' => false],
-                    ['name' => '404 Error', 'path' => '/error-404', 'pro' => false],
-                ],
+                'icon' => 'users',
+                'name' => 'Usuarios',
+                'path' => '/admin/usuarios',
             ],
         ];
     }
 
-    public static function getOthersItems()
+    public static function getCertificadosNavItems(): array
     {
+        $user = auth()->user();
+
+        if (! $user) {
+            return [];
+        }
+
+        $rolesConAcceso = ['super-admin', 'admin', 'rh-manager', 'employee-manager', 'contractor-manager'];
+
+        if (! $user->hasAnyRole($rolesConAcceso)) {
+            return [];
+        }
+
+        $subItems = [
+            ['name' => 'Historial', 'path' => '/certificados'],
+        ];
+
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
+            $subItems[] = ['name' => 'Firmas digitales', 'path' => '/certificados/firmas'];
+        }
+
         return [
             [
-                'icon' => 'charts',
-                'name' => 'Charts',
-                'subItems' => [
-                    ['name' => 'Line Chart', 'path' => '/line-chart', 'pro' => false],
-                    ['name' => 'Bar Chart', 'path' => '/bar-chart', 'pro' => false],
-                ],
-            ],
-            [
-                'icon' => 'ui-elements',
-                'name' => 'UI Elements',
-                'subItems' => [
-                    ['name' => 'Alerts', 'path' => '/alerts', 'pro' => false],
-                    ['name' => 'Avatar', 'path' => '/avatars', 'pro' => false],
-                    ['name' => 'Badge', 'path' => '/badge', 'pro' => false],
-                    ['name' => 'Buttons', 'path' => '/buttons', 'pro' => false],
-                    ['name' => 'Images', 'path' => '/image', 'pro' => false],
-                    ['name' => 'Videos', 'path' => '/videos', 'pro' => false],
-                ],
-            ],
-            [
-                'icon' => 'authentication',
-                'name' => 'Authentication',
-                'subItems' => [
-                    ['name' => 'Sign In', 'path' => '/signin', 'pro' => false],
-                    ['name' => 'Sign Up', 'path' => '/signup', 'pro' => false],
-                ],
+                'icon' => 'certificate',
+                'name' => 'Certificados',
+                'subItems' => $subItems,
             ],
         ];
     }
 
-    public static function getMenuGroups()
+    public static function getMenuGroups(): array
     {
-        return [
-            [
-                'title' => 'Menu',
-                'items' => self::getMainNavItems(),
-            ],
-            [
-                'title' => 'Recursos Humanos',
-                'items' => self::getRhNavItems(),
-            ],
-            [
-                'title' => 'Others',
-                'items' => self::getOthersItems(),
-            ],
+        $groups = [
+            ['title' => 'Menú',             'items' => self::getMainNavItems()],
+            ['title' => 'Recursos Humanos', 'items' => self::getRhNavItems()],
+            ['title' => 'Certificados',     'items' => self::getCertificadosNavItems()],
+            ['title' => 'Administración',   'items' => self::getAdminNavItems()],
         ];
+
+        return array_values(array_filter($groups, fn ($g) => ! empty($g['items'])));
     }
 
     public static function isActive($path)
@@ -129,6 +128,8 @@ class MenuHelper
     {
         $icons = [
             'rh' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7ZM12 4.5C10.6193 4.5 9.5 5.61929 9.5 7C9.5 8.38071 10.6193 9.5 12 9.5C13.3807 9.5 14.5 8.38071 14.5 7C14.5 5.61929 13.3807 4.5 12 4.5ZM5.25 19.5C5.25 16.3244 7.82436 13.75 11 13.75H13C16.1756 13.75 18.75 16.3244 18.75 19.5C18.75 19.9142 18.4142 20.25 18 20.25C17.5858 20.25 17.25 19.9142 17.25 19.5C17.25 17.1528 15.3472 15.25 13 15.25H11C8.65279 15.25 6.75 17.1528 6.75 19.5C6.75 19.9142 6.41421 20.25 6 20.25C5.58579 20.25 5.25 19.9142 5.25 19.5Z" fill="currentColor"></path></svg>',
+
+            'certificate' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.5 3.25C5.25736 3.25 4.25 4.25736 4.25 5.5V18.5C4.25 19.7426 5.25736 20.75 6.5 20.75H17.5C18.7426 20.75 19.75 19.7426 19.75 18.5V5.5C19.75 4.25736 18.7426 3.25 17.5 3.25H6.5ZM5.75 5.5C5.75 5.08579 6.08579 4.75 6.5 4.75H17.5C17.9142 4.75 18.25 5.08579 18.25 5.5V18.5C18.25 18.9142 17.9142 19.25 17.5 19.25H6.5C6.08579 19.25 5.75 18.9142 5.75 18.5V5.5ZM8 8.75C8 8.33579 8.33579 8 8.75 8H15.25C15.6642 8 16 8.33579 16 8.75C16 9.16421 15.6642 9.5 15.25 9.5H8.75C8.33579 9.5 8 9.16421 8 8.75ZM8 12C8 11.5858 8.33579 11.25 8.75 11.25H15.25C15.6642 11.25 16 11.5858 16 12C16 12.4142 15.6642 12.75 15.25 12.75H8.75C8.33579 12.75 8 12.4142 8 12ZM8.75 14.5C8.33579 14.5 8 14.8358 8 15.25C8 15.6642 8.33579 16 8.75 16H12.25C12.6642 16 13 15.6642 13 15.25C13 14.8358 12.6642 14.5 12.25 14.5H8.75Z" fill="currentColor"></path></svg>',
 
             'dashboard' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.5 3.25C4.25736 3.25 3.25 4.25736 3.25 5.5V8.99998C3.25 10.2426 4.25736 11.25 5.5 11.25H9C10.2426 11.25 11.25 10.2426 11.25 8.99998V5.5C11.25 4.25736 10.2426 3.25 9 3.25H5.5ZM4.75 5.5C4.75 5.08579 5.08579 4.75 5.5 4.75H9C9.41421 4.75 9.75 5.08579 9.75 5.5V8.99998C9.75 9.41419 9.41421 9.74998 9 9.74998H5.5C5.08579 9.74998 4.75 9.41419 4.75 8.99998V5.5ZM5.5 12.75C4.25736 12.75 3.25 13.7574 3.25 15V18.5C3.25 19.7426 4.25736 20.75 5.5 20.75H9C10.2426 20.75 11.25 19.7427 11.25 18.5V15C11.25 13.7574 10.2426 12.75 9 12.75H5.5ZM4.75 15C4.75 14.5858 5.08579 14.25 5.5 14.25H9C9.41421 14.25 9.75 14.5858 9.75 15V18.5C9.75 18.9142 9.41421 19.25 9 19.25H5.5C5.08579 19.25 4.75 18.9142 4.75 18.5V15ZM12.75 5.5C12.75 4.25736 13.7574 3.25 15 3.25H18.5C19.7426 3.25 20.75 4.25736 20.75 5.5V8.99998C20.75 10.2426 19.7426 11.25 18.5 11.25H15C13.7574 11.25 12.75 10.2426 12.75 8.99998V5.5ZM15 4.75C14.5858 4.75 14.25 5.08579 14.25 5.5V8.99998C14.25 9.41419 14.5858 9.74998 15 9.74998H18.5C18.9142 9.74998 19.25 9.41419 19.25 8.99998V5.5C19.25 5.08579 18.9142 4.75 18.5 4.75H15ZM15 12.75C13.7574 12.75 12.75 13.7574 12.75 15V18.5C12.75 19.7426 13.7574 20.75 15 20.75H18.5C19.7426 20.75 20.75 19.7427 20.75 18.5V15C20.75 13.7574 19.7426 12.75 18.5 12.75H15ZM14.25 15C14.25 14.5858 14.5858 14.25 15 14.25H18.5C18.9142 14.25 19.25 14.5858 19.25 15V18.5C19.25 18.9142 18.9142 19.25 18.5 19.25H15C14.5858 19.25 14.25 18.9142 14.25 18.5V15Z" fill="currentColor"></path></svg>',
 
@@ -159,8 +160,30 @@ class MenuHelper
             'support-ticket' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 17.0518V12C20 7.58174 16.4183 4 12 4C7.58168 4 3.99994 7.58174 3.99994 12V17.0518M19.9998 14.041V19.75C19.9998 20.5784 19.3282 21.25 18.4998 21.25H13.9998M6.5 18.75H5.5C4.67157 18.75 4 18.0784 4 17.25V13.75C4 12.9216 4.67157 12.25 5.5 12.25H6.5C7.32843 12.25 8 12.9216 8 13.75V17.25C8 18.0784 7.32843 18.75 6.5 18.75ZM17.4999 18.75H18.4999C19.3284 18.75 19.9999 18.0784 19.9999 17.25V13.75C19.9999 12.9216 19.3284 12.25 18.4999 12.25H17.4999C16.6715 12.25 15.9999 12.9216 15.9999 13.75V17.25C15.9999 18.0784 16.6715 18.75 17.4999 18.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
 
             'email' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.5 8.187V17.25C3.5 17.6642 3.83579 18 4.25 18H19.75C20.1642 18 20.5 17.6642 20.5 17.25V8.18747L13.2873 13.2171C12.5141 13.7563 11.4866 13.7563 10.7134 13.2171L3.5 8.187ZM20.5 6.2286C20.5 6.23039 20.5 6.23218 20.5 6.23398V6.24336C20.4976 6.31753 20.4604 6.38643 20.3992 6.42905L12.4293 11.9867C12.1716 12.1664 11.8291 12.1664 11.5713 11.9867L3.60116 6.42885C3.538 6.38481 3.50035 6.31268 3.50032 6.23568C3.50028 6.10553 3.60577 6 3.73592 6H20.2644C20.3922 6 20.4963 6.10171 20.5 6.2286ZM22 6.25648V17.25C22 18.4926 20.9926 19.5 19.75 19.5H4.25C3.00736 19.5 2 18.4926 2 17.25V6.23398C2 6.22371 2.00021 6.2135 2.00061 6.20333C2.01781 5.25971 2.78812 4.5 3.73592 4.5H20.2644C21.2229 4.5 22 5.27697 22.0001 6.23549C22.0001 6.24249 22.0001 6.24949 22 6.25648Z" fill="currentColor"></path></svg>',
+
+            'users' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 7C8.5 5.067 10.067 3.5 12 3.5C13.933 3.5 15.5 5.067 15.5 7C15.5 8.933 13.933 10.5 12 10.5C10.067 10.5 8.5 8.933 8.5 7ZM12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2ZM4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 17.7909 16.2091 16 14 16H10C7.79086 16 6 17.7909 6 20C6 20.5523 5.55228 21 5 21C4.44772 21 4 20.5523 4 20Z" fill="currentColor"/></svg>',
         ];
 
         return $icons[$iconName] ?? '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/></svg>';
+    }
+
+    /**
+     * Traduce el nombre técnico de un rol a su etiqueta en español.
+     */
+    public static function rolLabel(string $role): string
+    {
+        return match ($role) {
+            'super-admin' => 'Super Administrador',
+            'admin' => 'Administrador',
+            'rh-manager' => 'Gestor de RH',
+            'rh-viewer' => 'Consultor de RH',
+            'accounting-manager' => 'Gestor de Contabilidad',
+            'accounting-viewer' => 'Consultor de Contabilidad',
+            'inventory-manager' => 'Gestor de Inventario',
+            'inventory-viewer' => 'Consultor de Inventario',
+            'contractor-manager' => 'Gestor de Contratistas',
+            'employee-manager' => 'Gestor de Empleados',
+            default => ucwords(str_replace('-', ' ', $role)),
+        };
     }
 }

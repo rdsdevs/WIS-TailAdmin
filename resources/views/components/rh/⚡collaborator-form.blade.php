@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Livewire\Component;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
@@ -34,18 +36,30 @@ new class extends Component {
     public string $phone   = '';
     public string $address = '';
 
+    // ── Sección: perfil empleado (nómina) ─────────────────────────────────────
+    public string $eps                     = '';
+    public string $pensionFund             = '';
+    public string $arl                     = '';
+    public string $compensationFund        = '';
+    public string $severanceFund           = '';
+    public string $bloodType               = '';
+    public string $emergencyContactName    = '';
+    public string $emergencyContactPhone   = '';
+    public string $backgroundCheckVerifiedAt = '';
+
     // ── Sección: estado ───────────────────────────────────────────────────────
     public string $statusId = '';
 
     // ── Paso del formulario ───────────────────────────────────────────────────
-    public int $step = 1; // 1: Tipo | 2: Datos personales | 3: Contacto
+    public int  $step                   = 1; // 1: Tipo | 2: Datos | 3: Seg. Social | 4: Contacto
+    public bool $employeeProfileEnabled = false;
 
     public function mount(?string $collaboratorId = null): void
     {
         $this->collaboratorId = $collaboratorId;
 
         if ($collaboratorId) {
-            $c = Collaborator::findOrFail($collaboratorId);
+            $c = Collaborator::with('employeeProfile')->findOrFail($collaboratorId);
 
             $this->type              = $c->type ?? 'Empleado';
             $this->isCompany         = (bool) $c->is_company;
@@ -64,6 +78,19 @@ new class extends Component {
             $this->phone             = $c->phone ?? '';
             $this->address           = $c->address ?? '';
             $this->statusId          = (string) ($c->status_id ?? '');
+
+            if ($c->employeeProfile) {
+                $this->eps                       = $c->employeeProfile->eps ?? '';
+                $this->pensionFund               = $c->employeeProfile->pension_fund ?? '';
+                $this->arl                       = $c->employeeProfile->arl ?? '';
+                $this->compensationFund          = $c->employeeProfile->compensation_fund ?? '';
+                $this->severanceFund             = $c->employeeProfile->severance_fund ?? '';
+                $this->bloodType                 = $c->employeeProfile->blood_type ?? '';
+                $this->emergencyContactName      = $c->employeeProfile->emergency_contact_name ?? '';
+                $this->emergencyContactPhone     = $c->employeeProfile->emergency_contact_phone ?? '';
+                $this->backgroundCheckVerifiedAt = $c->employeeProfile->background_check_verified_at?->format('Y-m-d') ?? '';
+                $this->employeeProfileEnabled    = true;
+            }
         }
     }
 
@@ -75,11 +102,23 @@ new class extends Component {
             'email'    => 'nullable|email|max:200',
             'phone'    => 'nullable|string|max:50',
             'address'  => 'nullable|string|max:300',
+
+            // Reglas opcionales para perfil de empleado
+            'eps'                     => 'nullable|string|max:100',
+            'pensionFund'             => 'nullable|string|max:100',
+            'arl'                     => 'nullable|string|max:100',
+            'compensationFund'        => 'nullable|string|max:100',
+            'severanceFund'           => 'nullable|string|max:100',
+            'bloodType'               => 'nullable|string|max:5',
+            'emergencyContactName'    => 'nullable|string|max:150',
+            'emergencyContactPhone'   => 'nullable|string|max:30',
+            'backgroundCheckVerifiedAt' => 'nullable|date',
         ];
 
         if ($this->isCompany) {
             $rules['companyName']         = 'required|string|max:200';
             $rules['legalRepresentative'] = 'nullable|string|max:200';
+            $rules['documentNumber']      = 'nullable|string|max:20';
         } else {
             $rules['documentTypeId']   = 'required|uuid';
             $rules['documentNumber']   = 'required|string|min:6|max:20';
@@ -115,26 +154,56 @@ new class extends Component {
         // Limpiar campos mutuamente excluyentes al cambiar el toggle
     }
 
+    public function updatedType(): void
+    {
+        if ($this->type === 'Contratista') {
+            $this->step                      = 1;
+            $this->employeeProfileEnabled    = false;
+            $this->eps                       = '';
+            $this->pensionFund               = '';
+            $this->arl                       = '';
+            $this->compensationFund          = '';
+            $this->severanceFund             = '';
+            $this->bloodType                 = '';
+            $this->emergencyContactName      = '';
+            $this->emergencyContactPhone     = '';
+            $this->backgroundCheckVerifiedAt = '';
+        }
+    }
+
     public function save(): void
     {
         $this->validate();
 
         $data = [
-            'type'       => $this->type,
-            'is_company' => $this->isCompany,
-            'status_id'  => $this->statusId,
-            'email'      => $this->email ?: null,
-            'phone'      => $this->phone ?: null,
-            'address'    => $this->address ?: null,
+            'institution_id' => auth()->user()->institution_id,
+            'type'           => $this->type,
+            'is_company'     => $this->isCompany,
+            'status_id'      => $this->statusId,
+            'email'          => $this->email ?: null,
+            'phone'          => $this->phone ?: null,
+            'address'        => $this->address ?: null,
+        ];
+
+        $employeeProfileData = [
+            'eps'                     => $this->eps ?: null,
+            'pension_fund'             => $this->pensionFund ?: null,
+            'arl'                     => $this->arl ?: null,
+            'compensation_fund'        => $this->compensationFund ?: null,
+            'severance_fund'           => $this->severanceFund ?: null,
+            'blood_type'               => $this->bloodType ?: null,
+            'emergency_contact_name'    => $this->emergencyContactName ?: null,
+            'emergency_contact_phone'   => $this->emergencyContactPhone ?: null,
+            'background_check_verified_at' => $this->backgroundCheckVerifiedAt ?: null,
         ];
 
         if ($this->isCompany) {
             $data['company_name']         = $this->companyName;
             $data['legal_representative'] = $this->legalRepresentative ?: null;
-            // Limpiar campos personales
-            $data['first_name']     = null;
-            $data['first_surname']  = null;
-            $data['document_number'] = null;
+            $data['document_number']      = $this->documentNumber ?: null;
+            $data['document_type_id']     = \App\Models\RH\DocumentType::where('code', 'NIT')->value('id');
+            $data['first_name']           = null;
+            $data['first_surname']        = null;
         } else {
             $data['document_type_id']   = $this->documentTypeId;
             $data['document_number']    = $this->documentNumber;
@@ -148,15 +217,32 @@ new class extends Component {
         }
 
         if ($this->collaboratorId) {
-            $this->authorize('update', Collaborator::findOrFail($this->collaboratorId));
-            Collaborator::findOrFail($this->collaboratorId)->update($data);
+            $collaborator = Collaborator::findOrFail($this->collaboratorId);
+            $this->authorize('update', $collaborator);
+
+            $collaborator->update($data);
+
+            if ($this->type === 'Empleado' && $this->employeeProfileEnabled) {
+                $collaborator->employeeProfile()->updateOrCreate(
+                    ['collaborator_id' => $collaborator->id],
+                    $employeeProfileData
+                );
+            } elseif ($this->type === 'Contratista') {
+                $collaborator->employeeProfile()->delete();
+            }
+
             session()->flash('success', 'Colaborador actualizado correctamente.');
-            $this->redirect(route('rh.colaboradores.show', $this->collaboratorId), navigate: true);
+            $this->redirect(route('rh.colaboradores.show', $this->collaboratorId), navigate: false);
         } else {
             $this->authorize('create', Collaborator::class);
             $collaborator = Collaborator::create($data);
+
+            if ($this->type === 'Empleado' && $this->employeeProfileEnabled) {
+                $collaborator->employeeProfile()->create($employeeProfileData);
+            }
+
             session()->flash('success', 'Colaborador registrado correctamente.');
-            $this->redirect(route('rh.colaboradores.show', $collaborator->id), navigate: true);
+            $this->redirect(route('rh.colaboradores.show', $collaborator->id), navigate: false);
         }
     }
 
@@ -174,13 +260,23 @@ new class extends Component {
 
 <div class="mx-auto max-w-2xl">
     {{-- Indicador de pasos --}}
+    @php
+        $stepItems = [1 => 'Tipo', 2 => 'Datos'];
+        if ($type === 'Empleado') {
+            $stepItems[3] = 'Seguridad Social';
+        }
+        $stepItems[4] = 'Contacto';
+        $lastStepKey  = array_key_last($stepItems);
+        $displayNum   = 0;
+    @endphp
     <div class="mb-8 flex items-center justify-between">
-        @foreach([1 => 'Tipo', 2 => 'Datos', 3 => 'Contacto'] as $n => $label)
-            <div class="flex flex-1 items-center {{ $n < 3 ? 'after:h-px after:flex-1 after:bg-gray-200 dark:after:bg-gray-700' : '' }}">
+        @foreach($stepItems as $n => $label)
+            @php $displayNum++ @endphp
+            <div class="flex flex-1 items-center {{ $n !== $lastStepKey ? 'after:h-px after:flex-1 after:bg-gray-200 dark:after:bg-gray-700' : '' }}">
                 <button
                     wire:click="$set('step', {{ $n }})"
                     class="flex items-center gap-2 focus:outline-none"
-                    aria-label="Ir al paso {{ $n }}: {{ $label }}">
+                    aria-label="Ir al paso {{ $displayNum }}: {{ $label }}">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
                         {{ $step === $n
                             ? 'bg-blue-600 text-white'
@@ -190,7 +286,7 @@ new class extends Component {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                             </svg>
                         @else
-                            {{ $n }}
+                            {{ $displayNum }}
                         @endif
                     </span>
                     <span class="hidden text-xs font-medium sm:block
@@ -384,12 +480,41 @@ new class extends Component {
                         <label for="documentIssuedAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Fecha de expedición del documento
                         </label>
-                        <input
-                            wire:model="documentIssuedAt"
-                            id="documentIssuedAt"
-                            type="date"
-                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:scheme-dark"
-                        />
+                        <div x-data="{
+                            init() {
+                                flatpickr(this.$refs.fp, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: '{{ $this->documentIssuedAt }}' || null,
+                                    locale: {
+                                        firstDayOfWeek: 1,
+                                        weekdays: {
+                                            shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                            longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                        },
+                                        months: {
+                                            shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                            longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                        }
+                                    },
+                                    onChange(dates, dateStr) {
+                                        $wire.set('documentIssuedAt', dateStr);
+                                    }
+                                });
+                            }
+                        }">
+                            <input
+                                x-ref="fp"
+                                wire:model="documentIssuedAt"
+                                type="text"
+                                id="documentIssuedAt"
+                                placeholder="dd/mm/aaaa"
+                                class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                autocomplete="off"
+                                readonly
+                            />
+                        </div>
                     </div>
 
                     {{-- Nombres --}}
@@ -462,12 +587,41 @@ new class extends Component {
                             <label for="birthDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Fecha de nacimiento
                             </label>
-                            <input
-                                wire:model="birthDate"
-                                id="birthDate"
-                                type="date"
-                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                            />
+                            <div x-data="{
+                                init() {
+                                    flatpickr(this.$refs.fp, {
+                                        dateFormat: 'Y-m-d',
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        defaultDate: '{{ $this->birthDate }}' || null,
+                                        locale: {
+                                            firstDayOfWeek: 1,
+                                            weekdays: {
+                                                shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+                                                longhand: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                                            },
+                                            months: {
+                                                shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                                                longhand: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                                            }
+                                        },
+                                        onChange(dates, dateStr) {
+                                            $wire.set('birthDate', dateStr);
+                                        }
+                                    });
+                                }
+                            }">
+                                <input
+                                    x-ref="fp"
+                                    wire:model="birthDate"
+                                    type="text"
+                                    id="birthDate"
+                                    placeholder="dd/mm/aaaa"
+                                    class="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-900 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                                    autocomplete="off"
+                                    readonly
+                                />
+                            </div>
                         </div>
                         <div>
                             <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -496,7 +650,7 @@ new class extends Component {
                     </svg>
                     Anterior
                 </button>
-                <button type="button" wire:click="$set('step', 3)"
+                <button type="button" wire:click="$set('step', {{ $type === 'Empleado' ? 3 : 4 }})"
                     class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Siguiente
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -506,8 +660,106 @@ new class extends Component {
             </div>
         @endif
 
-        {{-- PASO 3: Contacto y estado --}}
-        @if($step === 3)
+        {{-- PASO 3: Seguridad Social (solo Empleados) --}}
+        @if($step === 3 && $type === 'Empleado')
+            <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Seguridad Social y Salud</h2>
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Información prestacional y de emergencia del empleado.</p>
+
+            {{-- Toggle para habilitar campos --}}
+            <div class="mb-6 flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-900/10">
+                <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Registrar información de seguridad social</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Active para ingresar EPS, pensión, ARL y demás datos prestacionales.</p>
+                </div>
+                <button
+                    type="button"
+                    wire:click="$toggle('employeeProfileEnabled')"
+                    role="switch"
+                    aria-checked="{{ $employeeProfileEnabled ? 'true' : 'false' }}"
+                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
+                        {{ $employeeProfileEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600' }}">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform
+                        {{ $employeeProfileEnabled ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                </button>
+            </div>
+
+            <fieldset class="space-y-4 transition-opacity {{ !$employeeProfileEnabled ? 'pointer-events-none opacity-50 select-none' : '' }}"
+                      @if(!$employeeProfileEnabled) disabled @endif>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="eps" class="block text-sm font-medium text-gray-700 dark:text-gray-300">EPS</label>
+                        <input wire:model.blur="eps" id="eps" type="text" placeholder="Ej: Sanitas"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                        <label for="pensionFund" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fondo de Pensión</label>
+                        <input wire:model.blur="pensionFund" id="pensionFund" type="text" placeholder="Ej: Porvenir"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="arl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ARL</label>
+                        <input wire:model.blur="arl" id="arl" type="text" placeholder="Ej: Sura"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                        <label for="compensationFund" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Caja de Compensación</label>
+                        <input wire:model.blur="compensationFund" id="compensationFund" type="text" placeholder="Ej: Compensar"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="bloodType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo Sanguíneo</label>
+                        <select wire:model="bloodType" id="bloodType"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            <option value="">Seleccione...</option>
+                            @foreach(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as $bt)
+                                <option value="{{ $bt }}">{{ $bt }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="backgroundCheckVerifiedAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Verificación Ley 1918</label>
+                        <input wire:model="backgroundCheckVerifiedAt" id="backgroundCheckVerifiedAt" type="date"
+                            class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contacto de Emergencia</h3>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="emergencyContactName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                            <input wire:model.blur="emergencyContactName" id="emergencyContactName" type="text"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label for="emergencyContactPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+                            <input wire:model.blur="emergencyContactPhone" id="emergencyContactPhone" type="text"
+                                class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="mt-6 flex justify-between">
+                <button type="button" wire:click="$set('step', 2)"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    Anterior
+                </button>
+                <button type="button" wire:click="$set('step', 4)"
+                    class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Siguiente
+                </button>
+            </div>
+        @endif
+
+        {{-- PASO 4: Contacto y estado --}}
+        @if($step === 4)
             <h2 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Datos de contacto y estado</h2>
             <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Información de contacto y estado del colaborador en el sistema.</p>
 
@@ -575,7 +827,7 @@ new class extends Component {
             </div>
 
             <div class="mt-6 flex justify-between">
-                <button type="button" wire:click="$set('step', 2)"
+                <button type="button" wire:click="$set('step', {{ $type === 'Empleado' ? 3 : 2 }})"
                     class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />

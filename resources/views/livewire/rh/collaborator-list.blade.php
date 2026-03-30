@@ -1,0 +1,1 @@
+../../components/rh/⚡collaborator-list.blade.php

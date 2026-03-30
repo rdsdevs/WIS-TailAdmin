@@ -1,201 +1,432 @@
 @extends('layouts.fullscreen-layout')
 
 @section('content')
-    <div class="relative z-1 bg-white p-6 sm:p-0 dark:bg-gray-900">
-        <div class="relative flex h-screen w-full flex-col justify-center sm:p-0 lg:flex-row dark:bg-gray-900">
+<style>
+    /* Ajustes específicos para el datepicker en el login para que el icono quede a la izquierda */
+    .login-datepicker .relative span[x-ref="calIcon"] {
+        left: 1rem !important;
+        right: auto !important;
+    }
+    .login-datepicker input {
+        padding-left: 2.75rem !important;
+    }
 
-            {{-- Formulario --}}
-            <div class="flex w-full flex-1 flex-col lg:w-1/2">
-                <div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-                    <div>
-                        {{-- Encabezado --}}
-                        <div class="mb-5 sm:mb-8">
-                            <h1 class="text-title-sm sm:text-title-md mb-2 font-semibold text-gray-800 dark:text-white/90">
-                                Iniciar sesión
-                            </h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Ingrese su número de cédula, fecha de expedición y contraseña para acceder al sistema.
-                            </p>
-                        </div>
+    /* Animaciones círculos decorativos */
+    @keyframes deco-pulse {
+        0%, 100% { transform: scale(1);   opacity: 0.9; }
+        50%       { transform: scale(1.08); opacity: 1; }
+    }
+    .deco-circle      { animation: deco-pulse 8s ease-in-out infinite; }
+    .deco-circle-slow { animation: deco-pulse 12s ease-in-out infinite reverse; }
+</style>
 
-                        {{-- Alerta de error general --}}
-                        @if ($errors->any() && ! $errors->has('document_number') && ! $errors->has('document_issued_at') && ! $errors->has('password'))
-                            <div class="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                                {{ $errors->first() }}
-                            </div>
-                        @endif
+<div class="flex min-h-screen flex-col font-sans antialiased">
 
-                        @if (session('error'))
-                            <div class="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                                {{ session('error') }}
-                            </div>
-                        @endif
+    {{-- Contenido principal: split-screen con fondo único --}}
+    <div class="branding-gradient relative flex flex-1 flex-col overflow-hidden lg:flex-row">
 
-                        <form method="POST" action="{{ route('login') }}">
-                            @csrf
+        {{-- Círculos decorativos globales --}}
+        <div class="deco-circle pointer-events-none absolute -left-20 -top-20
+                    h-80 w-80 rounded-full" style="background:rgba(255,255,255,0.18)"></div>
+        <div class="deco-circle-slow pointer-events-none absolute left-1/4 top-10
+                    h-56 w-56 rounded-full" style="background:rgba(255,255,255,0.08)"></div>
+        <div class="deco-circle pointer-events-none absolute -left-16 top-1/2 -translate-y-1/2
+                    h-40 w-40 rounded-full" style="background:rgba(255,255,255,0.07)"></div>
+        <div class="deco-circle-slow pointer-events-none absolute -bottom-16 left-10
+                    h-72 w-72 rounded-full" style="background:rgba(255,255,255,0.15)"></div>
+        <div class="deco-circle pointer-events-none absolute -right-16 -top-16
+                    h-64 w-64 rounded-full" style="background:rgba(255,255,255,0.12)"></div>
+        <div class="deco-circle-slow pointer-events-none absolute -bottom-20 right-8
+                    h-60 w-60 rounded-full" style="background:rgba(255,255,255,0.10)"></div>
 
-                            <div class="space-y-5">
+        {{-- ================================================
+             PANEL IZQUIERDO — Formulario
+        ================================================ --}}
+        <div class="relative flex w-full flex-1 items-center justify-center p-6
+                    lg:w-1/2 xl:w-7/12">
 
-                                {{-- Número de cédula --}}
-                                <div>
-                                    <label for="document_number"
-                                        class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Número de cédula <span class="text-error-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="document_number"
-                                        name="document_number"
-                                        value="{{ old('document_number') }}"
-                                        placeholder="Ej: 12345678"
-                                        autocomplete="username"
-                                        class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 {{ $errors->has('document_number') ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-700' }}"
-                                    />
-                                    @error('document_number')
-                                        <p class="mt-1.5 text-xs text-red-500 dark:text-red-400">{{ $message }}</p>
-                                    @enderror
-                                </div>
+            {{-- Card blanca del formulario --}}
+            <div class="card-shadow w-full max-w-md rounded-2xl bg-white px-8 py-10 sm:px-10 sm:py-12">
 
-                                {{-- Fecha de expedición del documento --}}
-                                <div>
-                                    <label for="document_issued_at"
-                                        class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Fecha de expedición del documento <span class="text-error-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        id="document_issued_at"
-                                        name="document_issued_at"
-                                        value="{{ old('document_issued_at') }}"
-                                        max="{{ now()->toDateString() }}"
-                                        class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 {{ $errors->has('document_issued_at') ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-700' }}"
-                                    />
-                                    @error('document_issued_at')
-                                        <p class="mt-1.5 text-xs text-red-500 dark:text-red-400">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                {{-- Contraseña --}}
-                                <div>
-                                    <label for="password"
-                                        class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Contraseña <span class="text-error-500">*</span>
-                                    </label>
-                                    <div x-data="{ mostrarContrasena: false }" class="relative">
-                                        <input
-                                            :type="mostrarContrasena ? 'text' : 'password'"
-                                            id="password"
-                                            name="password"
-                                            placeholder="Ingrese su contraseña"
-                                            autocomplete="current-password"
-                                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border py-2.5 pr-11 pl-4 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 {{ $errors->has('password') ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-700' }}"
-                                        />
-                                        <span
-                                            @click="mostrarContrasena = !mostrarContrasena"
-                                            class="absolute top-1/2 right-4 z-30 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400"
-                                            :title="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-                                        >
-                                            {{-- Icono ojo abierto --}}
-                                            <svg x-show="!mostrarContrasena" class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z" fill="#98A2B3" />
-                                            </svg>
-                                            {{-- Icono ojo cerrado --}}
-                                            <svg x-show="mostrarContrasena" class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z" fill="#98A2B3" />
-                                            </svg>
-                                        </span>
-                                    </div>
-                                    @error('password')
-                                        <p class="mt-1.5 text-xs text-red-500 dark:text-red-400">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                {{-- Recordarme --}}
-                                <div class="flex items-center justify-between">
-                                    <div x-data="{ recordarme: false }">
-                                        <label for="remember"
-                                            class="flex cursor-pointer items-center text-sm font-normal text-gray-700 select-none dark:text-gray-400">
-                                            <div class="relative">
-                                                <input
-                                                    type="checkbox"
-                                                    id="remember"
-                                                    name="remember"
-                                                    class="sr-only"
-                                                    @change="recordarme = !recordarme"
-                                                />
-                                                <div
-                                                    :class="recordarme ? 'border-brand-500 bg-brand-500' : 'bg-transparent border-gray-300 dark:border-gray-700'"
-                                                    class="mr-3 flex h-5 w-5 items-center justify-center rounded-md border-[1.25px]"
-                                                >
-                                                    <span :class="recordarme ? '' : 'opacity-0'">
-                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="white" stroke-width="1.94437" stroke-linecap="round" stroke-linejoin="round" />
-                                                        </svg>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            Mantener sesión iniciada
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {{-- Botón de envío --}}
-                                <div>
-                                    <button
-                                        type="submit"
-                                        class="bg-brand-500 shadow-theme-xs hover:bg-brand-600 flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-medium text-white transition">
-                                        Ingresar al sistema
-                                    </button>
-                                </div>
-
-                            </div>
-                        </form>
-
-                        {{-- Pie del formulario --}}
-                        <div class="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">
-                            <p class="text-center text-xs text-gray-500 dark:text-gray-400">
-                                Sistema de Gestión Integral &mdash; ASCUN
-                            </p>
-                        </div>
-
+                {{-- Encabezado de la card --}}
+                <div class="mb-8 text-center">
+                    <div class="mx-auto mb-4 flex justify-center">
+                        <img src="{{ asset('images/brand/w.svg') }}" alt="WIS" class="h-14 w-14 object-contain" />
                     </div>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-[#161950]">
+                        ¡Bienvenid@!
+                    </h1>
+                    <p class="mt-1.5 text-sm text-gray-500">
+                        Ingresa tus credenciales para acceder al sistema
+                    </p>
                 </div>
-            </div>
 
-            {{-- Panel lateral derecho --}}
-            <div class="bg-brand-950 relative hidden h-full w-full items-center lg:grid lg:w-1/2 dark:bg-white/5">
-                <div class="z-1 flex items-center justify-center">
-                    <x-common.common-grid-shape/>
-                    <div class="flex max-w-xs flex-col items-center">
-                        <a href="{{ route('login') }}" class="mb-6 block">
-                            <img src="/images/logo/auth-logo.svg" alt="Logo WIS ASCUN" />
-                        </a>
-                        <h2 class="mb-2 text-center text-lg font-semibold text-white">
-                            WIS ASCUN
-                        </h2>
-                        <p class="text-center text-sm text-gray-400 dark:text-white/60">
-                            Sistema de gestión integral para la Asociación Colombiana de Universidades.
-                        </p>
-                    </div>
-                </div>
-            </div>
+                {{-- Alerta de error general --}}
+                @if ($errors->any() && !$errors->has('document_number') && !$errors->has('document_issued_at') && !$errors->has('password'))
+                    <div class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</div>
+                @endif
 
-            {{-- Botón de tema claro/oscuro --}}
-            <div class="fixed right-6 bottom-6 z-50">
-                <button
-                    class="bg-brand-500 hover:bg-brand-600 inline-flex size-14 items-center justify-center rounded-full text-white transition-colors"
-                    @click.prevent="$store.theme.toggle()"
-                    title="Cambiar tema"
+                {{-- Formulario --}}
+                <form
+                    method="POST"
+                    action="{{ route('login') }}"
+                    class="space-y-5"
+                    x-data="{ showPass: false }"
                 >
-                    <svg class="hidden fill-current dark:block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M9.99998 1.5415C10.4142 1.5415 10.75 1.87729 10.75 2.2915V3.5415C10.75 3.95572 10.4142 4.2915 9.99998 4.2915C9.58577 4.2915 9.24998 3.95572 9.24998 3.5415V2.2915C9.24998 1.87729 9.58577 1.5415 9.99998 1.5415ZM10.0009 6.79327C8.22978 6.79327 6.79402 8.22904 6.79402 10.0001C6.79402 11.7712 8.22978 13.207 10.0009 13.207C11.772 13.207 13.2078 11.7712 13.2078 10.0001C13.2078 8.22904 11.772 6.79327 10.0009 6.79327ZM5.29402 10.0001C5.29402 7.40061 7.40135 5.29327 10.0009 5.29327C12.6004 5.29327 14.7078 7.40061 14.7078 10.0001C14.7078 12.5997 12.6004 14.707 10.0009 14.707C7.40135 14.707 5.29402 12.5997 5.29402 10.0001ZM15.9813 5.08035C16.2742 4.78746 16.2742 4.31258 15.9813 4.01969C15.6884 3.7268 15.2135 3.7268 14.9207 4.01969L14.0368 4.90357C13.7439 5.19647 13.7439 5.67134 14.0368 5.96423C14.3297 6.25713 14.8045 6.25713 15.0974 5.96423L15.9813 5.08035ZM18.4577 10.0001C18.4577 10.4143 18.1219 10.7501 17.7077 10.7501H16.4577C16.0435 10.7501 15.7077 10.4143 15.7077 10.0001C15.7077 9.58592 16.0435 9.25013 16.4577 9.25013H17.7077C18.1219 9.25013 18.4577 9.58592 18.4577 10.0001ZM14.9207 15.9806C15.2135 16.2735 15.6884 16.2735 15.9813 15.9806C16.2742 15.6877 16.2742 15.2128 15.9813 14.9199L15.0974 14.036C14.8045 13.7431 14.3297 13.7431 14.0368 14.036C13.7439 14.3289 13.7439 14.8038 14.0368 15.0967L14.9207 15.9806ZM9.99998 15.7088C10.4142 15.7088 10.75 16.0445 10.75 16.4588V17.7088C10.75 18.123 10.4142 18.4588 9.99998 18.4588C9.58577 18.4588 9.24998 18.123 9.24998 17.7088V16.4588C9.24998 16.0445 9.58577 15.7088 9.99998 15.7088ZM5.96356 15.0972C6.25646 14.8043 6.25646 14.3295 5.96356 14.0366C5.67067 13.7437 5.1958 13.7437 4.9029 14.0366L4.01902 14.9204C3.72613 15.2133 3.72613 15.6882 4.01902 15.9811C4.31191 16.274 4.78679 16.274 5.07968 15.9811L5.96356 15.0972ZM4.29224 10.0001C4.29224 10.4143 3.95645 10.7501 3.54224 10.7501H2.29224C1.87802 10.7501 1.54224 10.4143 1.54224 10.0001C1.54224 9.58592 1.87802 9.25013 2.29224 9.25013H3.54224C3.95645 9.25013 4.29224 9.58592 4.29224 10.0001ZM4.9029 5.9637C5.1958 6.25659 5.67067 6.25659 5.96356 5.9637C6.25646 5.6708 6.25646 5.19593 5.96356 4.90303L5.07968 4.01915C4.78679 3.72626 4.31191 3.72626 4.01902 4.01915C3.72613 4.31204 3.72613 4.78692 4.01902 5.07981L4.9029 5.9637Z" fill="" />
-                    </svg>
-                    <svg class="fill-current dark:hidden" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.4547 11.97L18.1799 12.1611C18.265 11.8383 18.1265 11.4982 17.8401 11.3266C17.5538 11.1551 17.1885 11.1934 16.944 11.4207L17.4547 11.97ZM8.0306 2.5459L8.57989 3.05657C8.80718 2.81209 8.84554 2.44682 8.67398 2.16046C8.50243 1.8741 8.16227 1.73559 7.83948 1.82066L8.0306 2.5459ZM12.9154 13.0035C9.64678 13.0035 6.99707 10.3538 6.99707 7.08524H5.49707C5.49707 11.1823 8.81835 14.5035 12.9154 14.5035V13.0035ZM16.944 11.4207C15.8869 12.4035 14.4721 13.0035 12.9154 13.0035V14.5035C14.8657 14.5035 16.6418 13.7499 17.9654 12.5193L16.944 11.4207ZM16.7295 11.7789C15.9437 14.7607 13.2277 16.9586 10.0003 16.9586V18.4586C13.9257 18.4586 17.2249 15.7853 18.1799 12.1611L16.7295 11.7789ZM10.0003 16.9586C6.15734 16.9586 3.04199 13.8433 3.04199 10.0003H1.54199C1.54199 14.6717 5.32892 18.4586 10.0003 18.4586V16.9586ZM3.04199 10.0003C3.04199 6.77289 5.23988 4.05695 8.22173 3.27114L7.83948 1.82066C4.21532 2.77574 1.54199 6.07486 1.54199 10.0003H3.04199ZM6.99707 7.08524C6.99707 5.52854 7.5971 4.11366 8.57989 3.05657L7.48132 2.03522C6.25073 3.35885 5.49707 5.13487 5.49707 7.08524H6.99707Z" fill="" />
-                    </svg>
-                </button>
+                    @csrf
+
+                    {{-- Campo: Número de Documento --}}
+                    <div>
+                        <label for="document_number"
+                               class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Usuario (Número de Documento)
+                        </label>
+                        <div class="relative">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#2a31d8]/60">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5a2.25 2.25 0 002.25 2.25zm.001-12h.001v.001h-.001V7.5zm0 3h.001v.001h-.001v-.001zm0 3h.001v.001h-.001v-.001z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                id="document_number"
+                                name="document_number"
+                                value="{{ old('document_number') }}"
+                                placeholder="72295836"
+                                autocomplete="username"
+                                required
+                                class="wis-input block w-full rounded-xl border border-transparent bg-[#EEF2FF]
+                                       py-3 pl-11 pr-4 text-sm text-gray-800 placeholder-gray-400
+                                       transition focus:border-[#2a31d8]/30 focus:bg-white"
+                            />
+                        </div>
+                        @error('document_number')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Campo: Fecha de Expedición --}}
+                    <div class="login-datepicker">
+                        <x-form.date-picker
+                            name="document_issued_at"
+                            label="Fecha de expedición del documento"
+                            value="{{ old('document_issued_at') }}"
+                            placeholder="Seleccione la fecha"
+                            :error="$errors->has('document_issued_at')"
+                            inputClasses="!bg-wis-field !border-transparent !rounded-xl !py-3 !pl-11"
+                        />
+                        @error('document_issued_at')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Campo: Contraseña --}}
+                    <div>
+                        <label for="password"
+                               class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Contraseña
+                        </label>
+                        <div class="relative">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#2a31d8]/60">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                </svg>
+                            </div>
+                            <input
+                                :type="showPass ? 'text' : 'password'"
+                                id="password"
+                                name="password"
+                                placeholder="••••••••"
+                                autocomplete="current-password"
+                                required
+                                class="wis-input block w-full rounded-xl border border-transparent bg-[#EEF2FF]
+                                       py-3 pl-11 pr-12 text-sm text-gray-800 placeholder-gray-400
+                                       transition focus:border-[#2a31d8]/30 focus:bg-white"
+                            />
+                            <button
+                                type="button"
+                                @click="showPass = !showPass"
+                                aria-label="Mostrar u ocultar contraseña"
+                                class="absolute inset-y-0 right-0 flex items-center pr-3.5
+                                       text-gray-400 transition hover:text-[#2a31d8]"
+                            >
+                                {{-- Ojo abierto --}}
+                                <svg x-show="!showPass" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {{-- Ojo tachado --}}
+                                <svg x-show="showPass" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                </svg>
+                            </button>
+                        </div>
+                        @error('password')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Fila: Mantenerme conectado + Olvidaste contraseña --}}
+                    <div class="flex items-center justify-between pt-1">
+                        <label class="flex cursor-pointer select-none items-center gap-2">
+                            <input
+                                type="checkbox"
+                                name="remember"
+                                class="h-4 w-4 rounded border-gray-300 text-[#2a31d8]
+                                       focus:ring-2 focus:ring-[#2a31d8]/30"
+                            />
+                            <span class="text-sm text-gray-600">Mantenerme conectado</span>
+                        </label>
+                        <a href="#"
+                           class="text-sm font-semibold text-[#2a31d8] transition hover:text-[#161950] hover:underline">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+
+                    {{-- Botón Iniciar Sesión --}}
+                    <button
+                        type="submit"
+                        class="btn-primary mt-2 flex w-full items-center justify-center gap-3
+                               rounded-xl py-3.5 text-sm font-bold tracking-wide text-white shadow-md"
+                    >
+                        <svg class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                        Iniciar Sesión
+                    </button>
+
+                </form>{{-- fin form --}}
+
+                {{-- Enlace soporte --}}
+                <p class="mt-8 text-center text-xs text-gray-400">
+                    ¿Necesitas ayuda?
+                    <a href="#" class="font-semibold text-[#2a31d8] hover:underline">
+                        Contacta soporte técnico
+                    </a>
+                </p>
+
+            </div>{{-- fin card --}}
+
+        </div>{{-- fin panel izquierdo --}}
+
+
+        {{-- ================================================
+             PANEL DERECHO — Branding
+             (oculto en móvil, visible desde lg)
+        ================================================ --}}
+        <div class="relative hidden w-full flex-col items-center justify-center px-12 py-16 lg:flex lg:w-1/2 xl:w-5/12">
+
+            <div class="relative z-10 flex max-w-xs flex-col items-center gap-8 text-center xl:max-w-sm">
+
+                <h2 class="text-4xl font-extrabold leading-tight text-white xl:text-5xl">
+                    Bienvenido a
+                </h2>
+
+                <img src="{{ asset('images/brand/wis.svg') }}" alt="Logo WIS" class="h-28 w-auto drop-shadow-xl xl:h-32" />
+
+                <p class="text-justify text-sm leading-relaxed text-blue-100/75">
+                    Sistema integral de gestión empresarial para la Asociación Colombiana de Universidades.
+                    Administra recursos, inventarios y talento humano de manera centralizada.
+                </p>
+
+                <div class="h-px w-full bg-white/10"></div>
+
+                <div class="flex w-full items-center justify-center">
+                    <img src="{{ asset('images/brand/logo.png') }}" alt="Logo ASCUN"
+                         class="h-24 w-auto object-contain drop-shadow-lg xl:h-28" />
+                </div>
+
             </div>
 
+        </div>{{-- fin panel derecho --}}
+
+    </div>{{-- fin split-screen --}}
+
+
+    {{-- ================================================
+         FOOTER GLOBAL
+    ================================================ --}}
+    <footer class="flex flex-col items-center justify-between gap-2 border-t border-gray-100
+                    bg-white px-6 py-3 sm:h-14 sm:flex-row sm:gap-0">
+
+        {{-- Izquierda: Conexión Segura --}}
+        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+            <svg class="h-3.5 w-3.5 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            <span class="font-medium text-green-600">Conexión Segura</span>
+        </div>
+
+        {{-- Centro: Copyright --}}
+        <div class="text-xs text-gray-500">
+            &copy; {{ date('Y') }} - <span class="font-bold text-gray-700">WIS</span> - Web Information System
+        </div>
+
+        {{-- Derecha: Desarrollado por RDS --}}
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+            <span class="font-medium uppercase tracking-tighter">Desarrollado por</span>
+            <img src="{{ asset('images/brand/rds.svg') }}" alt="RDS" class="h-4 w-auto opacity-60 transition-opacity hover:opacity-100" />
+        </div>
+
+    </footer>{{-- fin footer --}}
+
+</div>{{-- fin layout principal --}}
+
+
+{{-- ================================================
+     BANNER DE ANUNCIO — Login (fijo, vigencia 30 días)
+     Lógica: localStorage key "wis_announcement_v2_closed"
+     Expira: 2026-04-28
+================================================ --}}
+<div
+    x-data="{
+        visible: false,
+        EXPIRY: '2026-04-28',
+        STORAGE_KEY: 'wis_announcement_v2_closed',
+        init() {
+            const today = new Date().toISOString().slice(0, 10);
+            const closed = localStorage.getItem(this.STORAGE_KEY);
+            this.visible = (today <= this.EXPIRY) && !closed;
+        },
+        close() {
+            localStorage.setItem(this.STORAGE_KEY, '1');
+            this.visible = false;
+        }
+    }"
+    x-show="visible"
+    x-transition:enter="transition ease-out duration-500"
+    x-transition:enter-start="opacity-0 translate-y-4"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-300"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 translate-y-4"
+    class="fixed bottom-5 right-5 z-50 w-full max-w-lg"
+>
+    <div class="relative flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-5 shadow-2xl sm:flex-row sm:items-start sm:gap-5"
+         style="box-shadow: 0 20px 60px -10px rgba(13,27,94,0.25), 0 4px 16px -4px rgba(13,27,94,0.12);">
+
+        {{-- Icono --}}
+        <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
+             style="background: linear-gradient(135deg, #0d1b5e 0%, #1e44a0 100%);">
+            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+            </svg>
+        </div>
+
+        {{-- Contenido --}}
+        <div class="min-w-0 flex-1">
+            <div class="mb-1 flex items-center gap-2">
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white"
+                      style="background: linear-gradient(135deg, #0d1b5e, #1e44a0);">
+                    Nueva versión
+                </span>
+                <span class="text-[10px] font-medium uppercase tracking-wider text-gray-400">WIS ASCUN 2.0</span>
+            </div>
+            <h3 class="text-sm font-bold leading-snug text-gray-900">
+                Plataforma renovada para mayor productividad y rendimiento
+            </h3>
+            <p class="mt-1 text-xs leading-relaxed text-gray-500">
+                Hemos actualizado integralmente WIS ASCUN con una nueva interfaz optimizada, tiempos de respuesta mejorados y flujos de trabajo más ágiles. Esta versión ha sido diseñada para potenciar la eficiencia de su gestión institucional diaria. Agradecemos su confianza en nuestra plataforma.
+            </p>
+            <p class="mt-2 text-[10px] font-medium text-blue-600">
+                — Equipo de Desarrollo · RDS · Marzo {{ date('Y') }}
+            </p>
+        </div>
+
+        {{-- Botón cerrar --}}
+        <button
+            @click="close()"
+            aria-label="Cerrar anuncio"
+            class="absolute right-3 top-3 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+        >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+    </div>
+</div>
+
+
+{{-- ================================================
+     TOAST DE BIENVENIDA — Una sola vez al ingresar
+     Cierre automático en 8 segundos
+================================================ --}}
+<div
+    x-data="{
+        visible: false,
+        progress: 100,
+        EXPIRY: '2026-04-28',
+        STORAGE_KEY: 'wis_announcement_v2_seen',
+        timer: null,
+        interval: null,
+        init() {
+            const today = new Date().toISOString().slice(0, 10);
+            const seen  = localStorage.getItem(this.STORAGE_KEY);
+            if ((today <= this.EXPIRY) && !seen) {
+                setTimeout(() => {
+                    this.visible = true;
+                    this.startCountdown();
+                }, 1800);
+            }
+        },
+        startCountdown() {
+            const duration = 8000;
+            const steps    = 80;
+            const stepMs   = duration / steps;
+            this.interval  = setInterval(() => {
+                this.progress -= (100 / steps);
+                if (this.progress <= 0) this.dismiss();
+            }, stepMs);
+        },
+        dismiss() {
+            clearInterval(this.interval);
+            localStorage.setItem(this.STORAGE_KEY, '1');
+            this.visible = false;
+        }
+    }"
+    x-show="visible"
+    x-transition:enter="transition ease-out duration-500"
+    x-transition:enter-start="opacity-0 translate-y-4"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-300"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 translate-y-4"
+    class="fixed bottom-5 right-5 z-[60] w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
+    style="box-shadow: 0 20px 60px -10px rgba(13,27,94,0.22), 0 4px 16px -4px rgba(13,27,94,0.10);"
+>
+    {{-- Barra de progreso --}}
+    <div class="h-1 w-full" style="background: linear-gradient(135deg, #0d1b5e, #1e44a0);">
+        <div class="h-full transition-all ease-linear"
+             style="background: rgba(255,255,255,0.4);"
+             :style="'width:' + progress + '%'"></div>
+    </div>
+
+    <div class="p-4">
+        <div class="flex items-start gap-3">
+            {{-- Icono --}}
+            <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                 style="background: linear-gradient(135deg, #0d1b5e 0%, #1e44a0 100%);">
+                <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            {{-- Texto --}}
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-bold text-gray-900">¡Bienvenido a WIS ASCUN 2.0!</p>
+                <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
+                    Disfrute la nueva interfaz optimizada para mayor productividad y rendimiento institucional.
+                </p>
+            </div>
+            {{-- Cerrar --}}
+            <button @click="dismiss()" aria-label="Cerrar notificación" class="flex-shrink-0 text-gray-400 transition hover:text-gray-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
     </div>
+</div>
+
 @endsection

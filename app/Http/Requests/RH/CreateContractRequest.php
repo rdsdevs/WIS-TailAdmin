@@ -42,6 +42,21 @@ class CreateContractRequest extends FormRequest
             }
         }
 
+        // Comprometidos — solo aplica para contratos año >= 2025
+        $rules['committed_values'] = ['nullable', 'array'];
+        $rules['committed_values.*.accounting_account'] = ['required', 'string', 'max:200'];
+        $rules['committed_values.*.cost_center'] = ['required', 'string', 'max:200'];
+        $rules['committed_values.*.amount'] = ['required', 'numeric', 'min:0'];
+
+        // Detalle de Nómina (Opcional)
+        $rules['payroll_detail.base_salary'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.transport_allowance'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.non_statutory_bonuses'] = ['nullable', 'numeric', 'min:0'];
+        $rules['payroll_detail.sena_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.icbf_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.compensation_fund_rate'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+        $rules['payroll_detail.health_check_verified_at'] = ['nullable', 'date'];
+
         return $rules;
     }
 
@@ -66,6 +81,14 @@ class CreateContractRequest extends FormRequest
             'position_email.email' => 'El correo del cargo no tiene un formato válido.',
             'status.required' => 'El estado del contrato es obligatorio.',
             'status.in' => 'El estado del contrato no es válido.',
+            'committed_values.array' => 'Los valores comprometidos deben ser un listado.',
+            'committed_values.*.accounting_account.required' => 'La cuenta contable es obligatoria en cada línea de comprometido.',
+            'committed_values.*.accounting_account.max' => 'La cuenta contable no puede superar los 200 caracteres.',
+            'committed_values.*.cost_center.required' => 'El centro de costo es obligatorio en cada línea de comprometido.',
+            'committed_values.*.cost_center.max' => 'El centro de costo no puede superar los 200 caracteres.',
+            'committed_values.*.amount.required' => 'El valor comprometido es obligatorio en cada línea.',
+            'committed_values.*.amount.numeric' => 'El valor comprometido debe ser un número.',
+            'committed_values.*.amount.min' => 'El valor comprometido no puede ser negativo.',
         ];
     }
 }

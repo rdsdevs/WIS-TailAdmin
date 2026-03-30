@@ -22,13 +22,16 @@ class PositionChangeHistory extends Model implements Auditable
         'contract_id',
         'previous_position_id',
         'new_position_id',
+        'old_salary',
         'new_salary',
-        'new_position_email',
+        'change_date',
         'observations',
     ];
 
     protected $casts = [
-        'new_salary' => 'decimal:2',
+        'old_salary'  => 'decimal:2',
+        'new_salary'  => 'decimal:2',
+        'change_date' => 'date',
     ];
 
     public function contract(): BelongsTo

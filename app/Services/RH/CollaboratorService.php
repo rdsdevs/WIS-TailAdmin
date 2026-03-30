@@ -8,6 +8,10 @@ use App\Exports\RH\ColaboradoresExport;
 use App\Http\Requests\RH\CreateCollaboratorRequest;
 use App\Http\Requests\RH\UpdateCollaboratorRequest;
 use App\Models\RH\Collaborator;
+use App\Notifications\RH\CollaboratorCreatedNotification;
+use App\Notifications\RH\CollaboratorDeletedNotification;
+use App\Notifications\RH\CollaboratorTypeChangedNotification;
+use App\Notifications\RH\CollaboratorUpdatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -26,8 +30,8 @@ final class CollaboratorService
 
         if (! empty($filters['tipo'])) {
             match ($filters['tipo']) {
-                'empleados' => $query->employees(),
-                'contratistas' => $query->contractors(),
+                'empleados' => $query->empleados(),
+                'contratistas' => $query->contratistas(),
                 default => null,
             };
         }
@@ -56,7 +60,19 @@ final class CollaboratorService
     public function create(CreateCollaboratorRequest $request): Collaborator
     {
         return DB::transaction(function () use ($request): Collaborator {
-            return Collaborator::create($request->validated());
+            $validated = $request->validated();
+            $employeeData = $validated['employee_profile'] ?? null;
+            $data = collect($validated)->except('employee_profile')->all();
+
+            $colaborador = Collaborator::create($data);
+
+            if ($employeeData !== null) {
+                $colaborador->employeeProfile()->create($employeeData);
+            }
+
+            auth()->user()?->notify(new CollaboratorCreatedNotification($colaborador->full_name, $colaborador->id));
+
+            return $colaborador;
         });
     }
 
@@ -66,10 +82,59 @@ final class CollaboratorService
     public function update(Collaborator $collaborator, UpdateCollaboratorRequest $request): Collaborator
     {
         DB::transaction(function () use ($collaborator, $request): void {
-            $collaborator->update($request->validated());
+            $validated = $request->validated();
+            $employeeData = $validated['employee_profile'] ?? null;
+            $data = collect($validated)->except('employee_profile')->all();
+
+            $collaborator->update($data);
+
+            if ($employeeData !== null) {
+                $collaborator->employeeProfile()->updateOrCreate(
+                    ['collaborator_id' => $collaborator->id],
+                    $employeeData
+                );
+            }
+
+            auth()->user()?->notify(new CollaboratorUpdatedNotification($collaborator->full_name, $collaborator->id));
         });
 
-        return $collaborator->fresh(['documentType', 'status', 'activeContract.position']);
+        return $collaborator->fresh(['documentType', 'status', 'activeContract.position', 'employeeProfile']);
+    }
+
+    /**
+     * Determina si un colaborador puede cambiar de tipo.
+     * Solo es posible si no tiene contratos vigentes.
+     */
+    public function canChangeType(Collaborator $collaborator): bool
+    {
+        if ($collaborator->is_company) {
+            return false;
+        }
+
+        return ! $collaborator->contracts()
+            ->where('status', 'Vigente')
+            ->exists();
+    }
+
+    /**
+     * Cambia el tipo de un colaborador entre Empleado y Contratista.
+     *
+     * @throws \RuntimeException si el colaborador tiene contratos vigentes.
+     */
+    public function changeType(Collaborator $collaborator): Collaborator
+    {
+        if (! $this->canChangeType($collaborator)) {
+            throw new \RuntimeException('No se puede cambiar el tipo de colaborador mientras tenga contratos activos.');
+        }
+
+        $newType = $collaborator->type === 'Empleado' ? 'Contratista' : 'Empleado';
+
+        return DB::transaction(function () use ($collaborator, $newType): Collaborator {
+            $collaborator->update(['type' => $newType]);
+            auth()->user()?->notify(new CollaboratorTypeChangedNotification($collaborator->full_name, $collaborator->id, $newType));
+
+            return $collaborator->fresh();
+        });
     }
 
     /**
@@ -77,7 +142,9 @@ final class CollaboratorService
      */
     public function delete(Collaborator $collaborator): void
     {
+        $nombre = $collaborator->full_name;
         $collaborator->delete();
+        auth()->user()?->notify(new CollaboratorDeletedNotification($nombre));
     }
 
     /**

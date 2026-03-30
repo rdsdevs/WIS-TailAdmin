@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RH;
 use Illuminate\Support\Facades\Route;
 
@@ -15,7 +16,7 @@ Route::post('logout', [LoginController::class, 'destroy'])
     ->name('logout');
 
 // Dashboard
-Route::get('dashboard', fn () => view('pages.dashboard.ecommerce', ['title' => 'Dashboard WIS']))
+Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
 
@@ -31,12 +32,32 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('cargos', RH\PositionController::class);
 
     // Colaboradores (unificado — reemplaza empleados y contratistas)
-    // La ruta de exportar DEBE ir antes del resource para evitar
-    // que Laravel interprete "exportar" como el parámetro {collaborator}
+    // Las rutas adicionales DEBEN ir antes del resource para evitar
+    // que Laravel interprete los segmentos como el parámetro {collaborator}
+
+    // Importación masiva de colaboradores
+    Route::get('colaboradores/importar', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'create'])
+        ->name('colaboradores.importar');
+    Route::post('colaboradores/importar', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'store'])
+        ->name('colaboradores.importar.store');
+    Route::get('colaboradores/plantilla/{tipo}', [\App\Http\Controllers\RH\CollaboratorImportController::class, 'template'])
+        ->name('colaboradores.plantilla')
+        ->where('tipo', 'empleados|contratistas|todos');
+
     Route::get('colaboradores/exportar/{tipo}', [RH\CollaboratorController::class, 'export'])
         ->name('colaboradores.export');
+    Route::post('colaboradores/{collaborator}/change-type', [RH\CollaboratorController::class, 'changeType'])
+        ->name('colaboradores.change-type');
     Route::resource('colaboradores', RH\CollaboratorController::class)
         ->parameters(['colaboradores' => 'collaborator']);
+
+    // Importación masiva de contratos
+    Route::get('contratos/importar', [\App\Http\Controllers\RH\ContractImportController::class, 'create'])
+        ->name('contratos.importar');
+    Route::post('contratos/importar', [\App\Http\Controllers\RH\ContractImportController::class, 'store'])
+        ->name('contratos.importar.store');
+    Route::get('contratos/plantilla', [\App\Http\Controllers\RH\ContractImportController::class, 'template'])
+        ->name('contratos.plantilla');
 
     // Contratos — acción de terminar contrato
     Route::patch('contratos/{contrato}/terminar', [RH\ContractController::class, 'terminate'])
@@ -44,15 +65,43 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     Route::resource('contratos', RH\ContractController::class);
 });
 
+// ─── Ruta pública de verificación de certificados (sin auth) ─────────────────
+Route::get('verificar/{codigo}', [\App\Http\Controllers\Certificados\CertificateVerificationController::class, 'show'])
+    ->name('certificados.verificar')
+    ->where('codigo', '[0-9a-fA-F\-]{36}');
+
+// ─── Módulo de Certificados (protegido) ──────────────────────────────────────
+Route::prefix('certificados')->name('certificados.')->middleware('auth')->group(function (): void {
+    Route::get('/', [\App\Http\Controllers\Certificados\CertificateController::class, 'index'])
+        ->name('index');
+    Route::post('generar/empleado', [\App\Http\Controllers\Certificados\CertificateController::class, 'generateEmployee'])
+        ->name('generar.empleado');
+    Route::post('generar/contratista', [\App\Http\Controllers\Certificados\CertificateController::class, 'generateContractor'])
+        ->name('generar.contratista');
+    Route::delete('{certificate}', [\App\Http\Controllers\Certificados\CertificateController::class, 'destroy'])
+        ->name('destroy');
+    Route::resource('firmas', \App\Http\Controllers\Certificados\CertificateSignatureController::class)
+        ->parameters(['firmas' => 'signature'])
+        ->except(['show']);
+});
+
+// ─── Administración de usuarios ──────────────────────────────────────────────
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): void {
+    Route::resource('usuarios', \App\Http\Controllers\Admin\UserController::class)
+        ->parameters(['usuarios' => 'usuario']);
+});
+
 // calender pages
 Route::get('/calendar', function () {
     return view('pages.calender', ['title' => 'Calendar']);
 })->name('calendar');
 
-// profile pages
+// Perfil de usuario
 Route::get('/profile', function () {
-    return view('pages.profile', ['title' => 'Profile']);
-})->name('profile');
+    $user = auth()->user()->load('institution', 'roles');
+
+    return view('pages.profile', ['title' => 'Mi perfil', 'user' => $user]);
+})->middleware('auth')->name('profile');
 
 // form pages
 Route::get('/form-elements', function () {

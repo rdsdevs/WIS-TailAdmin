@@ -11,6 +11,7 @@ use App\Models\RH\Collaborator;
 use App\Models\RH\Contract;
 use App\Models\RH\ContractType;
 use App\Models\RH\Position;
+use App\Notifications\RH\ContractDeletedNotification;
 use App\Services\RH\ContractService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -23,19 +24,22 @@ class ContractController extends Controller
     {
         $this->authorize('viewAny', Contract::class);
 
-        $institutionId = auth()->user()->institution_id;
-        $contratos = $this->service->getActive($institutionId);
+        $user = auth()->user();
+        $institutionId = $user->institution_id;
+        $contratos = $this->service->getActive($institutionId, 15);
         $porVencer = $this->service->getExpiringSoon($institutionId, 30);
 
         $stats = [
-            'total' => Contract::count(),
-            'vigentes' => Contract::where('status', 'Vigente')->count(),
-            'porVencer' => Contract::where('status', 'Vigente')
+            'total' => Contract::where('institution_id', $institutionId)->count(),
+            'vigentes' => Contract::where('institution_id', $institutionId)->where('status', 'Vigente')->count(),
+            'porVencer' => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
                 ->whereNotNull('end_date')
                 ->where('end_date', '<=', now()->addDays(30))
                 ->where('end_date', '>=', now())
                 ->count(),
-            'contratistas' => Contract::where('status', 'Vigente')
+            'contratistas' => Contract::where('institution_id', $institutionId)
+                ->where('status', 'Vigente')
                 ->whereHas('collaborator', fn ($q) => $q->where('type', 'Contratista'))
                 ->count(),
         ];
@@ -47,7 +51,8 @@ class ContractController extends Controller
     {
         $this->authorize('create', Contract::class);
 
-        $institutionId = auth()->user()->institution_id;
+        $user = auth()->user();
+        $institutionId = $user->institution_id;
 
         $colaboradores = Collaborator::query()
             ->where('institution_id', $institutionId)
@@ -79,9 +84,9 @@ class ContractController extends Controller
 
     public function show(Contract $contrato): View
     {
-        $this->authorize('view', $contrato);
+        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'institution', 'extensions', 'committedValues', 'earlyTerminatedBy']);
 
-        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'extensions', 'committedValues']);
+        $this->authorize('view', $contrato);
 
         return view('pages.rh.contratos.show', compact('contrato'));
     }
@@ -119,7 +124,9 @@ class ContractController extends Controller
     public function destroy(Contract $contrato): RedirectResponse
     {
         $this->authorize('delete', $contrato);
+        $contractCode = $contrato->contract_code ?? 'Sin código';
         $contrato->delete();
+        auth()->user()?->notify(new ContractDeletedNotification($contractCode));
 
         return redirect()->route('rh.contratos.index')
             ->with('exito', 'Contrato eliminado correctamente.');

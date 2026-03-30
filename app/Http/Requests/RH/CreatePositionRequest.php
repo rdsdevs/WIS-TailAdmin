@@ -21,6 +21,12 @@ class CreatePositionRequest extends FormRequest
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
+
+            // Correos y Funciones (Opcionales)
+            'emails' => ['nullable', 'array'],
+            'emails.*' => ['required', 'email', 'max:150'],
+            'functions' => ['nullable', 'array'],
+            'functions.*' => ['required', 'string'],
         ];
     }
 

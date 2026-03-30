@@ -1,0 +1,1 @@
+../../components/⚡counter.blade.php

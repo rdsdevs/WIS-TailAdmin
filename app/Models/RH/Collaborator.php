@@ -87,6 +87,11 @@ class Collaborator extends Model implements Auditable
         return $this->hasMany(Contract::class);
     }
 
+    public function employeeProfile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
+
     public function activeContract(): HasOne
     {
         return $this->hasOne(Contract::class)->where('status', 'Vigente')->latestOfMany('start_date');
@@ -94,12 +99,12 @@ class Collaborator extends Model implements Auditable
 
     // ── Scopes ───────────────────────────────────────────────────────────────
 
-    public function scopeEmployees(Builder $query): Builder
+    public function scopeEmpleados(Builder $query): Builder
     {
         return $query->where('type', 'Empleado');
     }
 
-    public function scopeContractors(Builder $query): Builder
+    public function scopeContratistas(Builder $query): Builder
     {
         return $query->where('type', 'Contratista');
     }

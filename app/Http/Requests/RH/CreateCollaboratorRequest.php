@@ -17,9 +17,10 @@ class CreateCollaboratorRequest extends FormRequest
     {
         return [
             'institution_id' => ['required', 'uuid', 'exists:institutions,id'],
-            'document_type_id' => ['required', 'uuid', 'exists:document_types,id'],
+            'document_type_id' => ['required_if:is_company,false', 'nullable', 'uuid', 'exists:document_types,id'],
             'document_number' => [
-                'required',
+                'required_if:is_company,false',
+                'nullable',
                 'string',
                 'max:20',
                 'unique:collaborators,document_number,NULL,id,institution_id,'.$this->input('institution_id'),
@@ -39,6 +40,17 @@ class CreateCollaboratorRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'type' => ['required', 'in:Empleado,Contratista'],
             'status_id' => ['required', 'uuid', 'exists:collaborator_statuses,id'],
+
+            // Perfil de Empleado (Opcional)
+            'employee_profile.eps' => ['nullable', 'string', 'max:100'],
+            'employee_profile.pension_fund' => ['nullable', 'string', 'max:100'],
+            'employee_profile.arl' => ['nullable', 'string', 'max:100'],
+            'employee_profile.compensation_fund' => ['nullable', 'string', 'max:100'],
+            'employee_profile.severance_fund' => ['nullable', 'string', 'max:100'],
+            'employee_profile.blood_type' => ['nullable', 'string', 'max:5'],
+            'employee_profile.emergency_contact_name' => ['nullable', 'string', 'max:150'],
+            'employee_profile.emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'employee_profile.background_check_verified_at' => ['nullable', 'date'],
         ];
     }
 

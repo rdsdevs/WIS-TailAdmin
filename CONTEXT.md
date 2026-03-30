@@ -1,7 +1,7 @@
 # CONTEXT.md — WIS ASCUN
 
 Contexto completo del proyecto para orientar nuevas conversaciones y agentes.
-**Última actualización:** 28/03/2026
+**Última actualización:** 30/03/2026
 
 ---
 
@@ -41,9 +41,9 @@ Contexto completo del proyecto para orientar nuevas conversaciones y agentes.
 
 | Módulo | Estado | Notas |
 |--------|--------|-------|
-| **Autenticación** | ✅ Completo | Login: cédula + fecha expedición + password |
+| **Autenticación** | ✅ Completo | Login: cédula + fecha expedición + password. Vista rediseñada con identidad visual ASCUN (gradiente azul, split-screen, notificación de nueva versión) |
 | **Recursos Humanos** | ✅ Completo | Colaboradores, contratos, cargos, departamentos, importaciones, notificaciones |
-| **Certificados** | ✅ Completo | PDF+QR, firmas digitales, verificación pública por URL |
+| **Certificados** | ✅ Completo | PDF+QR, firmas digitales, verificación pública por URL. Firmas accesibles para contractor-manager y employee-manager. Auto-fill de firmante desde empleados con buscador estilo contratos |
 | **Admin / Usuarios** | ✅ Completo | CRUD usuarios con roles e instituciones |
 | **Contabilidad** | 🔶 Parcial | Modelos + migraciones únicamente. Sin controllers, services ni vistas |
 | **Inventario** | ❌ Pendiente | Nada implementado |
@@ -305,7 +305,7 @@ class MiModelo extends Model implements Auditable
 | `RH/PositionPolicy` | Position |
 | `RH/DepartmentPolicy` | Department |
 | `Certificados/CertificatePolicy` | Certificate |
-| `Certificados/CertificateSignaturePolicy` | CertificateSignature |
+| `Certificados/CertificateSignaturePolicy` | CertificateSignature — `MANAGERS = ['admin', 'rh-manager', 'contractor-manager', 'employee-manager']` |
 | `UserPolicy` | User |
 
 Todas registradas en `AppServiceProvider` con `Gate::policy()`.
@@ -359,6 +359,39 @@ resources/views/livewire/
     ├── position-manager.blade.php          (gestión de cargos)
     └── employee-dashboard.blade.php        (dashboard empleado)
 ```
+
+### Lógica de wizards (pasos condicionales)
+
+#### `collaborator-form` — flujo según tipo
+
+| Tipo | Flujo de pasos |
+|------|----------------|
+| Empleado | 1 Tipo → 2 Datos → 3 Seguridad Social → 4 Contacto |
+| Contratista | 1 Tipo → 2 Datos → 3 Contacto (paso 3 interno = 4) |
+
+- **Seguridad Social (paso 3):** solo visible si `$type === 'Empleado'`
+- Toggle `$employeeProfileEnabled` (off por defecto): habilita EPS, pensión, ARL, caja, cesantías, grupo sanguíneo, contacto emergencia, verificación Ley 1918
+- Sueldo base siempre editable cuando el paso es visible
+- `updatedType()` resetea `$step = 1` y limpia campos al cambiar a Contratista
+- `save()` guarda `employeeProfile` solo si `type === 'Empleado' && employeeProfileEnabled`
+- En edición: si hay `employeeProfile` existente, `$employeeProfileEnabled` se inicializa en `true`
+
+#### `contract-form` — flujo según tipo y año
+
+| Tipo | Año inicio | Flujo de pasos |
+|------|-----------|----------------|
+| Empleado | cualquiera | 1 Colaborador → 2 Contrato → 3 Nómina → guardar |
+| Contratista | >= 2025 | 1 Colaborador → 2 Contrato → 4 Contable → guardar |
+| Contratista | < 2025 | 1 Colaborador → 2 Contrato → guardar |
+
+- **Nómina (paso 3):** solo visible si `$collaboratorType === 'Empleado'`
+  - "Sueldo Básico" siempre editable en el paso
+  - Toggle `$payrollDetailEnabled` (off por defecto): habilita Auxilio de Transporte, Bonificaciones No Prestacionales, Parafiscales (SENA/ICBF/Caja), Examen Médico de Ingreso
+- **Contable (paso 4):** solo visible si `$collaboratorType === 'Contratista'` y `contractYear >= 2025` (`needsCommitted`)
+- `save()` tiene guard: si `$collaboratorType` vacío → error y redirige a paso 1
+- `save()` guarda `payrollDetail` solo si `collaboratorType === 'Empleado' && payrollDetailEnabled`
+- En edición: `payrollDetail()->delete()` cuando el toggle está desactivado
+- "Atrás" desde paso 4 siempre regresa al paso 2 (no al 3)
 
 ---
 
@@ -431,21 +464,20 @@ GET /verificar/{uuid}                    → CertificateVerificationController@s
 ### Commits recientes (últimos en esta rama)
 
 ```
-bfa18f2  chore(auth): actualizar roles de usuarios en UserSeeder
+fa4076a  feat(certificados): reemplazar select de firmante por buscador con autocompletado
+266b545  feat(certificados): auto-completar firmante desde empleados en gestión de firmas
+22f3c96  feat(certificados): ampliar acceso a firmas digitales para contractor-manager y employee-manager
+26c8246  fix(dashboard): revertir colores del button group del rol contractor-manager al estilo estándar
+9b69db2  feat(dashboard): unificar accesos rápidos de contractor-manager con estilo btn-primary
+c61f4e6  feat(dashboard): mejorar métricas y navegación del rol contractor-manager
+de3f190  fix(auth): ampliar ancho del banner de nueva versión a max-w-lg
+1ccdcef  fix(auth): corregir posición del banner de nueva versión en login
+53c05b9  feat(auth): rediseñar vista de login con identidad visual ASCUN
+699b15b  fix(rh): corregir wizard de colaboradores y formulario de contratos
+47ee57f  feat(rh): condicionar pasos wizard según tipo de colaborador
+4164b9d  docs: agregar CONTEXT.md con estado completo del proyecto
 8f9fd14  fix(migration): evitar columna deleted_at duplicada en position_emails
-d71b6ea  fix(rh): agregar deleted_at a position_emails para SoftDeletes
-4eb47a6  feat(rh): agregar comandos de migración desde sistema legacy
-de4c01d  chore(rh): eliminar migración duplicada de contratos
-43720c2  refactor(rh): migrar controllers, services, requests y exports al estándar Laravel 12
-b365c13  feat(rh): agregar vistas Livewire Volt para dashboard de empleado y gestión de cargos
-6d712d2  test(rh): actualizar y ampliar tests con restricciones de visibilidad por tipo de rol
-5ad09d0  feat(rh): agregar modelos y migraciones para perfiles de empleado y detalle de nómina
-72322e0  fix(rh): corregir autorización del modal de cambio de cargo en vista show
-bac9f5b  fix(rh): unificar campos de PositionChangeHistory en migración, modelo y vista
-505cbdf  fix(rh): agregar validación de campos payroll_detail en CreateContractRequest
-1dd65b0  fix(rh): corregir rutas de storage en jobs de importación
-193ff6b  fix(rh): corregir route model binding en CollaboratorController::changeType()
-c2d398a  fix(rh): corregir policies de colaboradores con restricción por tipo de rol
+bfa18f2  chore(auth): actualizar roles de usuarios en UserSeeder
 ```
 
 ---
@@ -508,6 +540,31 @@ Usar `@can('create', Model::class)` para acciones sin instancia. **NUNCA** `@can
 
 ### Caché de resultados de importación
 Los resultados de importación se guardan en caché con key `import_result_{userId}` (colaboradores) o `import_contracts_result_{userId}` (contratos), TTL 2 horas.
+
+### Patrón de buscador con autocompletado (Alpine.js)
+El buscador de colaborador en contratos (`contract-form.blade.php`) es la **referencia visual estándar** para cualquier campo de búsqueda con selección en el sistema. Tiene tres estados:
+
+1. **Sin selección** — input con clases: `w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm ... focus:border-blue-500 focus:ring-1 focus:ring-blue-500`
+2. **Seleccionado** — tarjeta azul: `rounded-lg border border-blue-300 bg-blue-50 px-3 py-2.5` con avatar de iniciales (`h-9 w-9 rounded-full bg-blue-100`) + nombre + dato secundario + botón X
+3. **Sin resultados** — mensaje `"No se encontraron..."` en dropdown
+
+Este patrón está implementado en `certificados/firmas/create.blade.php` y `edit.blade.php` para el campo "Nombre del firmante" (filtrado client-side con Alpine, datos pre-cargados via `@json($empleados)`).
+
+### Datos interpolados en Alpine `x-data`
+Siempre usar `@js()` para interpolar valores PHP dentro de strings JavaScript en `x-data`. Nunca usar comillas simples con `{{ }}` — se rompe con nombres que contengan apóstrofes (ej: `O'Connor`):
+```blade
+{{-- CORRECTO --}}
+selectedNombre: @js(old('signer_name', $model->field)),
+
+{{-- INCORRECTO — quiebra con apóstrofes --}}
+selectedNombre: '{{ old('signer_name', $model->field) }}',
+```
+
+### Dashboard por rol (`contractor-manager`)
+- Métricas: Certificaciones (total / verificadas / por verificar) — proxy: `whereNotNull('certificate_signature_id')` = verificado
+- Actividad reciente: últimos 3 contratistas + contratos de los últimos 30 días
+- Accesos rápidos: Colaboradores · Contratos · Firmas (estilo estándar blanco/gris)
+- Menú "Administración": visible solo para `super-admin` y `admin` (oculto para demás roles)
 
 ---
 

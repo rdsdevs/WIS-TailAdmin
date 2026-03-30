@@ -39,7 +39,7 @@
     <div class="mx-auto max-w-2xl">
         <form method="POST" action="{{ route('certificados.firmas.update', $signature) }}"
               x-data="{
-                  sigPreview: '{{ $signature->signature_image ?? '' }}',
+                  sigPreview: @js($signature->signature_image ?? ''),
                   toBase64(file, hiddenInput) {
                       const reader = new FileReader();
                       reader.onload = e => {
@@ -47,6 +47,21 @@
                           hiddenInput.value = e.target.result;
                       };
                       reader.readAsDataURL(file);
+                  },
+                  empleados: @json($empleados ?? []),
+                  get hayEmpleados() { return this.empleados.length > 0; },
+                  selectedNombre: @js(old('signer_name', $signature->signer_name)),
+                  signerPosition: @js(old('signer_position', $signature->signer_position)),
+                  cargoAutoLlenado: false,
+                  fillPosition(nombre) {
+                      const emp = this.empleados.find(e => e.nombre === nombre);
+                      if (emp) {
+                          this.signerPosition = emp.cargo;
+                          this.cargoAutoLlenado = true;
+                      } else {
+                          this.signerPosition = '';
+                          this.cargoAutoLlenado = false;
+                      }
                   }
               }">
             @csrf
@@ -59,11 +74,25 @@
                     <label for="signer_name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Nombre del firmante <span class="text-red-500" aria-hidden="true">*</span>
                     </label>
-                    <input type="text" name="signer_name" id="signer_name"
-                           value="{{ old('signer_name', $signature->signer_name) }}"
-                           required maxlength="200"
-                           placeholder="Ej: María García López"
-                           class="w-full rounded-xl border {{ $errors->has('signer_name') ? 'border-red-400' : 'border-gray-300' }} bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    <template x-if="hayEmpleados">
+                        <select name="signer_name" id="signer_name"
+                                x-model="selectedNombre"
+                                @change="fillPosition(selectedNombre)"
+                                class="wis-input w-full {{ $errors->has('signer_name') ? 'border-red-400' : '' }}"
+                                required>
+                            <option value="">— Seleccione el firmante —</option>
+                            <template x-for="emp in empleados" :key="emp.nombre">
+                                <option :value="emp.nombre" x-text="emp.nombre"></option>
+                            </template>
+                        </select>
+                    </template>
+                    <template x-if="!hayEmpleados">
+                        <input type="text" name="signer_name" id="signer_name"
+                               value="{{ old('signer_name', $signature->signer_name) }}"
+                               required maxlength="200"
+                               placeholder="Ej: María García López"
+                               class="wis-input w-full {{ $errors->has('signer_name') ? 'border-red-400' : '' }}" />
+                    </template>
                     @error('signer_name')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                     @enderror
@@ -75,10 +104,11 @@
                         Cargo del firmante <span class="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <input type="text" name="signer_position" id="signer_position"
-                           value="{{ old('signer_position', $signature->signer_position) }}"
+                           x-model="signerPosition"
                            required maxlength="200"
-                           placeholder="Ej: Directora de Gestión Humana"
-                           class="w-full rounded-xl border {{ $errors->has('signer_position') ? 'border-red-400' : 'border-gray-300' }} bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                           placeholder="Cargo del firmante"
+                           :readonly="hayEmpleados && cargoAutoLlenado"
+                           class="wis-input w-full {{ $errors->has('signer_position') ? 'border-red-400' : '' }}" />
                     @error('signer_position')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                     @enderror

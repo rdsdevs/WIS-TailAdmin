@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Certificados\CreateCertificateSignatureRequest;
 use App\Http\Requests\Certificados\UpdateCertificateSignatureRequest;
 use App\Models\RH\CertificateSignature;
+use App\Models\RH\Collaborator;
 use App\Services\Certificados\CertificateSignatureService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -29,7 +30,19 @@ class CertificateSignatureController extends Controller
     {
         $this->authorize('create', CertificateSignature::class);
 
-        return view('pages.certificados.firmas.create');
+        $empleados = Collaborator::query()
+            ->empleados()
+            ->byInstitution(auth()->user()->institution_id)
+            ->with(['activeContract.position'])
+            ->orderBy('first_surname')
+            ->get()
+            ->map(fn ($c) => [
+                'nombre' => $c->full_name,
+                'cargo'  => $c->activeContract?->position?->name ?? '',
+            ])
+            ->values();
+
+        return view('pages.certificados.firmas.create', compact('empleados'));
     }
 
     public function store(CreateCertificateSignatureRequest $request): RedirectResponse
@@ -49,7 +62,19 @@ class CertificateSignatureController extends Controller
     {
         $this->authorize('update', $signature);
 
-        return view('pages.certificados.firmas.edit', compact('signature'));
+        $empleados = Collaborator::query()
+            ->empleados()
+            ->byInstitution(auth()->user()->institution_id)
+            ->with(['activeContract.position'])
+            ->orderBy('first_surname')
+            ->get()
+            ->map(fn ($c) => [
+                'nombre' => $c->full_name,
+                'cargo'  => $c->activeContract?->position?->name ?? '',
+            ])
+            ->values();
+
+        return view('pages.certificados.firmas.edit', compact('signature', 'empleados'));
     }
 
     public function update(UpdateCertificateSignatureRequest $request, CertificateSignature $signature): RedirectResponse

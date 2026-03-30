@@ -62,15 +62,20 @@ final class CertificateSignatureService
     public function update(CertificateSignature $signature, array $data): CertificateSignature
     {
         return DB::transaction(function () use ($signature, $data): CertificateSignature {
-            $signature->update(array_filter([
+            $fields = array_filter([
                 'signer_name' => $data['signer_name'] ?? null,
                 'signer_position' => $data['signer_position'] ?? null,
                 'signature_image' => $data['signature_image'] ?? null,
                 'replacement_name' => $data['replacement_name'] ?? null,
                 'replacement_position' => $data['replacement_position'] ?? null,
                 'replacement_signature_image' => $data['replacement_signature_image'] ?? null,
-                'is_active' => $data['is_active'] ?? null,
-            ], fn ($v) => $v !== null));
+            ], fn ($v) => $v !== null);
+
+            // is_active siempre se actualiza (un checkbox desmarcado no se envía en POST,
+            // prepareForValidation() garantiza que llegue como bool false)
+            $fields['is_active'] = (bool) ($data['is_active'] ?? false);
+
+            $signature->update($fields);
 
             return $signature->fresh();
         });

@@ -52,7 +52,7 @@
                   get hayEmpleados() { return this.empleados.length > 0; },
                   selectedNombre: @js(old('signer_name', $signature->signer_name)),
                   signerPosition: @js(old('signer_position', $signature->signer_position)),
-                  cargoAutoLlenado: {{ $signature->signer_name ? 'true' : 'false' }},
+                  cargoAutoLlenado: @js((bool) $signature->signer_name),
                   searchQuery: '',
                   showDropdown: false,
                   get filteredEmpleados() {

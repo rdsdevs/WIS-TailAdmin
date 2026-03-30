@@ -13,6 +13,11 @@ class UpdateCertificateSignatureRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['is_active' => $this->boolean('is_active')]);
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -23,7 +28,7 @@ class UpdateCertificateSignatureRequest extends FormRequest
             'replacement_name' => ['nullable', 'string', 'max:200'],
             'replacement_position' => ['nullable', 'string', 'max:200'],
             'replacement_signature_image' => ['nullable', 'string'],
-            'is_active' => ['boolean'],
+            'is_active' => ['required', 'boolean'],
         ];
     }
 }

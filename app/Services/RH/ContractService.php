@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Mews\Purifier\Facades\Purifier;
 
 final class ContractService
 {
@@ -75,6 +76,14 @@ final class ContractService
 
             $data = collect($validated)->except(['committed_values', 'payroll_detail'])->all();
 
+            // Sanitizar HTML de campos rich text (defensa en profundidad)
+            if (isset($data['object'])) {
+                $data['object'] = Purifier::clean($data['object'], 'rh_text');
+            }
+            if (isset($data['obligations'])) {
+                $data['obligations'] = Purifier::clean($data['obligations'], 'rh_text');
+            }
+
             // Contratos de años anteriores se registran siempre como Terminado
             if (isset($data['start_date'])) {
                 $startYear = \Carbon\Carbon::parse($data['start_date'])->year;
@@ -132,6 +141,14 @@ final class ContractService
             $payrollData = $validated['payroll_detail'] ?? null;
 
             $data = collect($validated)->except(['committed_values', 'payroll_detail'])->all();
+
+            // Sanitizar HTML de campos rich text (defensa en profundidad)
+            if (isset($data['object'])) {
+                $data['object'] = Purifier::clean($data['object'], 'rh_text');
+            }
+            if (isset($data['obligations'])) {
+                $data['obligations'] = Purifier::clean($data['obligations'], 'rh_text');
+            }
 
             // Contratos de años anteriores mantienen siempre status = Terminado
             if ($contract->isFromPreviousYear()) {

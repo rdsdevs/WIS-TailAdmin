@@ -52,16 +52,26 @@
                   get hayEmpleados() { return this.empleados.length > 0; },
                   selectedNombre: @js(old('signer_name', $signature->signer_name)),
                   signerPosition: @js(old('signer_position', $signature->signer_position)),
-                  cargoAutoLlenado: false,
-                  fillPosition(nombre) {
-                      const emp = this.empleados.find(e => e.nombre === nombre);
-                      if (emp) {
-                          this.signerPosition = emp.cargo;
-                          this.cargoAutoLlenado = true;
-                      } else {
-                          this.signerPosition = '';
-                          this.cargoAutoLlenado = false;
-                      }
+                  cargoAutoLlenado: {{ $signature->signer_name ? 'true' : 'false' }},
+                  searchQuery: '',
+                  showDropdown: false,
+                  get filteredEmpleados() {
+                      if (!this.searchQuery) return this.empleados;
+                      const q = this.searchQuery.toLowerCase();
+                      return this.empleados.filter(e => e.nombre.toLowerCase().includes(q));
+                  },
+                  selectEmpleado(emp) {
+                      this.selectedNombre = emp.nombre;
+                      this.signerPosition = emp.cargo;
+                      this.cargoAutoLlenado = true;
+                      this.showDropdown = false;
+                      this.searchQuery = '';
+                  },
+                  clearEmpleado() {
+                      this.selectedNombre = '';
+                      this.signerPosition = '';
+                      this.cargoAutoLlenado = false;
+                      this.searchQuery = '';
                   }
               }">
             @csrf
@@ -71,28 +81,78 @@
 
                 {{-- Nombre del firmante --}}
                 <div>
-                    <label for="signer_name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Nombre del firmante <span class="text-red-500" aria-hidden="true">*</span>
                     </label>
-                    <template x-if="hayEmpleados">
-                        <select name="signer_name" id="signer_name"
-                                x-model="selectedNombre"
-                                @change="fillPosition(selectedNombre)"
-                                class="wis-input w-full {{ $errors->has('signer_name') ? 'border-red-400' : '' }}"
-                                required>
-                            <option value="">— Seleccione el firmante —</option>
-                            <template x-for="emp in empleados" :key="emp.nombre">
-                                <option :value="emp.nombre" x-text="emp.nombre"></option>
-                            </template>
-                        </select>
+
+                    {{-- Firmante seleccionado --}}
+                    <template x-if="hayEmpleados && selectedNombre">
+                        <div class="mt-1.5 flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-2.5 dark:border-blue-700 dark:bg-blue-900/20">
+                            <input type="hidden" name="signer_name" :value="selectedNombre">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                     x-text="selectedNombre.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase()"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedNombre"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="signerPosition || 'Sin cargo registrado'"></p>
+                                </div>
+                            </div>
+                            <button type="button" @click="clearEmpleado()"
+                                    class="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    aria-label="Cambiar firmante">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </template>
+
+                    {{-- Buscador (hay empleados, ninguno seleccionado) --}}
+                    <template x-if="hayEmpleados && !selectedNombre">
+                        <div class="relative mt-1.5">
+                            <input type="text"
+                                   x-model="searchQuery"
+                                   @focus="showDropdown = true"
+                                   @input="showDropdown = true"
+                                   @click.outside="showDropdown = false"
+                                   placeholder="Buscar firmante por nombre..."
+                                   autocomplete="off"
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 {{ $errors->has('signer_name') ? 'border-red-400' : '' }}" />
+                            <template x-if="showDropdown && filteredEmpleados.length > 0">
+                                <ul class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800" role="listbox">
+                                    <template x-for="emp in filteredEmpleados" :key="emp.nombre">
+                                        <li>
+                                            <button type="button" @click="selectEmpleado(emp)"
+                                                    class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    role="option">
+                                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                                     x-text="emp.nombre.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase()"></div>
+                                                <div>
+                                                    <p class="font-medium text-gray-900 dark:text-white" x-text="emp.nombre"></p>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="emp.cargo || 'Sin cargo'"></p>
+                                                </div>
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template x-if="showDropdown && searchQuery.length >= 2 && filteredEmpleados.length === 0">
+                                <div class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm text-gray-500 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                                    No se encontraron empleados.
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    {{-- Sin empleados: entrada manual --}}
                     <template x-if="!hayEmpleados">
-                        <input type="text" name="signer_name" id="signer_name"
+                        <input type="text" name="signer_name"
                                value="{{ old('signer_name', $signature->signer_name) }}"
                                required maxlength="200"
-                               placeholder="Ej: María García López"
-                               class="wis-input w-full {{ $errors->has('signer_name') ? 'border-red-400' : '' }}" />
+                               placeholder="Nombre del firmante"
+                               class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 {{ $errors->has('signer_name') ? 'border-red-400' : '' }}" />
                     </template>
+
                     @error('signer_name')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                     @enderror
@@ -107,8 +167,11 @@
                            x-model="signerPosition"
                            required maxlength="200"
                            placeholder="Cargo del firmante"
-                           :readonly="hayEmpleados && cargoAutoLlenado"
-                           class="wis-input w-full {{ $errors->has('signer_position') ? 'border-red-400' : '' }}" />
+                           :readonly="cargoAutoLlenado"
+                           :class="cargoAutoLlenado
+                               ? 'bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-400'
+                               : 'bg-white text-gray-900 dark:bg-gray-700 dark:text-white'"
+                           class="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:placeholder:text-gray-500 {{ $errors->has('signer_position') ? 'border-red-400' : '' }}" />
                     @error('signer_position')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                     @enderror

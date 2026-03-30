@@ -21,7 +21,7 @@ class CertificateSignaturePolicy
         return null;
     }
 
-    private const MANAGERS = ['admin', 'rh-manager'];
+    private const MANAGERS = ['admin', 'rh-manager', 'contractor-manager', 'employee-manager'];
 
     public function viewAny(User $user): bool
     {

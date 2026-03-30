@@ -94,7 +94,7 @@ class MenuHelper
             ['name' => 'Historial', 'path' => '/certificados'],
         ];
 
-        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'contractor-manager', 'employee-manager'])) {
             $subItems[] = ['name' => 'Firmas digitales', 'path' => '/certificados/firmas'];
         }
 

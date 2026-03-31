@@ -23,34 +23,34 @@ class PositionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer']);
+        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer', 'employee-manager']);
     }
 
     public function view(User $user, Position $position): bool
     {
-        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer'])
+        return $user->hasRole(['admin', 'rh-manager', 'rh-viewer', 'employee-manager'])
             && $user->institution_id === $position->institution_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole(['admin', 'rh-manager']);
+        return $user->hasRole(['admin', 'rh-manager', 'employee-manager']);
     }
 
     public function update(User $user, Position $position): bool
     {
-        return $user->hasRole(['admin', 'rh-manager'])
+        return $user->hasRole(['admin', 'rh-manager', 'employee-manager'])
             && $user->institution_id === $position->institution_id;
     }
 
     public function delete(User $user, Position $position): bool
     {
-        return $user->hasRole(['admin', 'rh-manager'])
+        return $user->hasRole(['admin', 'rh-manager', 'employee-manager'])
             && $user->institution_id === $position->institution_id;
     }
 
     public function import(User $user): bool
     {
-        return $user->hasRole(['admin', 'rh-manager']);
+        return $user->hasRole(['admin', 'rh-manager', 'employee-manager']);
     }
 }

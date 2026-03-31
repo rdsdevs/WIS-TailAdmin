@@ -11,6 +11,7 @@ class MenuHelper
      * Filtra las secciones según el rol del usuario autenticado.
      *
      * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Departamentos, Cargos)
+     * - employee-manager                 : Colaboradores, Contratos, Cargos (empleados)
      * - rh-viewer                        : Colaboradores, Contratos (solo lectura)
      */
     public static function getRhNavItems(): array
@@ -30,7 +31,7 @@ class MenuHelper
             $subItems[] = ['name' => 'Importar contratos', 'path' => '/rh/contratos/importar'];
         }
 
-        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'employee-manager'])) {
             $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
             $subItems[] = ['name' => 'Importar cargos', 'path' => '/rh/cargos/importar'];
         }

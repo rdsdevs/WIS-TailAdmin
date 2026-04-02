@@ -51,7 +51,9 @@ class PositionController extends Controller
 
     public function show(Position $cargo): View
     {
-        $this->authorize('viewAny', Position::class);
+        $this->authorize('view', $cargo);
+
+        $cargo->load(['department', 'emails', 'functions']);
 
         return view('pages.rh.cargos.show', compact('cargo'));
     }
@@ -66,6 +68,8 @@ class PositionController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+
+        $cargo->load(['emails', 'functions']);
 
         return view('pages.rh.cargos.edit', compact('cargo', 'departamentos'));
     }

@@ -11,15 +11,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('positions', function (Blueprint $table): void {
-            $table->string('code', 20)->nullable()->after('institution_id');
-            $table->string('email', 100)->nullable()->after('name');
+            $table->dropForeign(['department_id']);
+            $table->dropIndex(['department_id']);
+            $table->dropColumn('department_id');
         });
     }
 
     public function down(): void
     {
         Schema::table('positions', function (Blueprint $table): void {
-            $table->dropColumn(['code', 'email']);
+            $table->foreignUuid('department_id')
+                ->nullable()
+                ->after('institution_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->index('department_id');
         });
     }
 };

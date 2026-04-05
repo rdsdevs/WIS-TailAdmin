@@ -6,7 +6,6 @@ use Livewire\Volt\Component;
 use App\Models\RH\Contract;
 use App\Models\RH\Collaborator;
 use App\Models\RH\Position;
-use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     
@@ -34,22 +33,9 @@ new class extends Component {
             ->with(['activeContract.position'])
             ->get();
 
-        // Estadísticas por departamento
-        $distribucionDepto = DB::table('contracts')
-            ->join('positions', 'contracts.position_id', '=', 'positions.id')
-            ->join('departments', 'positions.department_id', '=', 'departments.id')
-            ->join('collaborators', 'contracts.collaborator_id', '=', 'collaborators.id')
-            ->where('contracts.institution_id', $institutionId)
-            ->where('contracts.status', 'Vigente')
-            ->where('collaborators.type', 'Empleado')
-            ->select('departments.name', DB::raw('count(*) as total'))
-            ->groupBy('departments.name')
-            ->get();
-
         return [
             'vencimientos' => $vencimientos,
             'pendientesLey1918' => $pendientesLey1918,
-            'distribucionDepto' => $distribucionDepto,
             'totalEmpleados' => Collaborator::where('institution_id', $institutionId)->where('type', 'Empleado')->count(),
             'totalCargos' => Position::where('institution_id', $institutionId)->count(),
         ];
@@ -143,26 +129,8 @@ new class extends Component {
         </div>
     </div>
 
-    {{-- Distribución y Estadísticas --}}
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        
-        {{-- Distribución por Depto --}}
-        <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">Distribución por Departamento</h3>
-            <div class="space-y-4">
-                @foreach($distribucionDepto as $d)
-                    <div>
-                        <div class="flex items-center justify-between text-sm mb-1">
-                            <span class="text-gray-600 dark:text-gray-400">{{ $d->name }}</span>
-                            <span class="font-semibold text-gray-900 dark:text-white">{{ $d->total }}</span>
-                        </div>
-                        <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-                            <div class="h-2 rounded-full bg-blue-500" style="width: {{ ($d->total / max($totalEmpleados, 1)) * 100 }}%"></div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
+    {{-- Estadísticas y Accesos Rápidos --}}
+    <div class="grid grid-cols-1 gap-6">
 
         {{-- Accesos Rápidos de Gestión --}}
         <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">

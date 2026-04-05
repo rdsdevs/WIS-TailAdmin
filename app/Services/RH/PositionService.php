@@ -19,7 +19,6 @@ final class PositionService
     {
         return Position::query()
             ->where('institution_id', $institutionId)
-            ->with('department')
             ->orderBy('name')
             ->paginate($perPage);
     }

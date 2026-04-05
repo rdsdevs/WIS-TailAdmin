@@ -8,7 +8,6 @@ use Database\Seeders\Contabilidad\AccountingAccountSeeder;
 use Database\Seeders\Contabilidad\CostCenterSeeder;
 use Database\Seeders\RH\CollaboratorStatusSeeder;
 use Database\Seeders\RH\ContractTypeSeeder;
-use Database\Seeders\RH\DepartmentSeeder;
 use Database\Seeders\RH\DocumentTypeSeeder;
 use Database\Seeders\RH\PositionSeeder;
 use Illuminate\Database\Seeder;
@@ -28,7 +27,6 @@ class DatabaseSeeder extends Seeder
             DocumentTypeSeeder::class,
             CollaboratorStatusSeeder::class,
             ContractTypeSeeder::class,
-            DepartmentSeeder::class,
             PositionSeeder::class,
             // Módulo Contabilidad — catálogos
             AccountingAccountSeeder::class,

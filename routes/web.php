@@ -25,9 +25,6 @@ Route::get('/', fn () => redirect()->route('dashboard'));
 
 // ─── Módulo de Recursos Humanos ──────────────────────────────────────────────
 Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
-    // Dependencias (departamentos)
-    Route::resource('departamentos', RH\DepartmentController::class);
-
     // Cargos (positions)
     Route::resource('cargos', RH\PositionController::class);
 

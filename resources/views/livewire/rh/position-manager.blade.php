@@ -5,8 +5,6 @@ declare(strict_types=1);
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use App\Models\RH\Position;
-use App\Services\RH\PositionService;
-use Illuminate\Support\Collection;
 
 new class extends Component {
     use WithPagination;
@@ -100,66 +98,49 @@ new class extends Component {
 
         $this->validate($rules);
 
-        $data = [
-            'institution_id' => auth()->user()->institution_id,
-            'name' => $this->name,
-            'code' => $this->code ?: null,
-            'description' => $this->description ?: null,
-            'is_active' => $this->isActive,
-            'emails' => $this->emails,
-            'functions' => $this->functions,
-        ];
+        $institutionId = auth()->user()->institution_id;
 
-        // Usamos el servicio para persistir
-        $request = new \App\Http\Requests\RH\CreatePositionRequest($data);
-        // Simulamos el objeto request para el servicio o inyectamos manualmente
-        // Pero el servicio actual recibe el objeto Request de Laravel. 
-        // Por simplicidad en Volt, llamaremos a la lógica directamente o refactorizaremos el servicio.
-        
-        $service = app(PositionService::class);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($institutionId): void {
+            if ($this->positionId) {
+                $position = Position::findOrFail($this->positionId);
+                $position->update([
+                    'name'        => $this->name,
+                    'code'        => $this->code ?: null,
+                    'description' => $this->description ?: null,
+                    'is_active'   => $this->isActive,
+                ]);
 
-        if ($this->positionId) {
-            $position = Position::findOrFail($this->positionId);
-            // El servicio espera UpdatePositionRequest
-            $position->update([
-                'name' => $this->name,
-                'code' => $this->code ?: null,
-                'description' => $this->description ?: null,
-                'is_active' => $this->isActive,
-            ]);
-            
-            // Sincronizar emails
-            $position->emails()->delete();
-            foreach ($this->emails as $email) {
-                $position->emails()->create(['email' => $email]);
+                $position->emails()->delete();
+                foreach ($this->emails as $email) {
+                    $position->emails()->create(['email' => $email]);
+                }
+
+                $position->functions()->delete();
+                foreach ($this->functions as $func) {
+                    $position->functions()->create(['description' => $func]);
+                }
+
+                $this->dispatch('notify', type: 'success', message: 'Cargo actualizado correctamente.');
+            } else {
+                $position = Position::create([
+                    'institution_id' => $institutionId,
+                    'name'           => $this->name,
+                    'code'           => $this->code ?: null,
+                    'description'    => $this->description ?: null,
+                    'is_active'      => $this->isActive,
+                ]);
+
+                foreach ($this->emails as $email) {
+                    $position->emails()->create(['email' => $email]);
+                }
+
+                foreach ($this->functions as $func) {
+                    $position->functions()->create(['description' => $func]);
+                }
+
+                $this->dispatch('notify', type: 'success', message: 'Cargo registrado correctamente.');
             }
-            
-            // Sincronizar funciones
-            $position->functions()->delete();
-            foreach ($this->functions as $func) {
-                $position->functions()->create(['description' => $func]);
-            }
-            
-            $this->dispatch('notify', type: 'success', message: 'Cargo actualizado correctamente.');
-        } else {
-            $position = Position::create([
-                'institution_id' => auth()->user()->institution_id,
-                'name' => $this->name,
-                'code' => $this->code ?: null,
-                'description' => $this->description ?: null,
-                'is_active' => $this->isActive,
-            ]);
-            
-            foreach ($this->emails as $email) {
-                $position->emails()->create(['email' => $email]);
-            }
-            
-            foreach ($this->functions as $func) {
-                $position->functions()->create(['description' => $func]);
-            }
-            
-            $this->dispatch('notify', type: 'success', message: 'Cargo registrado correctamente.');
-        }
+        });
 
         $this->isOpen = false;
     }

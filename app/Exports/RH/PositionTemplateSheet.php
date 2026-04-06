@@ -23,24 +23,23 @@ class PositionTemplateSheet implements FromArray, WithColumnWidths, WithStyles, 
     public function array(): array
     {
         return [
-            ['departamento (*)', 'nombre_cargo (*)', 'activo'],
-            ['Dirección Académica', 'Coordinador de Programas', 'SI'],
+            ['nombre_cargo (*)', 'activo'],
+            ['Coordinador de Programas', 'SI'],
         ];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 30,
-            'B' => 30,
-            'C' => 10,
+            'A' => 35,
+            'B' => 10,
         ];
     }
 
     public function styles(Worksheet $sheet): array
     {
         // Encabezado: fondo azul oscuro, texto blanco, negrita
-        $sheet->getStyle('A1:C1')->applyFromArray([
+        $sheet->getStyle('A1:B1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
@@ -48,7 +47,7 @@ class PositionTemplateSheet implements FromArray, WithColumnWidths, WithStyles, 
         ]);
 
         // Fila de ejemplo: cursiva, color gris tenue
-        $sheet->getStyle('A2:C2')->applyFromArray([
+        $sheet->getStyle('A2:B2')->applyFromArray([
             'font' => ['italic' => true, 'color' => ['argb' => 'FF888888']],
         ]);
 

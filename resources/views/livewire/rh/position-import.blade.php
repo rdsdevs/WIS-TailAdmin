@@ -169,7 +169,7 @@ new class extends Component {
             {{-- Bloque informativo según tipo --}}
             <div class="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:border-blue-800/50 dark:text-blue-300" role="note">
                 @if($tipo === 'cargos')
-                    Crea o actualiza cargos. Si el cargo ya existe en el departamento, actualiza sus datos.
+                    Crea o actualiza cargos. Si el cargo ya existe en la institución, actualiza sus datos.
                 @elseif($tipo === 'funciones')
                     Agrega nuevas funciones al cargo indicado. No elimina las funciones existentes.
                 @else
@@ -184,7 +184,6 @@ new class extends Component {
                 </p>
                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                     @if($tipo === 'cargos')
-                        <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700 dark:bg-gray-700 dark:text-gray-200">departamento (*)</code>
                         <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700 dark:bg-gray-700 dark:text-gray-200">nombre_cargo (*)</code>
                         <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700 dark:bg-gray-700 dark:text-gray-200">activo</code> (SI/NO)
                     @elseif($tipo === 'funciones')

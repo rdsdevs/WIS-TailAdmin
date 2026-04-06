@@ -20,7 +20,6 @@ class UpdatePositionRequest extends FormRequest
         $position = $this->route('cargo');
 
         return [
-            'department_id' => ['required', 'uuid', 'exists:departments,id'],
             'name' => [
                 'required',
                 'string',
@@ -43,8 +42,6 @@ class UpdatePositionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'department_id.required' => 'La dependencia es obligatoria.',
-            'department_id.exists' => 'La dependencia seleccionada no existe.',
             'name.required' => 'El nombre del cargo es obligatorio.',
             'name.max' => 'El nombre del cargo no puede tener más de :max caracteres.',
             'name.unique' => 'Ya existe un cargo con este nombre en la institución.',

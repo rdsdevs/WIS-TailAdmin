@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Models\Institution;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
-use App\Models\RH\Department;
 use App\Models\RH\DocumentType;
 use App\Models\RH\Position;
 use App\Models\User;
@@ -15,75 +14,6 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-});
-
-// ─── Gestión de Departamentos ─────────────────────────────────────────────────
-
-describe('Gestión de Departamentos', function (): void {
-
-    beforeEach(function (): void {
-        $institution = Institution::factory()->create();
-        $this->gerente = User::factory()->create(['institution_id' => $institution->id]);
-        $this->gerente->assignRole('rh-manager');
-        $this->institution = $institution;
-        $this->actingAs($this->gerente);
-    });
-
-    it('puede ver el listado de departamentos', function (): void {
-        Department::factory()->count(3)->create([
-            'institution_id' => $this->institution->id,
-            'name' => fn () => fake()->unique()->word().' '.fake()->word(),
-        ]);
-
-        $this->get(route('rh.departamentos.index'))
-            ->assertOk()
-            ->assertViewIs('pages.rh.departamentos.index');
-    });
-
-    it('puede crear un departamento con datos válidos', function (): void {
-        $datos = [
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento de Prueba',
-            'description' => 'Descripción de prueba',
-            'is_active' => true,
-        ];
-
-        $this->post(route('rh.departamentos.store'), $datos)
-            ->assertRedirect();
-
-        $this->assertDatabaseHas('departments', [
-            'name' => 'Departamento de Prueba',
-        ]);
-    });
-
-    it('impide que un consultor cree departamentos', function (): void {
-        $consultor = User::factory()->create([
-            'institution_id' => $this->institution->id,
-        ]);
-        $consultor->assignRole('rh-viewer');
-
-        $datos = [
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento No Permitido',
-            'is_active' => true,
-        ];
-
-        $this->actingAs($consultor)
-            ->post(route('rh.departamentos.store'), $datos)
-            ->assertForbidden();
-    });
-
-    it('puede eliminar un departamento', function (): void {
-        $departamento = Department::factory()->create([
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento A Eliminar',
-        ]);
-
-        $this->delete(route('rh.departamentos.destroy', $departamento))
-            ->assertRedirect();
-
-        $this->assertSoftDeleted('departments', ['id' => $departamento->id]);
-    });
 });
 
 // ─── Gestión de Cargos ────────────────────────────────────────────────────────
@@ -99,13 +29,8 @@ describe('Gestión de Cargos', function (): void {
     });
 
     it('puede ver el listado de cargos', function (): void {
-        $departamento = Department::factory()->create([
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento de Cargos',
-        ]);
         Position::factory()->count(3)->create([
             'institution_id' => $this->institution->id,
-            'department_id' => $departamento->id,
             'name' => fn () => fake()->unique()->jobTitle(),
         ]);
 
@@ -115,14 +40,8 @@ describe('Gestión de Cargos', function (): void {
     });
 
     it('puede crear un cargo con datos válidos', function (): void {
-        $departamento = Department::factory()->create([
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento para Cargo',
-        ]);
-
         $datos = [
             'institution_id' => $this->institution->id,
-            'department_id' => $departamento->id,
             'name' => 'Analista de Sistemas',
             'is_active' => true,
         ];
@@ -141,14 +60,8 @@ describe('Gestión de Cargos', function (): void {
         ]);
         $consultor->assignRole('rh-viewer');
 
-        $departamento = Department::factory()->create([
-            'institution_id' => $this->institution->id,
-            'name' => 'Departamento Consultor',
-        ]);
-
         $datos = [
             'institution_id' => $this->institution->id,
-            'department_id' => $departamento->id,
             'name' => 'Cargo No Permitido',
             'is_active' => true,
         ];

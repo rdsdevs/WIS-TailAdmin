@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories\RH;
 
 use App\Models\Institution;
-use App\Models\RH\Department;
 use App\Models\RH\Position;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -38,7 +37,6 @@ class PositionFactory extends Factory
 
         return [
             'institution_id' => Institution::factory(),
-            'department_id' => Department::factory(),
             'name' => $this->faker->unique()->randomElement($cargos),
             'description' => $this->faker->optional()->sentence(),
             'is_active' => true,

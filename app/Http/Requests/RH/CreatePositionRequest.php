@@ -17,7 +17,6 @@ class CreatePositionRequest extends FormRequest
     {
         return [
             'institution_id' => ['required', 'uuid', 'exists:institutions,id'],
-            'department_id' => ['required', 'uuid', 'exists:departments,id'],
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
@@ -35,8 +34,6 @@ class CreatePositionRequest extends FormRequest
         return [
             'institution_id.required' => 'La institución es obligatoria.',
             'institution_id.exists' => 'La institución seleccionada no existe.',
-            'department_id.required' => 'La dependencia es obligatoria.',
-            'department_id.exists' => 'La dependencia seleccionada no existe.',
             'name.required' => 'El nombre del cargo es obligatorio.',
             'name.max' => 'El nombre del cargo no puede tener más de :max caracteres.',
         ];

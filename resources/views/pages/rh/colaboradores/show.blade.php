@@ -97,9 +97,6 @@
                     @if($activeContract?->position)
                         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                             {{ $activeContract->position->name }}
-                            @if($activeContract->position->department)
-                                <span class="text-gray-400 dark:text-gray-500">&bull; {{ $activeContract->position->department->name }}</span>
-                            @endif
                         </p>
                     @endif
                 </div>
@@ -335,12 +332,6 @@
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">Cargo</p>
                                 <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-white">{{ $activeContract->position->name }}</p>
-                            </div>
-                        @endif
-                        @if($activeContract->position?->department)
-                            <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Departamento</p>
-                                <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-white">{{ $activeContract->position->department->name }}</p>
                             </div>
                         @endif
                         @if($activeContract->contractType)

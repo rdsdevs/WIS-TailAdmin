@@ -10,7 +10,7 @@ class MenuHelper
      * Retorna los ítems de navegación del módulo de Recursos Humanos.
      * Filtra las secciones según el rol del usuario autenticado.
      *
-     * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Departamentos, Cargos)
+     * - super-admin / admin / rh-manager : ven todo (Colaboradores, Contratos, Cargos)
      * - rh-viewer                        : Colaboradores, Contratos (solo lectura)
      */
     public static function getRhNavItems(): array
@@ -32,10 +32,6 @@ class MenuHelper
 
         if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
             $subItems[] = ['name' => 'Cargos', 'path' => '/rh/cargos'];
-        }
-
-        if ($user->hasAnyRole(['super-admin', 'admin', 'rh-manager'])) {
-            $subItems[] = ['name' => 'Departamentos', 'path' => '/rh/departamentos'];
         }
 
         return [

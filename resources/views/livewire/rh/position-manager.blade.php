@@ -12,9 +12,14 @@ new class extends Component {
     // ── Filtros y búsqueda ───────────────────────────────────────────────────
     public string $search = '';
 
-    // ── Estado del modal ─────────────────────────────────────────────────────
+    // ── Estado del modal crear/editar ────────────────────────────────────────
     public bool $isOpen = false;
     public ?string $positionId = null;
+
+    // ── Estado del modal de confirmación de eliminación ───────────────────────
+    public bool $confirmingDelete = false;
+    public ?string $deleteTargetId = null;
+    public string $deleteTargetName = '';
 
     // ── Datos del formulario ─────────────────────────────────────────────────
     public string $name = '';
@@ -153,12 +158,37 @@ new class extends Component {
         $this->dispatch('notify', type: 'success', message: 'Estado del cargo actualizado.');
     }
 
-    public function delete(string $id): void
+    public function confirmDelete(string $id): void
     {
         $position = Position::findOrFail($id);
         $this->authorize('delete', $position);
+        $this->deleteTargetId = $id;
+        $this->deleteTargetName = $position->name;
+        $this->confirmingDelete = true;
+    }
+
+    public function delete(): void
+    {
+        if (! $this->deleteTargetId) {
+            return;
+        }
+
+        $position = Position::findOrFail($this->deleteTargetId);
+        $this->authorize('delete', $position);
         $position->delete();
+
+        $this->confirmingDelete = false;
+        $this->deleteTargetId = null;
+        $this->deleteTargetName = '';
+
         $this->dispatch('notify', type: 'success', message: 'Cargo eliminado correctamente.');
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->confirmingDelete = false;
+        $this->deleteTargetId = null;
+        $this->deleteTargetName = '';
     }
 };
 ?>
@@ -226,20 +256,14 @@ new class extends Component {
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                @can('update', $pos)
                                 <button wire:click="openEditModal('{{ $pos->id }}')" title="Editar cargo"
-                                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    class="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </button>
-                                @endcan
-                                @can('delete', $pos)
-                                <button wire:click="delete('{{ $pos->id }}')"
-                                    wire:confirm="¿Está seguro de que desea eliminar el cargo '{{ $pos->name }}'? Esta acción no se puede deshacer."
-                                    title="Eliminar cargo"
-                                    class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                <button wire:click="confirmDelete('{{ $pos->id }}')" title="Eliminar cargo"
+                                    class="rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
-                                @endcan
                             </div>
                         </td>
                     </tr>
@@ -256,6 +280,47 @@ new class extends Component {
             {{ $positions->links() }}
         </div>
     </div>
+
+    {{-- Modal de Confirmación de Eliminación --}}
+    @if($confirmingDelete)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-delete-title" role="dialog" aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 text-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"></div>
+
+            <div class="relative inline-block transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md dark:bg-gray-800">
+                <div class="px-6 py-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                            <svg class="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white" id="modal-delete-title">
+                                Eliminar cargo
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                ¿Está seguro de que desea eliminar el cargo
+                                <span class="font-medium text-gray-900 dark:text-white">"{{ $deleteTargetName }}"</span>?
+                                Esta acción no se puede deshacer.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-700/50 flex justify-end gap-3">
+                    <button wire:click="cancelDelete"
+                        class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancelar
+                    </button>
+                    <button wire:click="delete"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Modal de Crear / Editar --}}
     @if($isOpen)

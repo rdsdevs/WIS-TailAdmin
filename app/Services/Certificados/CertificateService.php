@@ -81,7 +81,7 @@ final class CertificateService
 
             $contractsSnapshot = [];
             foreach ($contractIds as $contractId) {
-                $contract = Contract::with(['contractType', 'position.department'])->findOrFail($contractId);
+                $contract = Contract::with(['contractType', 'position'])->findOrFail($contractId);
 
                 $positionChanges = [];
                 if (! empty($options['show_position_history'])) {
@@ -106,7 +106,7 @@ final class CertificateService
                     'end_date' => $contract->end_date?->format('d/m/Y'),
                     'status' => $contract->status ?? '',
                     'position' => $contract->position?->name ?? '',
-                    'department' => $contract->position?->department?->name ?? '',
+                    'department' => '',
                     'salary' => $contract->salary,
                     'position_changes' => $positionChanges,
                 ];

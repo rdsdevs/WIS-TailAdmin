@@ -9,7 +9,6 @@ use App\Jobs\RH\ImportPositionEmailsJob;
 use App\Jobs\RH\ImportPositionFunctionsJob;
 use App\Jobs\RH\ImportPositionsJob;
 use App\Models\Institution;
-use App\Models\RH\Department;
 use App\Models\RH\Position;
 use App\Models\RH\PositionEmail;
 use App\Models\RH\PositionFunction;
@@ -28,7 +27,7 @@ beforeEach(function (): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Crea institución, departamento y usuario con el rol indicado.
+ * Crea institución y usuario con el rol indicado.
  */
 function contextoImportacionCargos(string $rol): array
 {
@@ -36,12 +35,7 @@ function contextoImportacionCargos(string $rol): array
     $user = User::factory()->create(['institution_id' => $institution->id]);
     $user->assignRole($rol);
 
-    $department = Department::factory()->create([
-        'institution_id' => $institution->id,
-        'name' => 'Dirección General',
-    ]);
-
-    return [$user, $institution, $department];
+    return [$user, $institution];
 }
 
 /**
@@ -53,8 +47,8 @@ function crearExcelCargos(array $filas = []): \Illuminate\Http\UploadedFile
 {
     if (empty($filas)) {
         $filas = [
-            ['departamento' => 'Dirección General', 'nombre_cargo' => 'Coordinador de Prueba', 'activo' => 'SI'],
-            ['departamento' => 'Dirección General', 'nombre_cargo' => 'Analista de Prueba', 'activo' => 'SI'],
+            ['nombre_cargo' => 'Coordinador de Prueba', 'activo' => 'SI'],
+            ['nombre_cargo' => 'Analista de Prueba', 'activo' => 'SI'],
         ];
     }
 
@@ -267,12 +261,11 @@ describe('Importación masiva de cargos', function (): void {
     });
 
     it('importar cargo existente lo actualiza sin crear duplicado', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         // Cargo que ya existe en la base de datos
         Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Coordinador Existente',
             'is_active'      => true,
         ]);
@@ -281,7 +274,6 @@ describe('Importación masiva de cargos', function (): void {
 
         $filas = collect([
             collect([
-                'departamento' => 'Dirección General',
                 'nombre_cargo' => 'Coordinador Existente',
                 'activo'       => 'NO',
             ]),
@@ -361,12 +353,11 @@ describe('Importación masiva de correos de cargo', function (): void {
 describe('Clase PositionImport — lógica interna', function (): void {
 
     it('crea cargos nuevos y actualiza existentes al procesar la colección', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         // Cargo preexistente que debe ser actualizado
         Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Cargo Preexistente',
             'is_active'      => true,
         ]);
@@ -375,12 +366,10 @@ describe('Clase PositionImport — lógica interna', function (): void {
 
         $filas = collect([
             collect([
-                'departamento' => 'Dirección General',
                 'nombre_cargo' => 'Cargo Preexistente',
                 'activo'       => 'NO',
             ]),
             collect([
-                'departamento' => 'Dirección General',
                 'nombre_cargo' => 'Cargo Nuevo Importado',
                 'activo'       => 'SI',
             ]),
@@ -406,38 +395,15 @@ describe('Clase PositionImport — lógica interna', function (): void {
         expect($import->skipped)->toBe(0);
     });
 
-    it('omite filas cuyo departamento no existe en la institución', function (): void {
-        [, $institution] = contextoImportacionCargos('rh-manager');
-
-        $import = new PositionImport(institutionId: (string) $institution->id);
-
-        $filas = collect([
-            collect([
-                'departamento' => 'Departamento Inexistente',
-                'nombre_cargo' => 'Cargo Sin Departamento',
-                'activo'       => 'SI',
-            ]),
-        ]);
-
-        $import->collection($filas);
-
-        $this->assertDatabaseMissing('positions', [
-            'name' => 'Cargo Sin Departamento',
-        ]);
-
-        expect($import->skipped)->toBe(1);
-        expect($import->imported)->toBe(0);
-    });
 });
 
 describe('Clase PositionFunctionImport — lógica interna', function (): void {
 
     it('no duplica funciones idénticas en una reimportación', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         $cargo = Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Coordinador de Funciones',
             'is_active'      => true,
         ]);
@@ -469,11 +435,10 @@ describe('Clase PositionFunctionImport — lógica interna', function (): void {
     });
 
     it('crea función para un cargo existente', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         $cargo = Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Analista de Nómina',
             'is_active'      => true,
         ]);
@@ -502,11 +467,10 @@ describe('Clase PositionFunctionImport — lógica interna', function (): void {
 describe('Clase PositionEmailImport — lógica interna', function (): void {
 
     it('crea correo para un cargo existente', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         $cargo = Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Secretaria Ejecutiva',
             'is_active'      => true,
         ]);
@@ -532,11 +496,10 @@ describe('Clase PositionEmailImport — lógica interna', function (): void {
     });
 
     it('no duplica correos idénticos en una reimportación', function (): void {
-        [, $institution, $department] = contextoImportacionCargos('rh-manager');
+        [, $institution] = contextoImportacionCargos('rh-manager');
 
         $cargo = Position::create([
             'institution_id' => $institution->id,
-            'department_id'  => $department->id,
             'name'           => 'Asesor Jurídico',
             'is_active'      => true,
         ]);

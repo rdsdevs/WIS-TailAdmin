@@ -86,24 +86,6 @@
                                 @enderror
                             </div>
 
-                            <div>
-                                <label for="department_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Departamento <span class="text-red-500">*</span>
-                                </label>
-                                <select id="department_id" name="department_id" required
-                                        class="wis-input w-full {{ $errors->has('department_id') ? 'border-red-400' : '' }}">
-                                    <option value="">— Seleccione —</option>
-                                    @foreach($departamentos as $dep)
-                                        <option value="{{ $dep->id }}" {{ old('department_id') === $dep->id ? 'selected' : '' }}>
-                                            {{ $dep->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('department_id')
-                                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                                @enderror
-                            </div>
-
                             <div class="sm:col-span-2">
                                 <label for="description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Descripción

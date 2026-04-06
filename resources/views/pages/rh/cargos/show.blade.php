@@ -5,7 +5,7 @@
         <div>
             <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{ $cargo->name }}</h2>
             <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                Detalle del cargo — {{ $cargo->department->name ?? 'Sin departamento' }}
+                Detalle del cargo
             </p>
         </div>
         <div class="flex items-center gap-3">
@@ -59,10 +59,6 @@
                     <div>
                         <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Código</dt>
                         <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $cargo->code ?: '—' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Departamento</dt>
-                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $cargo->department->name ?? '—' }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</dt>

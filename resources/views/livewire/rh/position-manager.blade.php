@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use App\Models\RH\Position;
-use App\Models\RH\Department;
 use App\Services\RH\PositionService;
 use Illuminate\Support\Collection;
 
@@ -14,7 +13,6 @@ new class extends Component {
 
     // ── Filtros y búsqueda ───────────────────────────────────────────────────
     public string $search = '';
-    public string $departmentFilter = '';
 
     // ── Estado del modal ─────────────────────────────────────────────────────
     public bool $isOpen = false;
@@ -23,7 +21,6 @@ new class extends Component {
     // ── Datos del formulario ─────────────────────────────────────────────────
     public string $name = '';
     public string $code = '';
-    public string $departmentId = '';
     public string $description = '';
     public bool $isActive = true;
     
@@ -35,13 +32,11 @@ new class extends Component {
     {
         return [
             'positions' => Position::query()
-                ->with(['department', 'emails', 'functions'])
+                ->with(['emails', 'functions'])
                 ->byInstitution(auth()->user()->institution_id)
                 ->when($this->search, fn($q) => $q->where('name', 'like', "%{$this->search}%")->orWhere('code', 'like', "%{$this->search}%"))
-                ->when($this->departmentFilter, fn($q) => $q->where('department_id', $this->departmentFilter))
                 ->orderBy('name')
                 ->paginate(10),
-            'departments' => Department::byInstitution(auth()->user()->institution_id)->orderBy('name')->get(),
         ];
     }
 
@@ -49,7 +44,7 @@ new class extends Component {
     public function openCreateModal(): void
     {
         $this->resetValidation();
-        $this->reset(['positionId', 'name', 'code', 'departmentId', 'description', 'isActive', 'emails', 'functions']);
+        $this->reset(['positionId', 'name', 'code', 'description', 'isActive', 'emails', 'functions']);
         $this->isOpen = true;
     }
 
@@ -61,7 +56,6 @@ new class extends Component {
         $this->positionId = $position->id;
         $this->name = $position->name;
         $this->code = $position->code ?? '';
-        $this->departmentId = $position->department_id;
         $this->description = $position->description ?? '';
         $this->isActive = (bool) $position->is_active;
         
@@ -98,7 +92,6 @@ new class extends Component {
         $rules = [
             'name' => 'required|string|max:150',
             'code' => 'nullable|string|max:50',
-            'departmentId' => 'required|uuid|exists:departments,id',
             'description' => 'nullable|string',
             'isActive' => 'boolean',
             'emails.*' => 'required|email|max:150',
@@ -109,7 +102,6 @@ new class extends Component {
 
         $data = [
             'institution_id' => auth()->user()->institution_id,
-            'department_id' => $this->departmentId,
             'name' => $this->name,
             'code' => $this->code ?: null,
             'description' => $this->description ?: null,
@@ -130,7 +122,6 @@ new class extends Component {
             $position = Position::findOrFail($this->positionId);
             // El servicio espera UpdatePositionRequest
             $position->update([
-                'department_id' => $this->departmentId,
                 'name' => $this->name,
                 'code' => $this->code ?: null,
                 'description' => $this->description ?: null,
@@ -153,7 +144,6 @@ new class extends Component {
         } else {
             $position = Position::create([
                 'institution_id' => auth()->user()->institution_id,
-                'department_id' => $this->departmentId,
                 'name' => $this->name,
                 'code' => $this->code ?: null,
                 'description' => $this->description ?: null,
@@ -198,12 +188,6 @@ new class extends Component {
                     class="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             </div>
             
-            <select wire:model.live="departmentFilter" class="rounded-lg border border-gray-300 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <option value="">Todos los departamentos</option>
-                @foreach($departments as $dept)
-                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                @endforeach
-            </select>
         </div>
 
         <button wire:click="openCreateModal" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
@@ -220,7 +204,6 @@ new class extends Component {
             <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
                 <tr>
                     <th class="px-6 py-4">Cargo / Código</th>
-                    <th class="px-6 py-4">Departamento</th>
                     <th class="px-6 py-4">Correos / Funciones</th>
                     <th class="px-6 py-4 text-center">Estado</th>
                     <th class="px-6 py-4 text-right">Acciones</th>
@@ -232,9 +215,6 @@ new class extends Component {
                         <td class="px-6 py-4">
                             <div class="font-medium text-gray-900 dark:text-white">{{ $pos->name }}</div>
                             <div class="text-xs text-gray-500">{{ $pos->code ?: 'Sin código' }}</div>
-                        </td>
-                        <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
-                            {{ $pos->department->name ?? 'N/A' }}
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-1">
@@ -263,7 +243,7 @@ new class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                             No se encontraron cargos.
                         </td>
                     </tr>
@@ -306,16 +286,6 @@ new class extends Component {
                             <input wire:model="code" type="text" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Departamento *</label>
-                            <select wire:model="departmentId" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                <option value="">Seleccione...</option>
-                                @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('departmentId') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-                        </div>
                     </div>
 
                     <div class="mt-4">

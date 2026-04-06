@@ -23,7 +23,6 @@ class Position extends Model implements Auditable
 
     protected $fillable = [
         'institution_id',
-        'department_id',
         'code',
         'name',
         'email',
@@ -38,11 +37,6 @@ class Position extends Model implements Auditable
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
-    }
-
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class);
     }
 
     public function emails(): HasMany

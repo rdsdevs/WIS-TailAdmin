@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Imports\RH;
 
-use App\Models\RH\Department;
 use App\Models\RH\Position;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,45 +24,25 @@ class PositionImport implements SkipsOnFailure, ToCollection, WithChunkReading, 
 
     public int $skipped = 0;
 
-    private array $departmentMap = [];
-
     public function __construct(
         private readonly string $institutionId,
-    ) {
-        $this->departmentMap = Department::query()
-            ->where('institution_id', $this->institutionId)
-            ->get(['id', 'name'])
-            ->mapWithKeys(fn (Department $dept): array => [
-                strtolower(trim($dept->name)) => (string) $dept->id,
-            ])
-            ->toArray();
-    }
+    ) {}
 
     public function collection(Collection $rows): void
     {
         foreach ($rows as $row) {
             $rowArray = $row->toArray();
 
-            $departmentKey = strtolower(trim($rowArray['departamento'] ?? ''));
-            $departmentId = $this->departmentMap[$departmentKey] ?? null;
-
-            if ($departmentId === null) {
-                $this->skipped++;
-
-                continue;
-            }
-
             $activoRaw = strtoupper(trim((string) ($rowArray['activo'] ?? '')));
             $isActive = blank($activoRaw) || in_array($activoRaw, ['SI', 'SÍ', 'S', '1', 'TRUE'], true);
 
             try {
-                DB::transaction(function () use ($rowArray, $departmentId, $isActive): void {
+                DB::transaction(function () use ($rowArray, $isActive): void {
                     $name = trim($rowArray['nombre_cargo']);
 
                     // Buscar incluyendo soft-deleted para poder restaurar sin romper relaciones
                     $position = Position::withTrashed()
                         ->where('institution_id', $this->institutionId)
-                        ->where('department_id', $departmentId)
                         ->where('name', $name)
                         ->first();
 
@@ -76,7 +55,6 @@ class PositionImport implements SkipsOnFailure, ToCollection, WithChunkReading, 
                     } else {
                         Position::create([
                             'institution_id' => $this->institutionId,
-                            'department_id'  => $departmentId,
                             'name'           => $name,
                             'is_active'      => $isActive,
                         ]);
@@ -93,7 +71,6 @@ class PositionImport implements SkipsOnFailure, ToCollection, WithChunkReading, 
     public function rules(): array
     {
         return [
-            '*.departamento' => ['required', 'string'],
             '*.nombre_cargo' => ['required', 'string', 'max:255'],
         ];
     }
@@ -101,7 +78,6 @@ class PositionImport implements SkipsOnFailure, ToCollection, WithChunkReading, 
     public function customValidationMessages(): array
     {
         return [
-            '*.departamento.required' => 'La fila :attribute no tiene departamento.',
             '*.nombre_cargo.required' => 'La fila :attribute no tiene nombre de cargo.',
             '*.nombre_cargo.max' => 'El nombre del cargo en la fila :attribute no puede superar 255 caracteres.',
         ];

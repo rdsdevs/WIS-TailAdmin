@@ -86,7 +86,7 @@ class CollaboratorController extends Controller
         ]);
 
         $contracts = $collaborator->contracts()
-            ->with(['contractType', 'position.department', 'extensions'])
+            ->with(['contractType', 'position', 'extensions'])
             ->orderByDesc('start_date')
             ->get();
 

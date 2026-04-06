@@ -23,7 +23,7 @@ new class extends Component {
         $collaborator = $query->firstOrFail();
 
         return $collaborator->contracts()
-            ->with(['contractType', 'position.department', 'extensions'])
+            ->with(['contractType', 'position', 'extensions'])
             ->orderByDesc('start_date')
             ->get();
     }
@@ -232,9 +232,6 @@ new class extends Component {
                                 @if($contrato->position)
                                     <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                                         {{ $contrato->position->name }}
-                                        @if($contrato->position->department)
-                                            &bull; {{ $contrato->position->department->name }}
-                                        @endif
                                     </p>
                                 @endif
                             </div>

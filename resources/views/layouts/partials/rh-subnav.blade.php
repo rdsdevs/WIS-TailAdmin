@@ -29,21 +29,7 @@
             <span>Contratos</span>
         </a>
 
-        {{-- Departamentos: solo roles con gestión estructural --}}
-        @if(auth()->check() && auth()->user()->hasAnyRole(['super-admin', 'admin', 'rh-manager']))
-            <a href="{{ route('rh.departamentos.index') }}"
-               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors
-                      {{ request()->routeIs('rh.departamentos.*')
-                         ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400'
-                         : 'text-gray-600 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-                </svg>
-                <span>Departamentos</span>
-            </a>
-        @endif
-
-        {{-- Cargos: roles con gestión estructural + employee-manager (necesita ver cargos al crear empleados) --}}
+{{-- Cargos: roles con gestión estructural + employee-manager (necesita ver cargos al crear empleados) --}}
         @if(auth()->check() && auth()->user()->hasAnyRole(['super-admin', 'admin', 'rh-manager', 'employee-manager']))
             <a href="{{ route('rh.cargos.index') }}"
                class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors

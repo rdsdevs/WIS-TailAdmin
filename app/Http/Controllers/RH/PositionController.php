@@ -7,7 +7,6 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RH\CreatePositionRequest;
 use App\Http\Requests\RH\UpdatePositionRequest;
-use App\Models\RH\Department;
 use App\Models\RH\Position;
 use App\Services\RH\PositionService;
 use Illuminate\Http\RedirectResponse;
@@ -31,14 +30,7 @@ class PositionController extends Controller
     {
         $this->authorize('create', Position::class);
 
-        $institutionId = auth()->user()->institution_id;
-        $departamentos = Department::query()
-            ->where('institution_id', $institutionId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('pages.rh.cargos.create', compact('departamentos'));
+        return view('pages.rh.cargos.create');
     }
 
     public function store(CreatePositionRequest $request): RedirectResponse
@@ -53,7 +45,7 @@ class PositionController extends Controller
     {
         $this->authorize('view', $cargo);
 
-        $cargo->load(['department', 'emails', 'functions']);
+        $cargo->load(['emails', 'functions']);
 
         return view('pages.rh.cargos.show', compact('cargo'));
     }
@@ -62,16 +54,9 @@ class PositionController extends Controller
     {
         $this->authorize('update', $cargo);
 
-        $institutionId = auth()->user()->institution_id;
-        $departamentos = Department::query()
-            ->where('institution_id', $institutionId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
         $cargo->load(['emails', 'functions']);
 
-        return view('pages.rh.cargos.edit', compact('cargo', 'departamentos'));
+        return view('pages.rh.cargos.edit', compact('cargo'));
     }
 
     public function update(UpdatePositionRequest $request, Position $cargo): RedirectResponse

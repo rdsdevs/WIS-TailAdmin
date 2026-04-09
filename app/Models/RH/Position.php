@@ -23,10 +23,8 @@ class Position extends Model implements Auditable
 
     protected $fillable = [
         'institution_id',
-        'code',
         'name',
         'email',
-        'description',
         'is_active',
     ];
 

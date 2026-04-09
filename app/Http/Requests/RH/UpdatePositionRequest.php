@@ -28,7 +28,6 @@ class UpdatePositionRequest extends FormRequest
                     ->where('institution_id', $position->institution_id)
                     ->ignore($position->id),
             ],
-            'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
 
             // Correos y Funciones (Opcionales)

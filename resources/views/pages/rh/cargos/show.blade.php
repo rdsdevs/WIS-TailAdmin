@@ -57,10 +57,6 @@
                         <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $cargo->name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Código</dt>
-                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $cargo->code ?: '—' }}</dd>
-                    </div>
-                    <div>
                         <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</dt>
                         <dd class="mt-1">
                             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $cargo->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }}">
@@ -68,12 +64,6 @@
                             </span>
                         </dd>
                     </div>
-                    @if($cargo->description)
-                    <div class="sm:col-span-2">
-                        <dt class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Descripción</dt>
-                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $cargo->description }}</dd>
-                    </div>
-                    @endif
                 </dl>
             </div>
 

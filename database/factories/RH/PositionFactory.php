@@ -38,7 +38,6 @@ class PositionFactory extends Factory
         return [
             'institution_id' => Institution::factory(),
             'name' => $this->faker->unique()->randomElement($cargos),
-            'description' => $this->faker->optional()->sentence(),
             'is_active' => true,
         ];
     }

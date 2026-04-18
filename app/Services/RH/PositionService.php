@@ -32,8 +32,10 @@ final class PositionService
             $validated = $request->validated();
             $emails = $validated['emails'] ?? [];
             $functions = $validated['functions'] ?? [];
+            $responsibilities = $validated['responsibilities'] ?? [];
+            $authorities = $validated['authorities'] ?? [];
 
-            $data = collect($validated)->except(['emails', 'functions'])->all();
+            $data = collect($validated)->except(['emails', 'functions', 'responsibilities', 'authorities'])->all();
             $position = Position::create($data);
 
             if (! empty($emails)) {
@@ -45,6 +47,18 @@ final class PositionService
             if (! empty($functions)) {
                 foreach ($functions as $function) {
                     $position->functions()->create(['description' => $function]);
+                }
+            }
+
+            if (! empty($responsibilities)) {
+                foreach ($responsibilities as $item) {
+                    $position->responsibilities()->create(['description' => $item]);
+                }
+            }
+
+            if (! empty($authorities)) {
+                foreach ($authorities as $item) {
+                    $position->authorities()->create(['description' => $item]);
                 }
             }
 
@@ -61,26 +75,42 @@ final class PositionService
             $validated = $request->validated();
             $emails = $validated['emails'] ?? null;
             $functions = $validated['functions'] ?? null;
+            $responsibilities = array_key_exists('responsibilities', $validated) ? $validated['responsibilities'] : null;
+            $authorities = array_key_exists('authorities', $validated) ? $validated['authorities'] : null;
 
-            $data = collect($validated)->except(['emails', 'functions'])->all();
+            $data = collect($validated)->except(['emails', 'functions', 'responsibilities', 'authorities'])->all();
             $position->update($data);
 
             if ($emails !== null) {
-                $position->emails()->delete();
+                $position->emails()->get()->each->delete();
                 foreach ($emails as $email) {
                     $position->emails()->create(['email' => $email]);
                 }
             }
 
             if ($functions !== null) {
-                $position->functions()->delete();
+                $position->functions()->get()->each->delete();
                 foreach ($functions as $function) {
                     $position->functions()->create(['description' => $function]);
                 }
             }
+
+            if ($responsibilities !== null) {
+                $position->responsibilities()->get()->each->delete();
+                foreach ($responsibilities as $item) {
+                    $position->responsibilities()->create(['description' => $item]);
+                }
+            }
+
+            if ($authorities !== null) {
+                $position->authorities()->get()->each->delete();
+                foreach ($authorities as $item) {
+                    $position->authorities()->create(['description' => $item]);
+                }
+            }
         });
 
-        return $position->fresh(['emails', 'functions']);
+        return $position->fresh(['emails', 'functions', 'responsibilities', 'authorities']);
     }
 
     /**

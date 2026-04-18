@@ -30,11 +30,15 @@ class UpdatePositionRequest extends FormRequest
             ],
             'is_active' => ['boolean'],
 
-            // Correos y Funciones (Opcionales)
-            'emails' => ['nullable', 'array'],
-            'emails.*' => ['required', 'email', 'max:150'],
-            'functions' => ['nullable', 'array'],
-            'functions.*' => ['required', 'string'],
+            // Correos, Funciones, Responsabilidades y Autoridades (Opcionales)
+            'emails'            => ['nullable', 'array'],
+            'emails.*'          => ['required', 'email', 'max:150'],
+            'functions'         => ['nullable', 'array'],
+            'functions.*'       => ['required', 'string'],
+            'responsibilities'   => ['nullable', 'array', 'max:50'],
+            'responsibilities.*' => ['required', 'string', 'max:1000'],
+            'authorities'        => ['nullable', 'array', 'max:50'],
+            'authorities.*'      => ['required', 'string', 'max:1000'],
         ];
     }
 

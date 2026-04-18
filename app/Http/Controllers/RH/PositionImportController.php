@@ -7,8 +7,10 @@ namespace App\Http\Controllers\RH;
 use App\Exports\RH\PositionTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RH\StorePositionImportRequest;
+use App\Jobs\RH\ImportPositionAuthoritiesJob;
 use App\Jobs\RH\ImportPositionEmailsJob;
 use App\Jobs\RH\ImportPositionFunctionsJob;
+use App\Jobs\RH\ImportPositionResponsibilitiesJob;
 use App\Jobs\RH\ImportPositionsJob;
 use App\Models\RH\Position;
 use Illuminate\Http\RedirectResponse;
@@ -37,9 +39,11 @@ class PositionImportController extends Controller
         $userId = (string) auth()->id();
 
         match ($tipo) {
-            'cargos' => ImportPositionsJob::dispatch($path, $institutionId, $userId),
-            'funciones' => ImportPositionFunctionsJob::dispatch($path, $institutionId, $userId),
-            'correos' => ImportPositionEmailsJob::dispatch($path, $institutionId, $userId),
+            'cargos'            => ImportPositionsJob::dispatch($path, $institutionId, $userId),
+            'funciones'         => ImportPositionFunctionsJob::dispatch($path, $institutionId, $userId),
+            'correos'           => ImportPositionEmailsJob::dispatch($path, $institutionId, $userId),
+            'responsabilidades' => ImportPositionResponsibilitiesJob::dispatch($path, $institutionId, $userId),
+            'autoridades'       => ImportPositionAuthoritiesJob::dispatch($path, $institutionId, $userId),
         };
 
         return redirect()
@@ -51,7 +55,7 @@ class PositionImportController extends Controller
     {
         $this->authorize('import', Position::class);
 
-        $tipo = in_array($tipo, ['cargos', 'funciones', 'correos'], true) ? $tipo : 'cargos';
+        $tipo = in_array($tipo, ['cargos', 'funciones', 'correos', 'responsabilidades', 'autoridades'], true) ? $tipo : 'cargos';
         $filename = "plantilla_{$tipo}_".now()->format('Ymd').'.xlsx';
 
         return Excel::download(new PositionTemplateExport($tipo), $filename);

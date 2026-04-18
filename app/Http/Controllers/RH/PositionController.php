@@ -45,7 +45,7 @@ class PositionController extends Controller
     {
         $this->authorize('view', $cargo);
 
-        $cargo->load(['emails', 'functions']);
+        $cargo->load(['emails', 'functions', 'responsibilities', 'authorities']);
 
         return view('pages.rh.cargos.show', compact('cargo'));
     }
@@ -54,13 +54,14 @@ class PositionController extends Controller
     {
         $this->authorize('update', $cargo);
 
-        $cargo->load(['emails', 'functions']);
+        $cargo->load(['emails', 'functions', 'responsibilities', 'authorities']);
 
         return view('pages.rh.cargos.edit', compact('cargo'));
     }
 
     public function update(UpdatePositionRequest $request, Position $cargo): RedirectResponse
     {
+        $this->authorize('update', $cargo);
         $this->service->update($cargo, $request);
 
         return redirect()->route('rh.cargos.index')

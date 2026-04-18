@@ -19,7 +19,7 @@ class StorePositionImportRequest extends FormRequest
     {
         return [
             'archivo' => ['required', 'file', 'mimes:xlsx,csv', 'max:2048', new MaxImportRows(500)],
-            'tipo' => ['required', 'in:cargos,funciones,correos'],
+            'tipo' => ['required', 'in:cargos,funciones,correos,responsabilidades,autoridades'],
         ];
     }
 
@@ -30,7 +30,7 @@ class StorePositionImportRequest extends FormRequest
             'archivo.mimes' => 'El archivo debe ser de tipo Excel (.xlsx) o CSV (.csv).',
             'archivo.max' => 'El archivo no debe superar 2 MB.',
             'tipo.required' => 'Debe seleccionar el tipo de importación.',
-            'tipo.in' => 'El tipo de importación debe ser cargos, funciones o correos.',
+            'tipo.in' => 'El tipo de importación debe ser: cargos, funciones, correos, responsabilidades o autoridades.',
         ];
     }
 }

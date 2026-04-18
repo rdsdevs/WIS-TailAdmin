@@ -52,6 +52,16 @@ class Position extends Model implements Auditable
         return $this->hasMany(PositionFunction::class);
     }
 
+    public function responsibilities(): HasMany
+    {
+        return $this->hasMany(PositionResponsibility::class);
+    }
+
+    public function authorities(): HasMany
+    {
+        return $this->hasMany(PositionAuthority::class);
+    }
+
     public function positionChangeHistory(): HasMany
     {
         return $this->hasMany(PositionChangeHistory::class, 'new_position_id');

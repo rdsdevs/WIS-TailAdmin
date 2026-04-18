@@ -13,9 +13,11 @@ class PositionTemplateExport implements WithMultipleSheets
     public function sheets(): array
     {
         return match ($this->tipo) {
-            'funciones' => [new PositionFunctionTemplateSheet],
-            'correos'   => [new PositionEmailTemplateSheet],
-            default     => [new PositionTemplateSheet],
+            'funciones'         => [new PositionFunctionTemplateSheet],
+            'correos'           => [new PositionEmailTemplateSheet],
+            'responsabilidades' => [new PositionResponsibilityTemplateSheet],
+            'autoridades'       => [new PositionAuthorityTemplateSheet],
+            default             => [new PositionTemplateSheet],
         };
     }
 }

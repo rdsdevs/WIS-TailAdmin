@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Imports\RH\PositionAuthorityImport;
 use App\Imports\RH\PositionEmailImport;
 use App\Imports\RH\PositionFunctionImport;
 use App\Imports\RH\PositionImport;
+use App\Imports\RH\PositionResponsibilityImport;
+use App\Jobs\RH\ImportPositionAuthoritiesJob;
 use App\Jobs\RH\ImportPositionEmailsJob;
 use App\Jobs\RH\ImportPositionFunctionsJob;
+use App\Jobs\RH\ImportPositionResponsibilitiesJob;
 use App\Jobs\RH\ImportPositionsJob;
 use App\Models\Institution;
 use App\Models\RH\Position;
+use App\Models\RH\PositionAuthority;
 use App\Models\RH\PositionEmail;
 use App\Models\RH\PositionFunction;
+use App\Models\RH\PositionResponsibility;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -532,5 +538,313 @@ describe('Clase PositionEmailImport — lógica interna', function (): void {
         // El correo ya existía, se contabiliza como updated, no imported
         expect($import->imported)->toBe(0);
         expect($import->updated)->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Importación de responsabilidades
+// ---------------------------------------------------------------------------
+
+/**
+ * Genera un UploadedFile Excel con filas de responsabilidades de cargo.
+ *
+ * @param  array<int, array<string, string>>  $filas
+ */
+function crearExcelResponsabilidades(array $filas = []): \Illuminate\Http\UploadedFile
+{
+    if (empty($filas)) {
+        $filas = [
+            ['nombre_cargo' => 'Coordinador de Prueba', 'responsabilidad' => 'Garantizar el cumplimiento del plan de trabajo'],
+        ];
+    }
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+    $sheet = $spreadsheet->getActiveSheet();
+
+    $encabezados = array_keys($filas[0]);
+    $sheet->fromArray($encabezados, null, 'A1');
+
+    foreach ($filas as $indice => $fila) {
+        $sheet->fromArray(array_values($fila), null, 'A'.($indice + 2));
+    }
+
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $ruta = sys_get_temp_dir().'/test_responsabilidades_'.uniqid().'.xlsx';
+    $writer->save($ruta);
+
+    return new \Illuminate\Http\UploadedFile(
+        $ruta,
+        'responsabilidades.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+}
+
+/**
+ * Genera un UploadedFile Excel con filas de autoridades de cargo.
+ *
+ * @param  array<int, array<string, string>>  $filas
+ */
+function crearExcelAutoridades(array $filas = []): \Illuminate\Http\UploadedFile
+{
+    if (empty($filas)) {
+        $filas = [
+            ['nombre_cargo' => 'Coordinador de Prueba', 'autoridad' => 'Aprobar solicitudes de permiso del personal a cargo'],
+        ];
+    }
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+    $sheet = $spreadsheet->getActiveSheet();
+
+    $encabezados = array_keys($filas[0]);
+    $sheet->fromArray($encabezados, null, 'A1');
+
+    foreach ($filas as $indice => $fila) {
+        $sheet->fromArray(array_values($fila), null, 'A'.($indice + 2));
+    }
+
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $ruta = sys_get_temp_dir().'/test_autoridades_'.uniqid().'.xlsx';
+    $writer->save($ruta);
+
+    return new \Illuminate\Http\UploadedFile(
+        $ruta,
+        'autoridades.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+}
+
+describe('Importación de responsabilidades', function (): void {
+
+    it('importar responsabilidades válidas despacha el job correctamente', function (): void {
+        Bus::fake();
+
+        [$user] = contextoImportacionCargos('rh-manager');
+        $archivo = crearExcelResponsabilidades();
+
+        $this->actingAs($user)
+            ->post(route('rh.cargos.importar.store'), [
+                'archivo' => $archivo,
+                'tipo'    => 'responsabilidades',
+            ])
+            ->assertRedirect(route('rh.cargos.importar'))
+            ->assertSessionHas('exito');
+
+        Bus::assertDispatched(ImportPositionResponsibilitiesJob::class);
+    });
+
+    it('cargo inexistente omite la fila sin lanzar excepción (skipped)', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        // No se crea ningún cargo — el nombre de la fila no existirá en el mapa
+        $import = new PositionResponsibilityImport(institutionId: (string) $institution->id);
+
+        $filas = collect([
+            collect([
+                'nombre_cargo'   => 'Cargo Que No Existe',
+                'responsabilidad' => 'Responsabilidad sin cargo asociado',
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        expect($import->skipped)->toBe(1);
+        expect($import->imported)->toBe(0);
+
+        $this->assertDatabaseMissing('position_responsibilities', [
+            'description' => 'Responsabilidad sin cargo asociado',
+        ]);
+    });
+
+    it('reimportar una responsabilidad soft-deleted la restaura', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        $cargo = Position::create([
+            'institution_id' => $institution->id,
+            'name'           => 'Jefe de Nómina',
+            'is_active'      => true,
+        ]);
+
+        // Crear la responsabilidad y luego eliminarla lógicamente
+        $responsabilidad = PositionResponsibility::create([
+            'position_id' => $cargo->id,
+            'description' => 'Supervisar el proceso de liquidación mensual',
+        ]);
+        $responsabilidad->delete();
+
+        $this->assertSoftDeleted('position_responsibilities', [
+            'id' => $responsabilidad->id,
+        ]);
+
+        $import = new PositionResponsibilityImport(institutionId: (string) $institution->id);
+
+        // Reimportar la misma responsabilidad
+        $filas = collect([
+            collect([
+                'nombre_cargo'   => 'Jefe de Nómina',
+                'responsabilidad' => 'Supervisar el proceso de liquidación mensual',
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        // El registro debe haberse restaurado, no duplicado
+        expect(
+            PositionResponsibility::where('position_id', $cargo->id)
+                ->where('description', 'Supervisar el proceso de liquidación mensual')
+                ->count()
+        )->toBe(1);
+
+        expect($import->imported)->toBe(1);
+        expect($import->skipped)->toBe(0);
+    });
+
+    it('fila con responsabilidad vacía es omitida', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        $cargo = Position::create([
+            'institution_id' => $institution->id,
+            'name'           => 'Auxiliar Contable',
+            'is_active'      => true,
+        ]);
+
+        $import = new PositionResponsibilityImport(institutionId: (string) $institution->id);
+
+        $filas = collect([
+            collect([
+                'nombre_cargo'   => 'Auxiliar Contable',
+                'responsabilidad' => '   ', // solo espacios en blanco
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        expect($import->skipped)->toBe(1);
+        expect($import->imported)->toBe(0);
+
+        $this->assertDatabaseMissing('position_responsibilities', [
+            'position_id' => $cargo->id,
+        ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Importación de autoridades
+// ---------------------------------------------------------------------------
+
+describe('Importación de autoridades', function (): void {
+
+    it('importar autoridades válidas despacha el job correctamente', function (): void {
+        Bus::fake();
+
+        [$user] = contextoImportacionCargos('rh-manager');
+        $archivo = crearExcelAutoridades();
+
+        $this->actingAs($user)
+            ->post(route('rh.cargos.importar.store'), [
+                'archivo' => $archivo,
+                'tipo'    => 'autoridades',
+            ])
+            ->assertRedirect(route('rh.cargos.importar'))
+            ->assertSessionHas('exito');
+
+        Bus::assertDispatched(ImportPositionAuthoritiesJob::class);
+    });
+
+    it('cargo inexistente omite la fila de autoridad sin lanzar excepción', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        // No se crea ningún cargo — el nombre de la fila no existirá en el mapa
+        $import = new PositionAuthorityImport(institutionId: (string) $institution->id);
+
+        $filas = collect([
+            collect([
+                'nombre_cargo' => 'Cargo Inexistente Para Autoridades',
+                'autoridad'    => 'Autoridad sin cargo asociado',
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        expect($import->skipped)->toBe(1);
+        expect($import->imported)->toBe(0);
+
+        $this->assertDatabaseMissing('position_authorities', [
+            'description' => 'Autoridad sin cargo asociado',
+        ]);
+    });
+
+    it('reimportar una autoridad soft-deleted la restaura', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        $cargo = Position::create([
+            'institution_id' => $institution->id,
+            'name'           => 'Director Académico',
+            'is_active'      => true,
+        ]);
+
+        // Crear la autoridad y luego eliminarla lógicamente
+        $autoridad = PositionAuthority::create([
+            'position_id' => $cargo->id,
+            'description' => 'Firmar actas de grado y diplomas institucionales',
+        ]);
+        $autoridad->delete();
+
+        $this->assertSoftDeleted('position_authorities', [
+            'id' => $autoridad->id,
+        ]);
+
+        $import = new PositionAuthorityImport(institutionId: (string) $institution->id);
+
+        // Reimportar la misma autoridad
+        $filas = collect([
+            collect([
+                'nombre_cargo' => 'Director Académico',
+                'autoridad'    => 'Firmar actas de grado y diplomas institucionales',
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        // El registro debe haberse restaurado, no duplicado
+        expect(
+            PositionAuthority::where('position_id', $cargo->id)
+                ->where('description', 'Firmar actas de grado y diplomas institucionales')
+                ->count()
+        )->toBe(1);
+
+        expect($import->imported)->toBe(1);
+        expect($import->skipped)->toBe(0);
+    });
+
+    it('fila con autoridad vacía es omitida', function (): void {
+        [, $institution] = contextoImportacionCargos('rh-manager');
+
+        $cargo = Position::create([
+            'institution_id' => $institution->id,
+            'name'           => 'Coordinador de Bienestar',
+            'is_active'      => true,
+        ]);
+
+        $import = new PositionAuthorityImport(institutionId: (string) $institution->id);
+
+        $filas = collect([
+            collect([
+                'nombre_cargo' => 'Coordinador de Bienestar',
+                'autoridad'    => '   ', // solo espacios en blanco
+            ]),
+        ]);
+
+        $import->collection($filas);
+
+        expect($import->skipped)->toBe(1);
+        expect($import->imported)->toBe(0);
+
+        $this->assertDatabaseMissing('position_authorities', [
+            'position_id' => $cargo->id,
+        ]);
     });
 });

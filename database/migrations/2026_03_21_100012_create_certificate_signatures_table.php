@@ -15,10 +15,10 @@ return new class extends Migration
             $table->foreignUuid('institution_id')->constrained()->restrictOnDelete();
             $table->string('signer_name', 80);
             $table->string('signer_position', 80);
-            $table->text('signature_image');
+            $table->string('signature_image', 500);
             $table->string('replacement_name', 80)->nullable();
             $table->string('replacement_position', 80)->nullable();
-            $table->text('replacement_signature_image')->nullable();
+            $table->string('replacement_signature_image', 500)->nullable();
             $table->boolean('is_active')->default(true);
             $table->softDeletes();
             $table->timestamps();

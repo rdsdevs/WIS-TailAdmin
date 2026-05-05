@@ -39,7 +39,7 @@
     <div class="mx-auto max-w-2xl">
         <form method="POST" action="{{ route('certificados.firmas.update', $signature) }}"
               x-data="{
-                  sigPreview: @js($signature->signature_image ?? ''),
+                  sigPreview: @js($signature->signature_image ? Storage::disk('public')->url($signature->signature_image) : ''),
                   toBase64(file, hiddenInput) {
                       const reader = new FileReader();
                       reader.onload = e => {
@@ -206,7 +206,7 @@
                         <label for="sig-upload" class="cursor-pointer text-sm text-blue-600 hover:underline dark:text-blue-400">
                             {{ $signature->signature_image ? 'Cambiar imagen' : 'Seleccionar imagen' }}
                         </label>
-                        <input type="file" accept="image/*" class="hidden" id="sig-upload"
+                        <input type="file" accept="image/png,image/jpeg" class="hidden" id="sig-upload"
                                @change="const f = $event.target.files[0]; if (f) toBase64(f, $el.closest('[x-data]').querySelector('[name=signature_image]'))">
                         <p class="text-xs text-gray-400 mt-1">o arrastre aquí</p>
                     </div>

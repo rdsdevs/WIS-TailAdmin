@@ -203,7 +203,7 @@
                         <label for="sig-upload" class="cursor-pointer text-sm text-blue-600 hover:underline dark:text-blue-400">
                             Seleccionar imagen
                         </label>
-                        <input type="file" accept="image/*" class="hidden" id="sig-upload"
+                        <input type="file" accept="image/png,image/jpeg" class="hidden" id="sig-upload"
                                @change="const f = $event.target.files[0]; if (f) toBase64(f, $el.closest('[x-data]').querySelector('[name=signature_image]'))">
                         <p class="text-xs text-gray-400 mt-1">o arrastre aquí</p>
                     </div>

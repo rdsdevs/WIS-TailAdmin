@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\Contabilidad\AccountingAccount;
+use App\Models\Contabilidad\CostCenter;
 use App\Models\Institution;
 use App\Models\RH\Collaborator;
 use App\Models\RH\CollaboratorStatus;
@@ -51,19 +53,43 @@ function cvmSetup(string $rol = 'rh-manager'): array
     return [$user, $institution, $contrato];
 }
 
+function cvmAccount(string $institutionId, string $code = '1110-05', string $name = 'Caja general'): AccountingAccount
+{
+    return AccountingAccount::create([
+        'institution_id' => $institutionId,
+        'code' => $code,
+        'name' => $name,
+        'type' => 'asset',
+        'is_active' => true,
+    ]);
+}
+
+function cvmCostCenter(string $institutionId, string $code = 'CC-200', string $name = 'Administración'): CostCenter
+{
+    return CostCenter::create([
+        'institution_id' => $institutionId,
+        'code' => $code,
+        'name' => $name,
+        'category' => 'general',
+        'is_active' => true,
+    ]);
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('committed-value-form-modal (Livewire SFC)', function (): void {
 
     it('crea un valor comprometido al recibir el evento open-committed-value-create y guardar', function (): void {
         [$user, $institution, $contrato] = cvmSetup('rh-manager');
+        $cuenta = cvmAccount($institution->id, '1110-05', 'Caja general');
+        $centro = cvmCostCenter($institution->id, 'CC-200', 'Administración');
 
         Livewire::actingAs($user)
             ->test('rh.committed-value-form-modal', ['contractId' => $contrato->id])
             ->dispatch('open-committed-value-create', contractId: $contrato->id)
             ->assertSet('open', true)
-            ->set('accountingAccount', '1110-05')
-            ->set('costCenter', 'CC-200')
+            ->call('selectAccount', $cuenta->id)
+            ->call('selectCostCenter', $centro->id)
             ->set('amount', '3500000')
             ->call('save')
             ->assertHasNoErrors()
@@ -72,11 +98,15 @@ describe('committed-value-form-modal (Livewire SFC)', function (): void {
         expect(CommittedValue::query()->where('contract_id', $contrato->id)->count())->toBe(1);
         $cv = CommittedValue::query()->where('contract_id', $contrato->id)->first();
         expect($cv->accounting_account)->toBe('1110-05');
+        expect($cv->cost_center)->toBe('CC-200');
         expect($cv->institution_id)->toBe($institution->id);
     });
 
     it('precarga los datos al recibir el evento open-committed-value-edit', function (): void {
         [$user, $institution, $contrato] = cvmSetup('rh-manager');
+        cvmAccount($institution->id, '9999-99', 'Cuenta de prueba');
+        cvmCostCenter($institution->id, 'CC-LOAD', 'Centro de prueba');
+
         $cv = CommittedValue::factory()->create([
             'institution_id' => $institution->id,
             'contract_id' => $contrato->id,
@@ -90,8 +120,9 @@ describe('committed-value-form-modal (Livewire SFC)', function (): void {
             ->dispatch('open-committed-value-edit', committedValueId: $cv->id)
             ->assertSet('open', true)
             ->assertSet('committedValueId', $cv->id)
-            ->assertSet('accountingAccount', '9999-99')
-            ->assertSet('costCenter', 'CC-LOAD');
+            ->assertSet('selectedAccount.code', '9999-99')
+            ->assertSet('selectedCostCenter.code', 'CC-LOAD')
+            ->assertSet('amount', '1234567.00');
     });
 
     it('valida campos obligatorios', function (): void {
@@ -100,11 +131,9 @@ describe('committed-value-form-modal (Livewire SFC)', function (): void {
         Livewire::actingAs($user)
             ->test('rh.committed-value-form-modal', ['contractId' => $contrato->id])
             ->dispatch('open-committed-value-create', contractId: $contrato->id)
-            ->set('accountingAccount', '')
-            ->set('costCenter', '')
             ->set('amount', '')
             ->call('save')
-            ->assertHasErrors(['accountingAccount', 'costCenter', 'amount']);
+            ->assertHasErrors(['selectedAccount', 'selectedCostCenter', 'amount']);
     });
 
     it('rechaza apertura si el rol no tiene permiso de creación', function (): void {

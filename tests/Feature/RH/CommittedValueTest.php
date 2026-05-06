@@ -161,7 +161,23 @@ describe('CommittedValueController', function (): void {
                 ->assertForbidden();
         });
 
-        it('impide gestionar valores en contratos de años anteriores', function (): void {
+        it('permite gestionar valores en contratos del año anterior (ventana rolling de 2 años)', function (): void {
+            [$user, $institution] = cvBuildInstitutionAndUser('rh-manager');
+            $contratoAnoAnterior = cvBuildContract($institution, year: now()->year - 1);
+
+            $this->actingAs($user)
+                ->post(route('rh.contratos.valores-comprometidos.store', $contratoAnoAnterior), [
+                    'accounting_account' => '1110-05',
+                    'cost_center' => 'CC-100',
+                    'amount' => '5000000',
+                ])
+                ->assertRedirect()
+                ->assertSessionHas('exito');
+
+            expect(\App\Models\RH\CommittedValue::query()->where('contract_id', $contratoAnoAnterior->id)->count())->toBe(1);
+        });
+
+        it('impide gestionar valores en contratos de hace 2+ años', function (): void {
             [$user, $institution] = cvBuildInstitutionAndUser('rh-manager');
             $contratoHistorico = cvBuildContract($institution, year: now()->year - 2);
 

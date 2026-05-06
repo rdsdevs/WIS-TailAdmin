@@ -73,9 +73,12 @@ class CommittedValuePolicy
     }
 
     /**
-     * Solo se permite gestionar valores de contratos del año actual o futuros,
-     * replicando la regla histórica usada por ContractProrogaService. Esto
-     * preserva la integridad contable de cierres de años anteriores.
+     * Permite gestionar valores de contratos del año actual y del año
+     * inmediatamente anterior (ventana de 2 años). Esta es una regla menos
+     * estricta que la de ContractProrogaService porque agregar/corregir una
+     * línea presupuestal es una operación administrativa habitual; la
+     * trazabilidad queda en la auditoría. Contratos de años más antiguos
+     * permanecen bloqueados para preservar cierres contables consolidados.
      */
     private function contractAllowsManagement(Contract $contract): bool
     {
@@ -83,6 +86,6 @@ class CommittedValuePolicy
             return true;
         }
 
-        return $contract->start_date->year >= now()->year;
+        return $contract->start_date->year >= now()->year - 1;
     }
 }

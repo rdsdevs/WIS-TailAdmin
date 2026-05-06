@@ -38,7 +38,7 @@ class CertificateSignatureController extends Controller
             ->get()
             ->map(fn ($c) => [
                 'nombre' => $c->full_name,
-                'cargo'  => $c->activeContract?->position?->name ?? '',
+                'cargo' => $c->activeContract?->position?->name ?? '',
             ])
             ->values();
 
@@ -47,8 +47,6 @@ class CertificateSignatureController extends Controller
 
     public function store(CreateCertificateSignatureRequest $request): RedirectResponse
     {
-        $this->authorize('create', CertificateSignature::class);
-
         $this->service->create(
             $request->validated(),
             auth()->user()->institution_id,
@@ -70,7 +68,7 @@ class CertificateSignatureController extends Controller
             ->get()
             ->map(fn ($c) => [
                 'nombre' => $c->full_name,
-                'cargo'  => $c->activeContract?->position?->name ?? '',
+                'cargo' => $c->activeContract?->position?->name ?? '',
             ])
             ->values();
 
@@ -79,8 +77,6 @@ class CertificateSignatureController extends Controller
 
     public function update(UpdateCertificateSignatureRequest $request, CertificateSignature $signature): RedirectResponse
     {
-        $this->authorize('update', $signature);
-
         $this->service->update($signature, $request->validated());
 
         return redirect()->route('certificados.firmas.index')

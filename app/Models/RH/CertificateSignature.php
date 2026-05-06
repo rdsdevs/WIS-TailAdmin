@@ -6,6 +6,8 @@ namespace App\Models\RH;
 
 use App\Models\Concerns\HasUuidPrimaryKey;
 use App\Models\Institution;
+use App\Observers\Certificados\CertificateSignatureObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
+#[ObservedBy(CertificateSignatureObserver::class)]
 class CertificateSignature extends Model implements Auditable
 {
     use HasFactory;

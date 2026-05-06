@@ -113,7 +113,7 @@
 
                     @if ($firma->signature_image)
                         <div class="mb-3 rounded-lg bg-gray-50 p-2 dark:bg-gray-700/50">
-                            <img src="{{ $firma->signature_image }}" alt="Firma de {{ $firma->signer_name }}" class="h-16 w-full object-contain">
+                            <img src="{{ Storage::disk('public')->url($firma->signature_image) }}" alt="Firma de {{ $firma->signer_name }}" class="h-16 w-full object-contain">
                         </div>
                     @endif
 

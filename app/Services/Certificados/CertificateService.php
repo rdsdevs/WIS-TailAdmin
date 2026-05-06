@@ -19,6 +19,8 @@ use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 
@@ -198,11 +200,11 @@ final class CertificateService
                 'collaborator_snapshot' => $collaboratorSnapshot,
                 'contracts_snapshot' => $contractsSnapshot,
                 'options_snapshot' => [
-                    'show_object' => (bool) ($options['show_object'] ?? true),
-                    'show_obligations' => (bool) ($options['show_obligations'] ?? true),
-                    'show_value' => (bool) ($options['show_value'] ?? true),
-                    'show_prorrogas' => (bool) ($options['show_prorrogas'] ?? true),
-                    'show_early_termination' => (bool) ($options['show_early_termination'] ?? true),
+                    'show_object' => (bool) ($options['show_object'] ?? false),
+                    'show_obligations' => (bool) ($options['show_obligations'] ?? false),
+                    'show_value' => (bool) ($options['show_value'] ?? false),
+                    'show_prorrogas' => (bool) ($options['show_prorrogas'] ?? false),
+                    'show_early_termination' => (bool) ($options['show_early_termination'] ?? false),
                 ],
             ]);
         });
@@ -255,18 +257,8 @@ final class CertificateService
         $footerBase64 = $this->loadAssetBase64('footer.png', 'image/png');
 
         $signatureBase64 = null;
-        if ($signature) {
-            $rawImage = $signature->signature_image;
-            if ($rawImage) {
-                if (str_starts_with($rawImage, 'data:')) {
-                    $signatureBase64 = $rawImage;
-                } elseif (file_exists(public_path($rawImage))) {
-                    $signatureBase64 = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path($rawImage)));
-                } elseif (strlen($rawImage) > 100) {
-                    $prefix = str_starts_with($rawImage, '/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,';
-                    $signatureBase64 = $prefix.$rawImage;
-                }
-            }
+        if ($signature && $signature->signature_image) {
+            $signatureBase64 = $this->loadSignatureBase64($signature->signature_image);
         }
 
         $viewName = $certificate->certificate_type === 'empleado'
@@ -309,6 +301,35 @@ final class CertificateService
         }
 
         return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
+    }
+
+    /**
+     * Lee el archivo de firma desde el disco "public" y lo retorna como data URL base64
+     * para embeberlo en el PDF generado por DomPDF/Mpdf.
+     */
+    private function loadSignatureBase64(string $path): ?string
+    {
+        if (! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            default => null,
+        };
+
+        if ($mime === null) {
+            Log::warning('Extensión de firma no reconocida; se omite del PDF.', [
+                'path' => $path,
+                'extension' => $extension,
+            ]);
+
+            return null;
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($path));
     }
 
     private function buildCollaboratorSnapshot(Collaborator $collaborator): array

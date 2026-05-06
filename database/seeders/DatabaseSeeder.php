@@ -9,6 +9,7 @@ use Database\Seeders\Contabilidad\CostCenterSeeder;
 use Database\Seeders\RH\CollaboratorStatusSeeder;
 use Database\Seeders\RH\ContractTypeSeeder;
 use Database\Seeders\RH\DocumentTypeSeeder;
+use Database\Seeders\RH\PositionChangeBackfillSeeder;
 use Database\Seeders\RH\PositionSeeder;
 use Illuminate\Database\Seeder;
 
@@ -31,6 +32,8 @@ class DatabaseSeeder extends Seeder
             // Módulo Contabilidad — catálogos
             AccountingAccountSeeder::class,
             CostCenterSeeder::class,
+            // Backfill (debe correr al final, después de que existan contratos)
+            PositionChangeBackfillSeeder::class,
         ]);
     }
 }

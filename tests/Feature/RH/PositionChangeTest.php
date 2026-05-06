@@ -23,7 +23,7 @@ beforeEach(function (): void {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function pcSetup(string $rol = 'rh-manager', string $statusContrato = 'Vigente'): array
+function pcSetup(string $rol = 'rh-manager', string $statusContrato = 'Vigente', string $tipoColaborador = 'Empleado'): array
 {
     $institution = Institution::factory()->create();
     $user = User::factory()->create(['institution_id' => $institution->id]);
@@ -36,6 +36,7 @@ function pcSetup(string $rol = 'rh-manager', string $statusContrato = 'Vigente')
         'institution_id' => $institution->id,
         'document_type_id' => $documentType->id,
         'status_id' => $status->id,
+        'type' => $tipoColaborador,
     ]);
 
     $tipo = ContractType::factory()->create([
@@ -369,6 +370,27 @@ describe('Robustez del Service y Policy', function (): void {
         // Por prioridad de fees > 0, se actualiza fees y salary queda igual
         expect((float) $contrato->fees)->toBe(5_000_000.0);
         expect((float) $contrato->salary)->toBe(1_000_000.0);
+    });
+
+    it('policy applyPositionChange rechaza contratos de colaboradores tipo Contratista', function (): void {
+        [$user, , $contratoContratista] = pcSetup('rh-manager', tipoColaborador: 'Contratista');
+
+        expect($user->can('applyPositionChange', $contratoContratista))->toBeFalse();
+    });
+
+    it('policy applyPositionChange permite contratos de colaboradores tipo Empleado', function (): void {
+        [$user, , $contratoEmpleado] = pcSetup('rh-manager', tipoColaborador: 'Empleado');
+
+        expect($user->can('applyPositionChange', $contratoEmpleado))->toBeTrue();
+    });
+
+    it('modal Livewire devuelve forbidden si el colaborador es Contratista', function (): void {
+        [$user, , $contratoContratista] = pcSetup('rh-manager', tipoColaborador: 'Contratista');
+
+        Livewire::actingAs($user)
+            ->test('rh.position-change-modal')
+            ->dispatch('open-position-change-modal', contractId: $contratoContratista->id)
+            ->assertForbidden();
     });
 
     it('policy applyPositionChange rechaza usuarios de otra institución', function (): void {

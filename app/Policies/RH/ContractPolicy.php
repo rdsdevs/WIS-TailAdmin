@@ -148,6 +148,16 @@ class ContractPolicy
             return false;
         }
 
+        // El cambio de cargo solo aplica a empleados de nómina,
+        // no a contratistas.
+        $collaborator = $contract->relationLoaded('collaborator')
+            ? $contract->collaborator
+            : $contract->collaborator()->first();
+
+        if ($collaborator === null || $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
         return true;
     }
 

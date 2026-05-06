@@ -6,6 +6,7 @@ namespace App\Services\RH;
 
 use App\Models\RH\Contract;
 use App\Models\RH\PositionChangeHistory;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 final class PositionChangeService
@@ -24,9 +25,21 @@ final class PositionChangeService
      *   new_amount: float|null,
      *   observations: string|null,
      * }  $data
+     *
+     * @throws DomainException si el colaborador no es de tipo Empleado.
      */
     public function apply(Contract $contract, array $data): PositionChangeHistory
     {
+        $collaborator = $contract->relationLoaded('collaborator')
+            ? $contract->collaborator
+            : $contract->collaborator()->first();
+
+        if ($collaborator === null || $collaborator->type !== 'Empleado') {
+            throw new DomainException(
+                'El cambio de cargo solo aplica a colaboradores de tipo Empleado.'
+            );
+        }
+
         return DB::transaction(function () use ($contract, $data): PositionChangeHistory {
             $previousPositionId = $contract->position_id;
             $oldSalary = (float) ($contract->salary ?? 0);

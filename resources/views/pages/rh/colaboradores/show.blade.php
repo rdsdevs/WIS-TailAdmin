@@ -385,7 +385,9 @@
                                class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                 Editar contrato
                             </a>
-                            <button type="button" 
+                        @endcan
+                        @can('applyPositionChange', $activeContract)
+                            <button type="button"
                                     onclick="Livewire.dispatch('open-position-change-modal', { contractId: '{{ $activeContract->id }}' })"
                                     class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

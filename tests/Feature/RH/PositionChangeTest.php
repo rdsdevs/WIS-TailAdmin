@@ -384,6 +384,22 @@ describe('Robustez del Service y Policy', function (): void {
         expect($user->can('applyPositionChange', $contratoEmpleado))->toBeTrue();
     });
 
+    it('service lanza DomainException si llaman directo con Contratista', function (): void {
+        [, , $contratoContratista] = pcSetup('rh-manager', tipoColaborador: 'Contratista');
+        $cargoNuevo = pcNewPosition($contratoContratista->institution_id);
+
+        expect(fn () => app(\App\Services\RH\PositionChangeService::class)->apply($contratoContratista, [
+            'new_position_id' => $cargoNuevo->id,
+            'change_date' => now()->format('Y-m-d'),
+            'adjust_compensation' => false,
+            'new_amount' => null,
+            'observations' => null,
+        ]))->toThrow(\DomainException::class, 'colaboradores de tipo Empleado');
+
+        // No se creó histórico
+        expect(\App\Models\RH\PositionChangeHistory::query()->where('contract_id', $contratoContratista->id)->count())->toBe(0);
+    });
+
     it('modal Livewire devuelve forbidden si el colaborador es Contratista', function (): void {
         [$user, , $contratoContratista] = pcSetup('rh-manager', tipoColaborador: 'Contratista');
 

@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\Certificados\Certificate;
 use App\Models\RH\CertificateSignature;
 use App\Models\RH\Collaborator;
+use App\Models\RH\CommittedValue;
 use App\Models\RH\Contract;
 use App\Models\RH\Position;
 use App\Models\User;
@@ -14,6 +15,7 @@ use App\Observers\RH\ContractObserver;
 use App\Policies\Certificados\CertificatePolicy;
 use App\Policies\Certificados\CertificateSignaturePolicy;
 use App\Policies\RH\CollaboratorPolicy;
+use App\Policies\RH\CommittedValuePolicy;
 use App\Policies\RH\ContractPolicy;
 use App\Policies\RH\PositionPolicy;
 use App\Policies\UserPolicy;
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Policies del módulo RH
         Gate::policy(Collaborator::class, CollaboratorPolicy::class);
+        Gate::policy(CommittedValue::class, CommittedValuePolicy::class);
         Gate::policy(Contract::class, ContractPolicy::class);
         Gate::policy(Position::class, PositionPolicy::class);
 

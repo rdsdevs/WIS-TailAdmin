@@ -35,7 +35,6 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
         ->name('cargos.plantilla')
         ->where('tipo', 'cargos|funciones|correos');
 
-
     // Cargos (positions)
     Route::resource('cargos', RH\PositionController::class);
 
@@ -70,6 +69,20 @@ Route::prefix('rh')->name('rh.')->middleware('auth')->group(function (): void {
     // Contratos — acción de terminar contrato
     Route::patch('contratos/{contrato}/terminar', [RH\ContractController::class, 'terminate'])
         ->name('contratos.terminate');
+
+    // Valores comprometidos (anidado bajo contratos) — DEBE ir antes del
+    // resource('contratos') para que el segmento "valores-comprometidos" no
+    // sea interpretado como el parámetro {contrato}. La pertenencia del
+    // valor comprometido al contrato se verifica explícitamente en el
+    // controlador (en lugar de usar scopeBindings(), que requeriría una
+    // relación con nombre en español en el modelo Contract).
+    Route::resource('contratos.valores-comprometidos', RH\CommittedValueController::class)
+        ->parameters([
+            'contratos' => 'contrato',
+            'valores-comprometidos' => 'valor_comprometido',
+        ])
+        ->only(['index', 'store', 'update', 'destroy']);
+
     Route::resource('contratos', RH\ContractController::class);
 });
 

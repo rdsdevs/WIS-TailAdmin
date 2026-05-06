@@ -35,6 +35,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'committed_values.update',
             'committed_values.delete',
 
+            // Cambios de cargo (histórico)
+            'position_changes.create',
+            'position_changes.read',
+
             // Certificados
             'certificates.generate',
             'certificates.read',
@@ -106,6 +110,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'committed_values.read',
             'committed_values.update',
             'committed_values.delete',
+            'position_changes.create',
+            'position_changes.read',
             'certificates.generate',
             'certificates.read',
             'reports.hr',
@@ -116,6 +122,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'collaborators.read',
             'contracts.read',
             'committed_values.read',
+            'position_changes.read',
             'certificates.read',
             'reports.hr',
         ]);
@@ -134,6 +141,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'committed_values.read',
             'committed_values.update',
             'committed_values.delete',
+            'position_changes.create',
+            'position_changes.read',
             'certificates.generate',
             'certificates.read',
             'reports.hr',
@@ -153,6 +162,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'committed_values.read',
             'committed_values.update',
             'committed_values.delete',
+            'position_changes.create',
+            'position_changes.read',
             'certificates.generate',
             'certificates.read',
             'reports.hr',

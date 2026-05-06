@@ -16,20 +16,13 @@ class ContractObserver
 
     /**
      * Handle the Contract "updated" event.
+     *
+     * El histórico de cargos se gestiona explícitamente desde el flujo
+     * de "Cambio de cargo" (PositionChangeService), no desde el observer.
      */
     public function updated(Contract $contract): void
     {
-        if ($contract->wasChanged(['position_id', 'salary'])) {
-            // Solo registrar si hay un cargo asignado
-            if ($contract->position_id !== null) {
-                $contract->positionChangeHistory()->create([
-                    'previous_position_id' => $contract->getOriginal('position_id'),
-                    'new_position_id' => $contract->position_id,
-                    'new_salary' => $contract->salary,
-                    'observations' => 'Cambio automático detectado por actualización de contrato.',
-                ]);
-            }
-        }
+        //
     }
 
     /**

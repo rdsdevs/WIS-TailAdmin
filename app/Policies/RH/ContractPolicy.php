@@ -130,6 +130,50 @@ class ContractPolicy
         return true;
     }
 
+    public function applyPositionChange(User $user, Contract $contract): bool
+    {
+        if (! $user->hasAnyRole(self::MANAGERS)) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        if ($contract->status !== 'Vigente') {
+            return false;
+        }
+
+        if (! $user->can('position_changes.create')) {
+            return false;
+        }
+
+        // El cambio de cargo solo aplica a empleados de nómina,
+        // no a contratistas.
+        $collaborator = $contract->relationLoaded('collaborator')
+            ? $contract->collaborator
+            : $contract->collaborator()->first();
+
+        if ($collaborator === null || $collaborator->type !== 'Empleado') {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function viewPositionHistory(User $user, Contract $contract): bool
+    {
+        if (! $user->hasAnyRole(self::VIEWERS)) {
+            return false;
+        }
+
+        if ($user->institution_id !== $contract->institution_id) {
+            return false;
+        }
+
+        return $user->can('position_changes.read');
+    }
+
     /**
      * Prórroga avanzada: solo para contratos Terminado + año anterior.
      * Disponible únicamente desde el módulo de opciones avanzadas.

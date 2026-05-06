@@ -84,7 +84,17 @@ class ContractController extends Controller
 
     public function show(Contract $contrato): View
     {
-        $contrato->load(['collaborator.documentType', 'contractType', 'position', 'institution', 'extensions', 'committedValues', 'earlyTerminatedBy']);
+        $contrato->load([
+            'collaborator.documentType',
+            'contractType',
+            'position',
+            'institution',
+            'extensions',
+            'committedValues',
+            'earlyTerminatedBy',
+            'positionChangeHistory.previousPosition',
+            'positionChangeHistory.newPosition',
+        ]);
 
         $this->authorize('view', $contrato);
 

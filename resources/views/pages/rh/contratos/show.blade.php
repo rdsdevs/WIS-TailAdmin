@@ -237,6 +237,18 @@
                     @endcan
                 @endif
 
+                {{-- Cambio de cargo --}}
+                @can('applyPositionChange', $contrato)
+                    <button type="button"
+                            x-on:click="Livewire.dispatch('open-position-change-modal', { contractId: '{{ $contrato->id }}' })"
+                            class="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-medium text-amber-600 hover:bg-amber-50 dark:bg-gray-800 dark:text-amber-400 dark:hover:bg-amber-900/20">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 3M21 7.5H7.5" />
+                        </svg>
+                        Cambio de cargo
+                    </button>
+                @endcan
+
                 {{-- Terminar anticipadamente --}}
                 @if($contrato->status === 'Vigente')
                     @can('earlyTerminate', $contrato)
@@ -459,6 +471,78 @@
         </div>
     </div>
 
+    {{-- ── Card: histórico de cargos ──────────────────────────────────────────── --}}
+    @can('viewPositionHistory', $contrato)
+        @php
+            $positionHistory = $contrato->positionChangeHistory->sortByDesc('change_date')->values();
+        @endphp
+        <div class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                        <svg class="h-4 w-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 3M21 7.5H7.5" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Histórico de cargos</h3>
+                </div>
+                @if($positionHistory->isNotEmpty())
+                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        {{ $positionHistory->count() }} {{ $positionHistory->count() === 1 ? 'cambio' : 'cambios' }}
+                    </span>
+                @endif
+            </div>
+
+            <div class="p-6">
+                @if($positionHistory->isEmpty())
+                    <p class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No se han registrado cambios de cargo para este contrato.
+                    </p>
+                @else
+                    <ol class="relative ml-3 border-l border-gray-200 dark:border-gray-700">
+                        @foreach($positionHistory as $change)
+                            <li class="mb-6 ml-5 last:mb-0">
+                                <span class="absolute -left-1.5 mt-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-4 ring-white dark:ring-gray-800" aria-hidden="true"></span>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <time class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        {{ $change->change_date?->format('d/m/Y') ?? '—' }}
+                                    </time>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @if($change->previousPosition)
+                                        <span class="text-gray-500 dark:text-gray-400">{{ $change->previousPosition->name }}</span>
+                                        <svg class="mx-1 inline h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0-4 4m4-4H3" />
+                                        </svg>
+                                    @endif
+                                    <strong class="font-semibold text-amber-700 dark:text-amber-400">
+                                        {{ $change->newPosition?->name ?? 'Cargo eliminado' }}
+                                    </strong>
+                                </p>
+                                @if((float) $change->old_salary !== (float) $change->new_salary)
+                                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        Compensación:
+                                        <span class="text-gray-500 line-through dark:text-gray-500">
+                                            $ {{ number_format((float) $change->old_salary, 0, ',', '.') }}
+                                        </span>
+                                        <span class="ml-1 font-medium text-gray-900 dark:text-white">
+                                            $ {{ number_format((float) $change->new_salary, 0, ',', '.') }}
+                                        </span>
+                                    </p>
+                                @endif
+                                @if($change->observations)
+                                    <p class="mt-1 text-xs italic text-gray-500 dark:text-gray-400">
+                                        “{{ $change->observations }}”
+                                    </p>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </div>
+        </div>
+    @endcan
+
     {{-- ── Card: historial de prórrogas ────────────────────────────────────────── --}}
     <div class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
@@ -609,10 +693,14 @@
     {{-- ── Modales Livewire ────────────────────────────────────────────────────── --}}
     <livewire:rh.contract-proroga-modal />
     <livewire:rh.contract-early-termination-modal />
+    <livewire:rh.position-change-modal />
 
     <script>
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('contract-updated', () => {
+                window.location.reload();
+            });
+            Livewire.on('position-change-applied', () => {
                 window.location.reload();
             });
         });

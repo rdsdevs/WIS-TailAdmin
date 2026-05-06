@@ -111,6 +111,13 @@ class UserSeeder extends Seeder
                 'email' => 'contabilidad@ascun.org.co',
                 'role' => 'accounting-manager',
             ],
+            [
+                'document_number' => '99000001',
+                'document_issued_at' => '2010-01-01',
+                'name' => 'RH VIEWER PRUEBAS',
+                'email' => 'rh.viewer@ascun.org.co',
+                'role' => 'rh-viewer',
+            ],
         ];
     }
 

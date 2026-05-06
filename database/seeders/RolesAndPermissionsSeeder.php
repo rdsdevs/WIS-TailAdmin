@@ -29,6 +29,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'contracts.update',
             'contracts.delete',
 
+            // Valores comprometidos (líneas presupuestales del contrato)
+            'committed_values.create',
+            'committed_values.read',
+            'committed_values.update',
+            'committed_values.delete',
+
             // Certificados
             'certificates.generate',
             'certificates.read',
@@ -96,6 +102,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'contracts.read',
             'contracts.update',
             'contracts.delete',
+            'committed_values.create',
+            'committed_values.read',
+            'committed_values.update',
+            'committed_values.delete',
             'certificates.generate',
             'certificates.read',
             'reports.hr',
@@ -105,6 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::findByName('rh-viewer')->givePermissionTo([
             'collaborators.read',
             'contracts.read',
+            'committed_values.read',
             'certificates.read',
             'reports.hr',
         ]);
@@ -119,6 +130,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'contracts.read',
             'contracts.update',
             'contracts.delete',
+            'committed_values.create',
+            'committed_values.read',
+            'committed_values.update',
+            'committed_values.delete',
             'certificates.generate',
             'certificates.read',
             'reports.hr',
@@ -134,6 +149,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'contracts.read',
             'contracts.update',
             'contracts.delete',
+            'committed_values.create',
+            'committed_values.read',
+            'committed_values.update',
+            'committed_values.delete',
             'certificates.generate',
             'certificates.read',
             'reports.hr',

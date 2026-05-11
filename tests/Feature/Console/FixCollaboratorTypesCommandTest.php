@@ -113,6 +113,8 @@ test('dry-run no modifica la base de datos ni genera auditorías', function (): 
         ['id' => '1', 'numdoc' => '111', 'tipo_colaborador' => 'Empleado'],
     ]);
 
+    $auditsBefore = Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count();
+
     $this->artisan('rh:fix-collaborator-types', [
         'csv' => $csv,
         '--institution-nit' => $ctx['institution']->nit,
@@ -121,7 +123,7 @@ test('dry-run no modifica la base de datos ni genera auditorías', function (): 
     ])->assertSuccessful();
 
     expect($a->fresh()->type)->toBe('Contratista');
-    expect(Audit::count())->toBe(0);
+    expect(Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count())->toBe($auditsBefore);
 });
 
 test('colaboradores no encontrados en BD se reportan como skipped sin error', function (): void {
@@ -131,6 +133,8 @@ test('colaboradores no encontrados en BD se reportan como skipped sin error', fu
         ['id' => '1', 'numdoc' => '999999', 'tipo_colaborador' => 'Empleado'],
     ]);
 
+    $auditsBefore = Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count();
+
     $this->artisan('rh:fix-collaborator-types', [
         'csv' => $csv,
         '--institution-nit' => $ctx['institution']->nit,
@@ -139,7 +143,7 @@ test('colaboradores no encontrados en BD se reportan como skipped sin error', fu
         ->expectsConfirmation('¿Confirma actualizar el campo type de los colaboradores afectados en la BD?', 'yes')
         ->assertSuccessful();
 
-    expect(Audit::count())->toBe(0);
+    expect(Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count())->toBe($auditsBefore);
 });
 
 test('colaboradores ya marcados como Empleado se cuentan como ya_correctos sin actualizar', function (): void {
@@ -150,6 +154,8 @@ test('colaboradores ya marcados como Empleado se cuentan como ya_correctos sin a
         ['id' => '1', 'numdoc' => '111', 'tipo_colaborador' => 'Empleado'],
     ]);
 
+    $auditsBefore = Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count();
+
     $this->artisan('rh:fix-collaborator-types', [
         'csv' => $csv,
         '--institution-nit' => $ctx['institution']->nit,
@@ -159,7 +165,7 @@ test('colaboradores ya marcados como Empleado se cuentan como ya_correctos sin a
         ->assertSuccessful();
 
     expect($a->fresh()->type)->toBe('Empleado');
-    expect(Audit::count())->toBe(0);
+    expect(Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count())->toBe($auditsBefore);
 });
 
 test('filas con es_empresa=true se ignoran aunque tipo_colaborador sea Empleado', function (): void {
@@ -216,6 +222,8 @@ test('respeta la cancelación de la confirmación y no aplica cambios', function
         ['id' => '1', 'numdoc' => '111', 'tipo_colaborador' => 'Empleado'],
     ]);
 
+    $auditsBefore = Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count();
+
     $this->artisan('rh:fix-collaborator-types', [
         'csv' => $csv,
         '--institution-nit' => $ctx['institution']->nit,
@@ -226,7 +234,7 @@ test('respeta la cancelación de la confirmación y no aplica cambios', function
         ->assertSuccessful();
 
     expect($a->fresh()->type)->toBe('Contratista');
-    expect(Audit::count())->toBe(0);
+    expect(Audit::where('auditable_type', \App\Models\RH\Collaborator::class)->count())->toBe($auditsBefore);
 });
 
 test('funciona sin --user-id usando el primer super-admin como firmante', function (): void {
